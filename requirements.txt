@@ -1,0 +1,8 @@
+numpy
+pillow
+opencv-python
+matplotlib
+scipy
+sklearn
+scikit-image
+rasterio
