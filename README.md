@@ -1,7 +1,7 @@
 # A pixel-level label tools to process high-throughput images at pixel level.
 ## Implement Python version >= 3.6.5
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/FreeCADITS/master/Training_intro.png)-->
-![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/blob/master/compare.png)
+![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/compare.png)
 <!--#### RUN ```pip3 install plantlabeller``` to install from terminal, if you cannot run ```pip3```, use ```python3 -m pip install plantlabeller```.
 #### Linux user may need to use ```sudo pip3 install plantlabeller``` or ```sudo python3 -m pip install plantlabeller```.-->
 #### ***Need to modify matplotlibrc file (if crashed)***  ADD: ```backend: TkAgg```
