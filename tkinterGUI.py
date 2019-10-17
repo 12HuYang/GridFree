@@ -739,7 +739,7 @@ def showcountingstat(tupinput,usertype):
     filename=tupinput[0]
     coinparts=tupinput[1]
     labeldict=tupinput[2]
-    labelkeys=labeldict.keys()
+    labelkeys=list(labeldict.keys())
     if filename in multi_results:
         return
     multi_results.update({filename:labeldict})
@@ -749,7 +749,7 @@ def showcountingstat(tupinput,usertype):
         tempdict={}
         iterreturn=labeldict[key]
         labels=iterreturn['labels']
-        labels=labels.astype(int)
+        #labels=labels.astype(int)
         colortable=iterreturn['colortable']
         counts=iterreturn['counts']
         if usertype==1:
@@ -779,7 +779,7 @@ def showcountingstat(tupinput,usertype):
         uniquelabels=list(colortable.keys())
         for uni in uniquelabels:
             if uni !=0:
-                pixelloc = np.where(labels == int(uni))
+                pixelloc = np.where(labels == uni)
                 if len(pixelloc[0])>0:
                     ulx = min(pixelloc[1])
                     uly = min(pixelloc[0])
@@ -847,7 +847,7 @@ def showcountingstat(tupinput,usertype):
                         print('kernelwidth='+str(width*pixelmmratio))
                         print('kernellength='+str(kernellength*pixelmmratio))
                         #print('kernelwidth='+str(kernelwidth*pixelmmratio))
-                        tempdict.update({uni:[kernellength,width,kernellength*pixelmmratio,width*pixelmmratio]})
+
 
 
                     #print(event.x, event.y, labels[event.x, event.y], ulx, uly, rlx, rly)
@@ -862,7 +862,9 @@ def showcountingstat(tupinput,usertype):
                         #rectext = canvas.create_text(midx, midy, fill='black', font='Times 8', text=canvastext)
                         #drawcontents.append(rectext)
                         draw.text([(midx,midy)],text=canvastext,fill='black',font=font)
+                    tempdict.update({uni:[kernellength,width,kernellength*pixelmmratio,width*pixelmmratio]})
         kerneldict.update({key:tempdict})
+        print(key,tempdict)
         content='item count:'+str(len(uniquelabels))+' ID:'+key+' '+filename
         draw.text((10,10),text=content,fill='black',font=font)
         #c=Toplevel()
@@ -2947,7 +2949,7 @@ def Open_RGBfile(entbox,usertype):
             RGBrsc=cv2.imread(QGISRGBFILE,flags=cv2.IMREAD_COLOR)
             #RGBrsc=cv2.imread(QGISRGBFILE,flags=cv2.IMREAD_COLOR)
             RGBrsccopy=cv2.imread(QGISRGBFILE,flags=cv2.IMREAD_COLOR)
-            cv2.imshow('singlefile',RGBrsccopy)
+            #cv2.imshow('singlefile',RGBrsccopy)
             #pyplt.imshow(RGBrsccopy)
             height,width,channel=np.shape(RGBrsc)
             RGBsize=(height,width)
