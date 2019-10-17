@@ -5,7 +5,7 @@
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/normaldistribution.png)
 <!--#### RUN ```pip3 install plantlabeller``` to install from terminal, if you cannot run ```pip3```, use ```python3 -m pip install plantlabeller```.
 #### Linux user may need to use ```sudo pip3 install plantlabeller``` or ```sudo python3 -m pip install plantlabeller```.-->
-#### UNIX OS 
+#### UNIX OS (Linux OS/MacOS)
 * execute ```python3 -m pip install -r requirements.txt``` to install required packages
 * execute ```./run``` on a terminal to run the software
 #### Windows OS 
