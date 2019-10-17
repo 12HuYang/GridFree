@@ -5,7 +5,6 @@
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/normaldistribution.png)
 <!--#### RUN ```pip3 install plantlabeller``` to install from terminal, if you cannot run ```pip3```, use ```python3 -m pip install plantlabeller```.
 #### Linux user may need to use ```sudo pip3 install plantlabeller``` or ```sudo python3 -m pip install plantlabeller```.-->
-#### ***Need to modify matplotlibrc file (if crashed)***  ADD: ```backend: TkAgg```
 #### UNIX OS 
 * execute ```python3 -m pip install -r requirements.txt``` to install required packages
 * execute ```./run``` on a terminal to run the software
@@ -32,4 +31,4 @@ https://drive.google.com/file/d/1hZzEpsqDWq7yrXRgDWwbDmQCY2iGni3Z/view?usp=shari
 2. RUN ```brew install gdal```, go to step 1
    - if failed with "gcc" go to step 3
 3. RUN ```brew reinstall gcc```, go to step 1--->
- 
+#### ***Need to modify matplotlibrc file (if crashed)***  ADD: ```backend: TkAgg```
