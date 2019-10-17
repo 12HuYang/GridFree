@@ -9,7 +9,7 @@
 * execute ```python3 -m pip install -r requirements.txt``` to install required packages
 * execute ```./run``` on a terminal to run the software
 #### Windows OS 
-* install Python 3.6.5 or later, download link: https://www.python.org/downloads/release/python-365/
+* install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 * run ```cmd``` go to the path you downloaded GridFree
 * execute ```py -m pip install -r requirements.txt``` to install required packages
 * execute ```py -m pip install opencv-python``` for opencv package
