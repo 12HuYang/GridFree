@@ -33,6 +33,6 @@ https://drive.google.com/file/d/1hZzEpsqDWq7yrXRgDWwbDmQCY2iGni3Z/view?usp=shari
 #### If crashed
 Modify matplotlibrc file ADD: ```backend: TkAgg```
 #### Reference
-[1] ImageJ https://imagej.nih.gov/ij/download.html
-[2] SeedCounter https://www.frontiersin.org/articles/10.3389/fpls.2016.01990/full
-[3] GrainScan https://plantmethods.biomedcentral.com/articles/10.1186/1746-4811-10-23
+- [1] ImageJ https://imagej.nih.gov/ij/download.html
+- [2] SeedCounter https://www.frontiersin.org/articles/10.3389/fpls.2016.01990/full
+- [3] GrainScan https://plantmethods.biomedcentral.com/articles/10.1186/1746-4811-10-23
