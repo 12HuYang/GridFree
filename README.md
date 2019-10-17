@@ -31,4 +31,5 @@ https://drive.google.com/file/d/1hZzEpsqDWq7yrXRgDWwbDmQCY2iGni3Z/view?usp=shari
 2. RUN ```brew install gdal```, go to step 1
    - if failed with "gcc" go to step 3
 3. RUN ```brew reinstall gcc```, go to step 1--->
-#### ***Need to modify matplotlibrc file (if crashed)***  ADD: ```backend: TkAgg```
+#### If crashed
+Modify matplotlibrc file ADD: ```backend: TkAgg```
