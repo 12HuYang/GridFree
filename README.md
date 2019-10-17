@@ -1,4 +1,4 @@
-# A pixel-level label tools to process high-throughput images at pixel level.
+# GridFree: A pixel-level label tools to segment high-throughput images
 ## Implement Python version >= 3.6.5
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/FreeCADITS/master/Training_intro.png)-->
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/compare.png)
