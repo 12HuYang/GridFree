@@ -7,19 +7,19 @@
 #### Linux user may need to use ```sudo pip3 install plantlabeller``` or ```sudo python3 -m pip install plantlabeller```.-->
 #### ***Need to modify matplotlibrc file (if crashed)***  ADD: ```backend: TkAgg```
 #### UNIX OS 
-execute ```python3 -m pip install -r requirements.txt``` to install required packages
-execute ```./run``` on a terminal to run the software
+* execute ```python3 -m pip install -r requirements.txt``` to install required packages
+* execute ```./run``` on a terminal to run the software
 #### Windows OS 
-install Python 3.6.5 or later, download link: https://www.python.org/downloads/release/python-365/
-run ```cmd``` go to the path you downloaded GridFree
-execute ```py -m pip install -r requirements.txt``` to install required packages
-execute ```py -m pip install opencv-python``` for opencv package
-execute ```py -m pip install scikit-image``` for package installation
-execute ```py -m pip install sklearn``` for package installation
-Download rasterio package at Link: https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal
+* install Python 3.6.5 or later, download link: https://www.python.org/downloads/release/python-365/
+* run ```cmd``` go to the path you downloaded GridFree
+* execute ```py -m pip install -r requirements.txt``` to install required packages
+* execute ```py -m pip install opencv-python``` for opencv package
+* execute ```py -m pip install scikit-image``` for package installation
+* execute ```py -m pip install sklearn``` for package installation
+* Download rasterio package at Link: https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal
 ```rasterio‑1.0.24+gdal24‑cp36‑cp36m‑win32.whl``` for Windows 32bit OS
 ```rasterio‑1.0.24+gdal24‑cp36‑cp36m‑win_amd64.whl``` for Windows 64 bit OS
-execute ```py tkinterGUI.py``` to run the software
+* execute ```py tkinterGUI.py``` to run the software
 #### dup1OUTPUT.tif 
 dup1OUTPUT.tif is a sample filed image, download it to GridFree folder:
 https://drive.google.com/file/d/1hZzEpsqDWq7yrXRgDWwbDmQCY2iGni3Z/view?usp=sharing
