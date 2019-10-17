@@ -6,8 +6,11 @@
 <!--#### RUN ```pip3 install plantlabeller``` to install from terminal, if you cannot run ```pip3```, use ```python3 -m pip install plantlabeller```.
 #### Linux user may need to use ```sudo pip3 install plantlabeller``` or ```sudo python3 -m pip install plantlabeller```.-->
 #### ***Need to modify matplotlibrc file (if crashed)***  ADD: ```backend: TkAgg```
-#### execute ```python3 -m pip install -r requirements.txt``` to install required packages
-#### UNIX OS execute ```./run``` on a terminal to implement the software
+#### UNIX OS execute ```python3 -m pip install -r requirements.txt``` to install required packages
+#### UNIX OS execute ```./run``` on a terminal to run the software
+#### Windows OS run ```cmd``` go to the path you downloaded GridFree
+#### Windows OS execute ```py -m pip install -r requirements.txt``` to install required packages
+#### Windows OS execute ```py tkinterGUI.py``` to run the software
 #### dup1OUTPUT.tif can be download at : https://drive.google.com/file/d/1hZzEpsqDWq7yrXRgDWwbDmQCY2iGni3Z/view?usp=sharing
 #### dup1OUTPUT.tif should be saved under GridFree folder
 
