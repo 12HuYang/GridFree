@@ -278,6 +278,64 @@ def get_boundaryloc(area,labelvalue):
                     break
     return boundaryloc
 
+def boundarywatershedcoin(area,segbondtimes,boundarytype):
+    if avgarea is not None and numpy.count_nonzero(area)<avgarea/2:
+        return area
+    x=[0,-1,-1,-1,0,1,1,1]
+    y=[1,1,0,-1,-1,-1,0,1]
+    #x=[0,-1,0,1]
+    #y=[1,0,-1,0]
+    #
+    #temptif=cv2.GaussianBlur(area,(3,3),0,0,cv2.BORDER_DEFAULT)
+    #areaboundary=cv2.Laplacian(area,cv2.CV_8U,ksize=5)
+    #plt.imshow(areaboundary)
+    #areaboundary=find_boundaries(area,mode=boundarytype)
+    areaboundary=get_boundary(area)
+    #areaboundary=areaboundary*1   #boundary = 1's, nonboundary=0's
+    temparea=area-areaboundary
+    arealabels=labelgapnp(temparea)
+    unique, counts = numpy.unique(arealabels, return_counts=True)
+    if segbondtimes>1:
+        return area
+    if(len(unique)>2):
+        res=arealabels+areaboundary
+        leftboundaryspots=numpy.where(areaboundary==1)
+
+        leftboundary_y=leftboundaryspots[0].tolist()
+        leftboundary_x=leftboundaryspots[1].tolist()
+        for uni in unique[1:]:
+            labelboundaryloc=get_boundaryloc(arealabels,uni)
+            for m in range(len(labelboundaryloc[0])):
+                for k in range(len(y)):
+                    i = labelboundaryloc[0][m] + y[k]
+                    j = labelboundaryloc[1][m] + x[k]
+                    if i >= 0 and i < res.shape[0] and j >= 0 and j < res.shape[1]:
+                        if res[i, j] == 1:
+                            res[i,j]=uni
+                            for n in range(len(leftboundary_y)):
+                                if leftboundary_y[n]==i and leftboundary_x[n]==j:
+                                    leftboundary_y.pop(n)
+                                    leftboundary_x.pop(n)
+                                    break
+        '''
+        res=res.tolist()
+        for k in range(len(leftboundaryspots[0])):
+            i=leftboundaryspots[0][k]
+            j=leftboundaryspots[1][k]
+            for m in range(len(y)):
+                if i+y[m]>=0 and i+y[m]<len(res) and j+x[m]>=0 and j+x[m]<len(res[0]):
+                    if areaboundary[i][j]>0:
+                        diff=areaboundary[i][j]-res[i+y[m]][j+x[m]]
+                        if diff<0:
+                            res[i][j]=res[i+y[m]][j+x[m]]
+                            break
+        '''
+        res=numpy.asarray(res)-1
+        res=numpy.where(res<0,0,res)
+        return res
+    else:
+        return area
+
 def boundarywatershed(area,segbondtimes,boundarytype):   #area = 1's
     if avgarea is not None and numpy.count_nonzero(area)<avgarea/2:
         return area
@@ -437,6 +495,8 @@ def cornerdivide(area,greatareas):
     hist=dict(zip(unique,counts))
     del hist[0]
     meanpixel=sum(counts[1:])/len(counts[1:])
+    bincounts=numpy.bincount(counts[1:])
+    #meanpixel=numpy.argmax(bincounts)
     while len(greatareas)>0:
         topkey=greatareas.pop(0)
         if topkey not in exceptions:
@@ -468,6 +528,8 @@ def manualdivide(area,greatareas):
     hist=dict(zip(unique,counts))
     del hist[0]
     meanpixel=sum(counts[1:])/len(counts[1:])
+    bincounts=numpy.bincount(counts[1:])
+    #meanpixel=numpy.argmax(bincounts)
     countseed=numpy.asarray(counts[1:])
     stdpixel=numpy.std(countseed)
     sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
@@ -543,6 +605,8 @@ def manualdivide(area,greatareas):
                 print('max label='+str(area.max()))
                 sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
                 meanpixel=sum(counts[1:])/len(counts[1:])
+                #meanpixel=numpy.argmax(bincounts)
+                countseed=numpy.asarray(counts[1:])
                 countseed=numpy.asarray(counts[1:])
                 stdpixel=numpy.std(countseed)
 
@@ -564,6 +628,8 @@ def divideloop(area,misslabel,avgarea,layers,par):
     #print('hist length='+str(len(counts)-1))
     #print('max label='+str(labels.max()))
     meanpixel=sum(counts[1:])/len(counts[1:])
+    bincounts=numpy.bincount(counts[1:])
+    #meanpixel=numpy.argmax(bincounts)
     countseed=numpy.asarray(counts[1:])
     stdpixel=numpy.std(countseed)
     leftsigma=(meanpixel-min(countseed))/stdpixel
@@ -643,6 +709,8 @@ def divideloop(area,misslabel,avgarea,layers,par):
                 print('max label='+str(area.max()))
                 sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
                 meanpixel=sum(counts[1:])/len(counts[1:])
+                bincounts=numpy.bincount(counts[1:])
+                #meanpixel=numpy.argmax(bincounts)
                 countseed=numpy.asarray(counts[1:])
                 stdpixel=numpy.std(countseed)
                 leftsigma=(meanpixel-min(countseed))/stdpixel
@@ -676,6 +744,8 @@ def combineloop(area,misslabel,par):
     #print('hist length='+str(len(counts)-1))
     #print('max label='+str(labels.max()))
     meanpixel=sum(counts[1:])/len(counts[1:])
+    bincounts=numpy.bincount(counts[1:])
+    #meanpixel=numpy.argmax(bincounts)
     countseed=numpy.asarray(counts[1:])
     stdpixel=numpy.std(countseed)
     leftsigma=(meanpixel-min(countseed))/stdpixel
@@ -778,6 +848,8 @@ def combineloop(area,misslabel,par):
             hist=dict(zip(unique,counts))
             sortedkeys=list(sorted(hist,key=hist.get))
             meanpixel=sum(counts[1:])/len(counts[1:])
+            bincounts=numpy.bincount(counts[1:])
+            #meanpixel=numpy.argmax(bincounts)
             countseed=numpy.asarray(counts[1:])
             stdpixel=numpy.std(countseed)
             leftsigma=(meanpixel-min(countseed))/stdpixel
@@ -1132,7 +1204,10 @@ def checkvalid(pvalue,leftsigma,rightsigma):
             #if round(leftsigma)>3:
             #    godivide=True
             #else:
-            gocombine=True
+            #if rightsigma==leftsigma:
+            #    allpass=True
+            #else:
+                gocombine=True
 
     return allpass,godivide,gocombine
 
@@ -1186,6 +1261,8 @@ def findmissitem(originimage,area,coinparts):
     unique=numpy.unique(tempband,return_counts=True)
     labelunique,labelcounts=numpy.unique(area,return_counts=True)
     meanpixel=sum(labelcounts[1:])/len(labelcounts[1:])
+    bincounts=numpy.bincount(labelcounts[1:])
+    #meanpixel=numpy.argmax(bincounts)
     std=numpy.std(labelcounts[1:])
     if len(unique)>2:
         boundaryarea=boundarywatershed(tempband,1,'inner')
@@ -1229,9 +1306,80 @@ def findcoin(area):
     maxpixellabel=rankhist[coincandi]
 
     '''
-    maxpixel=max(counts[1:])
-    maxpixelind=counts.tolist().index(maxpixel)
-    maxpixellabel=unique[maxpixelind]
+    hist=dict(zip(unique[1:],counts[1:]))
+    sortedlist=sorted(hist,key=hist.get,reverse=True)
+    topfive=sortedlist[:5]
+    coinkey=None
+    maxarea={}
+    densityarea={}
+    lwratio={}
+    for key in topfive:
+        locs=numpy.where(area==key)
+        ulx,uly=min(locs[1]),min(locs[0])
+        rlx,rly=max(locs[1]),max(locs[0])
+        subarea=area[uly:rly+1,ulx:rlx+1]
+        tempsubarea=subarea/key
+        newtempsubarea=numpy.where(tempsubarea!=1.,0,1)
+        newsubarea=boundarywatershedcoin(newtempsubarea,1,'inner')#,windowsize)
+        labelunique,labcounts=numpy.unique(newsubarea,return_counts=True)
+        hist=dict(zip(labelunique[1:],labcounts[1:]))
+        labelunique=labelunique.tolist()
+        sortedsub=sorted(hist,key=hist.get,reverse=True)
+        try:
+            topsub=sortedsub[0]
+        except IndexError:
+            continue
+        maxarea.update({key:hist[topsub]})
+        topsubloc=numpy.where(newsubarea==topsub)
+        ulx,uly=min(topsubloc[1]),min(topsubloc[0])
+        rlx,rly=max(topsubloc[1]),max(topsubloc[0])
+        density=float(hist[topsub]/((rly-uly)*(rlx-ulx)))
+        densityarea.update({key:density})
+        length=max((rlx-ulx),(rly-uly))
+        width=min((rlx-ulx),(rly-uly))
+        templwratio=length/width
+        lwratio.update({key:templwratio})
+
+    #calculate score
+    score={}
+    sortedarea=sorted(maxarea,key=maxarea.get)
+    sorteddensity=sorted(densityarea,key=densityarea.get)
+    sortedlwratio=sorted(lwratio,key=lwratio.get,reverse=True)
+    for key in maxarea.keys():
+        areascore=0.5*sortedarea.index(key)
+        densityscore=0.5*sorteddensity.index(key)
+        lwratioscore=0.5*sortedlwratio.index(key)
+        totalscore=areascore+densityscore+lwratioscore
+        score.update({key:totalscore})
+
+
+    sortedlist=sorted(score,key=score.get,reverse=True)
+    coinkey=sortedlist[0]
+    locs=numpy.where(area==coinkey)
+    ulx,uly=min(locs[1]),min(locs[0])
+    rlx,rly=max(locs[1]),max(locs[0])
+    subarea=area[uly:rly+1,ulx:rlx+1]
+    tempsubarea=subarea/coinkey
+    newtempsubarea=numpy.where(tempsubarea!=1.,0,1)
+    newsubarea=boundarywatershedcoin(newtempsubarea,1,'inner')#,windowsize)
+    labelunique,labcounts=numpy.unique(newsubarea,return_counts=True)
+    hist=dict(zip(labelunique[1:],labcounts[1:]))
+    labelunique=labelunique.tolist()
+    sortedsub=sorted(hist,key=hist.get,reverse=True)
+    topsub=sortedsub[0]
+    tempsubarea=numpy.zeros(subarea.shape)
+    tempsubarea=numpy.where(newsubarea==topsub,1,tempsubarea)
+    temparea=numpy.zeros(area.shape)
+    temparea[uly:rly+1,ulx:rlx+1]=tempsubarea
+    temparea=temparea*area
+    uniquekey=numpy.unique(temparea)
+    coinkey=uniquekey[1]
+    coinlocs=numpy.where(temparea==coinkey)
+
+    #maxpixel=max(counts[1:])
+    #maxpixelind=counts.tolist().index(maxpixel)
+    #maxpixellabel=unique[maxpixelind]
+    maxpixellabel=coinkey
     '''
     countarray=numpy.asarray([unique[1:],counts[1:]]).transpose()
     clf=KMeans(n_clusters=2,init='k-means++',n_init=10,random_state=0)
@@ -1248,7 +1396,7 @@ def findcoin(area):
     coinparts={}
 
     #for i in range(len(refind)):
-    coinlocs=numpy.where(area==maxpixellabel)
+    #coinlocs=numpy.where(area==maxpixellabel)
     coinparts.update({maxpixellabel:coinlocs})
 
     '''
@@ -1708,6 +1856,8 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
     labeldict.update(tempdict)
     #print(numpy.column_stack(counts[1:]))
     meanpixel=sum(counts[1:])/len(counts[1:])
+    bincounts=numpy.bincount(counts[1:])
+    ##meanpixel=numpy.argmax(bincounts)
     countseed=numpy.asarray(counts[1:])
 
 
@@ -1744,6 +1894,7 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
     #while allinexceptsions is False:
     lastgreatarea=[]
     lasttinyarea=[]
+    currcounts=[]
     for it in range(ittimes):
         if godivide==False and gocombine==False:
             break
@@ -1756,6 +1907,8 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
         print('hist length='+str(len(counts)-1))
         print('max label='+str(labels.max()))
         meanpixel=sum(counts[1:])/len(counts[1:])
+        bincounts=numpy.bincount(counts[1:])
+        ##meanpixel=numpy.argmax(bincounts)
         countseed=numpy.asarray(counts[1:])
         with open('countseed'+str(it)+'.csv','w') as f:
             csvwriter=csv.writer(f)
@@ -1783,6 +1936,8 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
             #    labels=numpy.where(labels==unique[i],i,labels)
             unique, counts = numpy.unique(labels, return_counts=True)
             meanpixel=sum(counts[1:])/len(counts[1:])
+            bincounts=numpy.bincount(counts[1:])
+            #meanpixel=numpy.argmax(bincounts)
             countseed=numpy.asarray(counts[1:])
             stdpixel=numpy.std(countseed)
             leftsigma=(meanpixel-min(countseed))/stdpixel
@@ -1822,6 +1977,8 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
             #    labels=numpy.where(labels==unique[i],i,labels)
             unique, counts = numpy.unique(labels, return_counts=True)
             meanpixel=sum(counts[1:])/len(counts[1:])
+            bincounts=numpy.bincount(counts[1:])
+            #meanpixel=numpy.argmax(bincounts)
             countseed=numpy.asarray(counts[1:])
             stdpixel=numpy.std(countseed)
             leftsigma=(meanpixel-min(countseed))/stdpixel
@@ -1849,6 +2006,8 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
         par+=0.05
         unique, counts = numpy.unique(labels, return_counts=True)
         meanpixel=sum(counts[1:])/len(counts[1:])
+        bincounts=numpy.bincount(counts[1:])
+        #meanpixel=numpy.argmax(bincounts)
         countseed=numpy.asarray(counts[1:])
         stdpixel=numpy.std(countseed)
         hist=dict(zip(unique,counts))
@@ -1863,7 +2022,20 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
         stat,p=shapiro(countseed)
         #allinexceptsions,godivide,gocombine=checkvalid(misslabel,hist,sortedkeys,uprange,lowrange,avgarea)
         allinexceptsions,godivide,gocombine=checkvalid(p,leftsigma,rightsigma)
-        dimention=getdimension(labels)
+        if len(currcounts)==0:
+            currcounts[:]=counts[:]
+        else:
+            if len(currcounts)==len(counts):
+                samevalue=0
+                for i in range(len(currcounts)):
+                    if currcounts[i]==counts[i]:
+                        samevalue+=1
+                print(samevalue,len(currcounts))
+                if samevalue==len(currcounts):
+                    break
+                else:
+                    currcounts[:]=counts[:]
+        #dimention=getdimension(labels)
         copylabels=numpy.zeros(labels.shape)
         copylabels[:,:]=labels[:,:]
         subtempdict={'labels':copylabels}
@@ -1874,6 +2046,7 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
 
         tempdict={'iter'+str(it+1):subtempdict}
         labeldict.update(tempdict)
+
     #if len(greatareas)>0:
     #    manualdivide(labels,misslabel,avgarea)
 

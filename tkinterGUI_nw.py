@@ -74,29 +74,6 @@ workingimg=None
 def distance(p1,p2):
     return np.sum((p1-p2)**2)
 
-def kplusinit(data,k):
-    centroid=[]
-    centroid.append(data[np.random.randint(data.shape[0]),:])
-    for c_id in range(k-1):
-        dist=[]
-        for i in range(data.shape[0]):
-            point=data[i,:]
-            d=sys.maxsize
-
-            for j in range(len(centroid)):
-                temp_dist=distance(point,centroid[j])
-                d=min(d,temp_dist)
-            dist.append(d)
-
-        dist=np.array(dist)
-        next_centroid=data[np.argmax(dist),:]
-        centroid.append(next_centroid)
-    return centroid
-
-def kmeansplus(data,k):
-    means=kplusinit(data,k)
-    clusters=kplus.FindClusters(means,data)
-    print(cluster)
 
 
 
@@ -129,7 +106,7 @@ def generatedisplayimg(filename):
     resize=cv2.resize(Multigray[filename],(int(width/ratio),int(height/ratio)),interpolation=cv2.INTER_LINEAR)
     grayimg=ImageTk.PhotoImage(Image.fromarray(resize.astype('uint8')))
     displayimg['Gray/NIR']=grayimg
-    pyplt.imsave('displayimg.png',displaybandarray['LabOstu'])
+    pyplt.imsave('displayimg.png',displaybandarray[filename]['LabOstu'])
     indimg=cv2.imread('displayimg.png')
     displayimg['ColorIndices']=ImageTk.PhotoImage(Image.fromarray(indimg))
     displayimg['Output']=ImageTk.PhotoImage(Image.fromarray(np.zeros((int(height/ratio),int(width/ratio))).astype('uint8')))
@@ -226,12 +203,13 @@ def Open_Multifile():
         clusterdisplay={}
         for i in range(len(MULTIFILES)):
             Open_File(MULTIFILES[i])
+            singleband(MULTIFILES[i])
         for widget in changefileframe.winfo_children():
             widget.pack_forget()
         filedropvar.set(filenames[0])
         changefiledrop=OptionMenu(changefileframe,filedropvar,*filenames,command=partial(changeimage,imageframe))
         changefiledrop.pack()
-        singleband(filenames[0])
+        #singleband(filenames[0])
         generatedisplayimg(filenames[0])
         currentfilename=filenames[0]
         for i in range(len(cluster)):
@@ -259,12 +237,14 @@ def singleband(file):
     bands=bands/ostu
     #display purpose
     ratio=findratio([bandsize[0],bandsize[1]],[620,620])
+    originbands={}
+    displays={}
     if 'LabOstu' not in originbandarray:
-        originbandarray.update({'LabOstu':bands})
+        originbands.update({'LabOstu':bands})
         displaybands=cv2.resize(bands,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #displaybands=displaybands.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         #kernel=np.ones((2,2),np.float32)/4
-        displaybandarray.update({'LabOstu':displaybands})
+        displays.update({'LabOstu':displaybands})
         #displaybandarray.update({'LabOstu':cv2.filter2D(displaybands,-1,kernel)})
     bands=Multiimagebands[file].bands
     for i in range(3):
@@ -272,12 +252,15 @@ def singleband(file):
     NDI=128*((bands[1,:,:]-bands[0,:,:])/(bands[1,:,:]+bands[0,:,:])+1)
     tempdict={'NDI':NDI}
     if 'NDI' not in originbandarray:
-        originbandarray.update(tempdict)
+        originbands.update(tempdict)
         displaybands=cv2.resize(NDI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-        kernel=np.ones((2,2),np.float32)/4
-        displaydict={'NDI':cv2.filter2D(displaybands,-1,kernel)}
+        #kernel=np.ones((2,2),np.float32)/4
+        #displaydict={'NDI':cv2.filter2D(displaybands,-1,kernel)}
+        displaydict={'NDI':displaybands}
         #displaydict=displaydict.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
-        displaybandarray.update(displaydict)
+        displays.update(displaydict)
+    displaybandarray.update({file:displays})
+    originbandarray.update({file:originbands})
     '''
     Greenness = bands[1, :, :] / (bands[0, :, :] + bands[1, :, :] + bands[2, :, :])
     tempdict = {'Greenness': Greenness}
@@ -371,12 +354,23 @@ def Band_calculation():
 
 
 def changeimage(frame,filename):
-    global clusterdisplay,currentfilename
+    global clusterdisplay,currentfilename,resviewframe
     clusterdisplay={}
     currentfilename=filename
     print(filename)
     generatedisplayimg(filename)
     changedisplayimg(frame,'Origin')
+    if filename in multi_results.keys():
+        for widget in resviewframe.winfo_children():
+            widget.pack_forget()
+        iternum=len(list(multi_results[filename][0].keys()))
+        itervar=IntVar()
+        itervar.set(iternum)
+        resscaler=Scale(resviewframe,from_=1,to=iternum,tickinterval=1,length=220,orient=HORIZONTAL,variable=itervar,command=partial(changeoutputimg,filename))
+        resscaler.pack()
+        outputbutton=Button(resviewframe,text='Export Results',command=partial(export_result,itervar))
+        outputbutton.pack()
+
 
 def generateplant(checkbox,bandchoice):
     keys=bandchoice.keys()
@@ -433,7 +427,7 @@ def generateimgplant(displaylabels):
     plantchoice=[]
     for key in keys:
         plantchoice.append(checkboxdict[key].get())
-    tempdisplayimg=np.zeros((displaybandarray['LabOstu'].shape))
+    tempdisplayimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
     for i in range(len(plantchoice)):
         tup=plantchoice[i]
         if '1' in tup:
@@ -450,12 +444,12 @@ def kmeansclassify(choicelist,reshapedtif):
     if int(kmeans.get())==0:
         return
     for i in range(len(choicelist)):
-            tempband=displaybandarray[choicelist[i]]
+            tempband=displaybandarray[currentfilename][choicelist[i]]
             #tempband=cv2.resize(tempband,(450,450),interpolation=cv2.INTER_LINEAR)
             reshapedtif[:,i]=tempband.reshape(tempband.shape[0]*tempband.shape[1],1)[:,0]
     clf=KMeans(n_clusters=int(kmeans.get()),init='k-means++',n_init=10,random_state=0)
     tempdisplayimg=clf.fit_predict(reshapedtif)
-    displaylabels=tempdisplayimg.reshape(displaybandarray['LabOstu'].shape)
+    displaylabels=tempdisplayimg.reshape(displaybandarray[currentfilename]['LabOstu'].shape)
     pixelarea=1.0
     for i in range(int(kmeans.get())):
         pixelloc=np.where(displaylabels==i)
@@ -472,12 +466,12 @@ def kmeansclassify(choicelist,reshapedtif):
 def changecluster():
     keys=bandchoice.keys()
     choicelist=[]
-    imageband=np.zeros((displaybandarray['LabOstu'].shape))
+    imageband=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
     for key in keys:
         tup=bandchoice[key].get()
         if '1' in tup:
             choicelist.append(key)
-            imageband=imageband+displaybandarray[key]
+            imageband=imageband+displaybandarray[currentfilename][key]
     if len(choicelist)==0:
         messagebox.showerror('No Indices is selected',message='Please select indicies to do KMeans Classification.')
         return
@@ -492,12 +486,12 @@ def changecluster():
             if kmeans.get() in tempdict:
                 displaylabels=tempdict[kmeans.get()]
             else:
-                reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
+                reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
                 displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
             generateimgplant(displaylabels)
             return
         else:
-            reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
+            reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
             displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
             generateimgplant(displaylabels)
 
@@ -532,7 +526,7 @@ def showcounting(tup):
     if labels.shape[1]<1000:
         font=ImageFont.truetype('cmb10.ttf',size=14)
     else:
-        font=ImageFont.truetype('cmb10.ttf',size=28)
+        font=ImageFont.truetype('cmb10.ttf',size=32)
     if len(coinparts)>0:
         tempband=np.zeros(labels.shape)
         coinkeys=coinparts.keys()
@@ -656,8 +650,8 @@ def showcounting(tup):
 
 
 
-def changeoutputimg(itervar):
-    outputimg=outputimgdict['iter'+str(int(itervar)-1)]
+def changeoutputimg(file,itervar):
+    outputimg=outputimgdict[file]['iter'+str(int(itervar)-1)]
     displayimg['Output']=outputimg
     changedisplayimg(imageframe,'Output')
 
@@ -666,7 +660,9 @@ def export_result(iterver):
     path=filedialog.askdirectory()
     for file in files:
         labeldict=multi_results[file][0]
-        itervalue='iter'+str(int(iterver.get())-1)
+        totalitervalue=len(list(labeldict.keys()))
+        #itervalue='iter'+str(int(iterver.get())-1)
+        itervalue='iter'+str(totalitervalue-1)
         print(itervalue)
         print(labeldict)
         labels=labeldict[itervalue]['labels']
@@ -675,21 +671,21 @@ def export_result(iterver):
         head_tail=os.path.split(file)
         originfile,extension=os.path.splitext(head_tail[1])
         if len(path)>0:
-            imageband=outputimgbands[itervalue]
+            imageband=outputimgbands[file][itervalue]
             originheight,originwidth=Multigraybands[file].size
             image=imageband.resize([originwidth,originheight],resample=Image.BILINEAR)
-            image.save(originfile+'-countresult'+'.png',"PNG")
+            image.save(path+'/'+originfile+'-countresult'+'.png',"PNG")
             originrestoredband=labels
             restoredband=originrestoredband.astype('float32')
             restoredband=cv2.resize(src=restoredband,dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
             print(restoredband.shape)
             currentsizes=kernersizes[file]
-            indicekeys=list(originbandarray.keys())
+            indicekeys=list(originbandarray[file].keys())
             indeclist=[ 0 for i in range(len(indicekeys)*3)]
             datatable={}
             origindata={}
             for key in indicekeys:
-                data=originbandarray[key]
+                data=originbandarray[file][key]
                 data=data.tolist()
                 tempdict={key:data}
                 origindata.update(tempdict)
@@ -752,11 +748,75 @@ def export_result(iterver):
                     csvwriter.writerow(row)
     messagebox.showinfo('Saved',message='Results are saved to '+path)
 
+def single_kmenas(singlebandarray):
+    numindec=0
+    keys=bandchoice.keys()
+    for key in keys:
+        tup=bandchoice[key].get()
+        if '1' in tup:
+            numindec+=1
+    reshapeworkimg=np.zeros((singlebandarray[cluster[0]].shape[0]*singlebandarray[cluster[0]].shape[1],numindec))
+    j=0
+    for i in range(len(cluster)):
+        tup=bandchoice[cluster[i]].get()
+        if '1' in tup:
+            tempband=singlebandarray[cluster[i]]
+            reshapeworkimg[:,j]=tempband.reshape(tempband.shape[0]*tempband.shape[1],1)[:,0]
+            j+=1
+    clusternumber=int(kmeans.get())
+    clf=KMeans(n_clusters=clusternumber,init='k-means++',n_init=10,random_state=0)
+    labels=clf.fit_predict(reshapeworkimg)
+    temptif=labels.reshape(singlebandarray[cluster[0]].shape[0],singlebandarray[cluster[0]].shape[1])
+    keys=checkboxdict.keys()
+    plantchoice=[]
+    for key in keys:
+        plantchoice.append(checkboxdict[key].get())
+    tempdisplayimg=np.zeros((singlebandarray[cluster[0]].shape))
+    for i in range(len(plantchoice)):
+        tup=plantchoice[i]
+        if '1' in tup:
+            tempdisplayimg=np.where(temptif==i,1,tempdisplayimg)
+    return tempdisplayimg
 
 
 
+def batchextraction():
+    global multi_results
+    for file in filenames:
+        if file!=currentfilename:
+            tempdisplaybands=displaybandarray[file]
+            displayband=single_kmenas(tempdisplaybands)
+            nonzeros=np.count_nonzero(displayband)
+            nonzeroloc=np.where(displayband!=0)
+            ulx,uly=min(nonzeroloc[1]),min(nonzeroloc[0])
+            rlx,rly=max(nonzeroloc[1]),max(nonzeroloc[0])
+            nonzeroratio=float(nonzeros)/((rlx-ulx)*(rly-uly))
+            print(nonzeroratio)
+            if nonzeroratio<=0.15:# and nonzeroratio>=0.1:
+                ratio=findratio([displayband.shape[0],displayband.shape[1]],[1600,1600])
+                workingimg=cv2.resize(displayband,(int(displayband.shape[1]*ratio),int(displayband.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+            else:
+                if nonzeroratio>0.15:
+                    ratio=findratio([displayband.shape[0],displayband.shape[1]],[450,450])
+                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                #else:
+                #    if nonzeroratio<0.1:
+                #        ratio=findratio([displayband.shape[0],displayband.shape[1]],[1503,1503])
+                #        workingimg=cv2.resize(displayband,(int(displayband.shape[1]*ratio),int(displayband.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
 
-
+            coin=refvar.get()=='1'
+            labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
+            multi_results.update({file:(labeldict,coinparts)})
+            tempimgdict={}
+            tempimgbands={}
+            for key in labeldict:
+                tup=(labeldict[key]['labels'],labeldict[key]['counts'],labeldict[key]['colortable'],coinparts,file)
+                outputdisplay,outputimg=showcounting(tup)
+                tempimgdict.update({key:outputdisplay})
+                tempimgbands.update({key:outputimg})
+            outputimgdict.update({file:tempimgdict})
+            outputimgbands.update({file:tempimgbands})
+    pass
 
 
 def extraction(frame):
@@ -765,6 +825,7 @@ def extraction(frame):
     kernersizes.clear()
     itervar=IntVar()
     outputimgdict.clear()
+    outputimgbands.clear()
     for widget in frame.winfo_children():
         widget.pack_forget()
     nonzeros=np.count_nonzero(currentlabels)
@@ -772,13 +833,21 @@ def extraction(frame):
     ulx,uly=min(nonzeroloc[1]),min(nonzeroloc[0])
     rlx,rly=max(nonzeroloc[1]),max(nonzeroloc[0])
     nonzeroratio=float(nonzeros)/((rlx-ulx)*(rly-uly))
+    #nonzeroratio=float(nonzeros)/(currentlabels.shape[0]*currentlabels.shape[1])
     print(nonzeroratio)
-    if nonzeroratio<=0.15:
-        ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
+    if nonzeroratio<=0.16:# and nonzeroratio>=0.1:
+        ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1600,1600])
         workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
     else:
-        ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[450,450])
-        workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        if nonzeroratio>0.16:
+            ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[450,450])
+            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        #else:
+        #    if nonzeroratio<0.1:
+        #        print('using 1500x1500')
+        #        ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1553,1553])
+        #        workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+
     #cv2.imshow('workingimg',workingimg)
     coin=refvar.get()=='1'
     labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
@@ -788,17 +857,22 @@ def extraction(frame):
     print(labeldict)
     #iternum=3
     itervar.set(len(iterkeys))
+    tempimgdict={}
+    tempimgbands={}
     for key in labeldict:
         tup=(labeldict[key]['labels'],labeldict[key]['counts'],labeldict[key]['colortable'],coinparts,currentfilename)
         outputdisplay,outputimg=showcounting(tup)
-        outputimgdict.update({key:outputdisplay})
-        outputimgbands.update({key:outputimg})
+        tempimgdict.update({key:outputdisplay})
+        tempimgbands.update({key:outputimg})
+    outputimgdict.update({currentfilename:tempimgdict})
+    outputimgbands.update({currentfilename:tempimgbands})
     time.sleep(5)
     #tup=(labeldict,coinparts,currentfilename)
-    resscaler=Scale(frame,from_=1,to=iternum,tickinterval=1,length=220,orient=HORIZONTAL,variable=itervar,command=changeoutputimg)
+    resscaler=Scale(frame,from_=1,to=iternum,tickinterval=1,length=220,orient=HORIZONTAL,variable=itervar,command=partial(changeoutputimg,currentfilename))
     resscaler.pack()
     outputbutton=Button(frame,text='Export Results',command=partial(export_result,itervar))
     outputbutton.pack()
+    batchextraction()
     pass
 
 def onFrameConfigure(inputcanvas):
@@ -925,7 +999,7 @@ for text,mode in refoption:
 ### ---start extraction---
 extractionframe=LabelFrame(control_fr,text='Image extraction')
 extractionframe.pack(padx=5,pady=5)
-resviewframe=LabelFrame(control_fr)
+resviewframe=LabelFrame(control_fr,text='Review results')
 extractbutton=Button(extractionframe,text='Start Image Process',command=partial(extraction,resviewframe))
 extractbutton.pack()
 resviewframe.pack()
