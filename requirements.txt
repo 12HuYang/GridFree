@@ -5,5 +5,4 @@ matplotlib
 scipy
 sklearn
 scikit-image
-GDAL==1.11.0
-rasterio
+
