@@ -1577,8 +1577,9 @@ def startbatchextract(usertype):
         #canvasframe.pack()
 
         #extractw.pack()
-        tup=(key,coinparts,labeldict)
-        showcountingstat(tup,usertype)
+        #tup=(key,coinparts,labeldict)
+        #showcountingstat(tup,usertype)
+        showcounting(tup,usertype)
         time.sleep(5)
         #x=extractw.winfo_rootx()+extractw.winfo_x()
         #y=extractw.winfo_rooty()+extractw.winfo_y()
@@ -1610,7 +1611,10 @@ def startsingleextract(modified_tif,mapfile,tiflayers,usertype):
     itertime=10
     #tkinterclustering.init(modified_tif,mapfile,tiflayers,itertime)
     #coin=False
-    labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(seg_tif,valid_tif,mapfile,tiflayers,itertime,coin)
+    if usertype==1:
+        labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(seg_tif,seg_tif,mapfile,tiflayers,itertime,coin)
+    else:
+        labels,border,colortable,greatareas,tinyareas,coinparts=tkintercore.init(seg_tif,seg_tif,mapfile,tiflayers,itertime,coin)
     unique,count=np.unique(labels,return_counts=True)
     meanpixel=sum(count[1:])/len(count[1:])
     sigma=np.std(count[1:])
@@ -1639,7 +1643,12 @@ def startsingleextract(modified_tif,mapfile,tiflayers,usertype):
     if usertype==2:
         pngbands=np.zeros((RGB.size[0],RGB.size[1]))
         if extension=='.tif':
-            pngbands[:,:]=bandarrays['Greenness']
+            #pngbands[:,:]=bandarrays['Greenness']
+            height,width=RGB.size
+            pngbands=np.zeros((height,width,3))
+            for i in range(3):
+                pngbands[:,:,i]=RGB.bands[i,:,:]
+            pngbands=pngbands.astype('uint8')
             print(pngbands)
             pyplt.imsave('tempcroptif.png',pngbands)
             image=cv2.imread('tempcroptif.png')
@@ -1699,9 +1708,9 @@ def startsingleextract(modified_tif,mapfile,tiflayers,usertype):
     #extractw.pack()
 
 
-    '''
-    trainingdataset=showcounting(tup,usertype)
 
+    trainingdataset=showcounting(tup,usertype)
+    '''
     with open('trainingdataset.csv','w') as f:
         writer=csv.writer(f)
         for item in trainingdataset:
@@ -1715,8 +1724,8 @@ def startsingleextract(modified_tif,mapfile,tiflayers,usertype):
     #modifybutton.grid(row=0,column=1,padx=5,pady=3)
     #recompubutton.grid(row=0,column=2,padx=5,pady=3)
 
-    tup=(currentfilename,coinparts,labeldict)
-    showcountingstat(tup,usertype)
+    #tup=(currentfilename,coinparts,labeldict)
+    #showcountingstat(tup,usertype)
 
 
 
@@ -2092,12 +2101,15 @@ def setsegmap(plantchoice):
             zerograph = np.zeros(temptif.shape)
             zerograph = np.where(temptif == i, 1, zerograph)
             tiflayers.append(zerograph)
+    #seg_tif=cv2.GaussianBlur(modified_tif,(5,5),cv2.BORDER_DEFAULT)
     seg_tif=modified_tif
+    pyplt.imsave('seg_tif.png',seg_tif)
 
 def setvalidmap():
     global valid_tif
     valid_tif=None
     valid_tif=modified_tif
+    pyplt.imsave('valid_tif.png',valid_tif)
 
 def scalarbarvalue(blurvalue):
     global panelA
@@ -2221,8 +2233,8 @@ def confirmremove(refop,edgeop,plantchoice,choicelist,classpick,usertype):
     panelA = Label(ctr_left, image=image)
     panelA.image = image
     panelA.grid(row=0, column=0)
-    setsegmap(plantchoice)
     setvalidmap()
+    setsegmap(plantchoice)
     parameter.update({'bandchoice':choicelist})
     parameter.update({'classnum':len(plantchoice)})
     parameter.update({'classpick':classpick})
@@ -2328,8 +2340,9 @@ def generateplant(checkboxdict,choicelist,usertype):
     pixelnum=np.count_nonzero(modified_tif)
     pixelarea=float(pixelnum/(modified_tif.shape[0]*modified_tif.shape[1]))
     print('pixelarea='+str(pixelarea))
-    setsegmap(plantchoice)
     setvalidmap()
+    setsegmap(plantchoice)
+
     v=StringVar()
     edge=StringVar()
     #removeedge=LabelFrame(panelB,text='Remove Square Edge')
@@ -2398,7 +2411,7 @@ def single_KMeans(singleworkbandarrays,bandchoice,classnum,classpick):
         tempband=singleworkbandarrays[bandchoice[i]]
         reshapeworkimg[:,i]=tempband.reshape(tempband.shape[0]*tempband.shape[1],1)[:,0]
     clusternumber=classnum
-    clf=KMeans(n_clusters=clusternumber,init='k-means++',n_init=10,random_state=0)
+    clf=KMeans(n_clusters=clusternumber,init='k-means++',n_init=30,random_state=0)
     labels=clf.fit_predict(reshapeworkimg)
     temptif = labels.reshape(singleworkbandarrays[bandchoice[0]].shape[0], singleworkbandarrays[bandchoice[0]].shape[1])
     arearank={}
@@ -2448,7 +2461,7 @@ def kmeansclassify(bandchoice,classentry,usertype):
 
     #reshapemodified_tif=modified_tif.reshape(modified_tif.shape[0]*modified_tif.shape[1],1)
     clusternumber=int(classentry.get())
-    clf=KMeans(n_clusters=clusternumber,init='k-means++',n_init=10,random_state=0)
+    clf=KMeans(n_clusters=clusternumber,init='k-means++',n_init=30,random_state=0)
     if len(choicelist)==0:
         messagebox.showerror('No Indices is selected',message='Please select indicies to do KMeans Classification.')
         return
@@ -2591,7 +2604,7 @@ def KMeansPanel(usertype):
     clusternumberentry=Entry(panelB)
     if usertype==2 and defaultfile:
         clusternumberentry.delete(0,END)
-        clusternumberentry.insert(END,5)
+        clusternumberentry.insert(END,3)
     if usertype==1 and defaultfile:
         clusternumberentry.delete(0,END)
         clusternumberentry.insert(END,2)
@@ -2600,7 +2613,7 @@ def KMeansPanel(usertype):
         bandchoice.update(tempdict)
         ch=ttk.Checkbutton(contentframe,text=key,variable=bandchoice[key])#,command=partial(autosetclassnumber,clusternumberentry,bandchoice))
         if usertype==2 and defaultfile:
-            if key=='MExG' or key=='NDVI':
+            if key=='Band4':
                 ch.invoke()
         if usertype==1 and defaultfile:
             if key=='NDI':
@@ -2924,7 +2937,9 @@ def Open_defaultRGBfile(QGISRGBFILE):
             for j in range(0,channel):
                 band = RGBrsc.read(j+1)
                 band = np.where((band == 0)|(band==-10000) | (band==-9999), 1e-6, band)
-                RGBbands[channel-(j+1), :, :] = band
+                #RGBbands[channel-(j+1), :, :] = band
+                #band = (band-np.amin(band))/(np.amax(band)-np.amin(band))
+                RGBbands[j,:,:]=band
             RGB=img(RGBsize,RGBbands)
             RGBlabel.text='Open file: '+QGISRGBFILE
             print(RGBbands)
@@ -2944,8 +2959,6 @@ def Open_RGBfile(entbox,usertype):
         entbox.delete("1.0",END)
         entbox.tag_config("wrap",wrap=CHAR)
         try:
-            entbox.insert(END, QGISRGBFILE, "wrap")
-            entbox.config(stat=DISABLED)
             RGBrsc=cv2.imread(QGISRGBFILE,flags=cv2.IMREAD_COLOR)
             #RGBrsc=cv2.imread(QGISRGBFILE,flags=cv2.IMREAD_COLOR)
             RGBrsccopy=cv2.imread(QGISRGBFILE,flags=cv2.IMREAD_COLOR)
@@ -2983,26 +2996,36 @@ def Open_RGBfile(entbox,usertype):
             print(RGBbands)
         except:
             try:
-                entbox.insert(END,QGISRGBFILE,"wrap")
-                entbox.config(stat=DISABLED)
                 RGBrsc=rasterio.open(QGISRGBFILE)
-                show(RGBrsc)
-                #GBrsc.colorinterp=(ColorInterp.red,ColorInterp.green,ColorInterp.blue)
                 height=RGBrsc.height
                 width=RGBrsc.width
                 channel=RGBrsc.count
-                print(RGBrsc)
+                #print(RGBrsc)
                 #RGBrsc = cv2.cvtColor(RGBrsc, cv2.COLOR_BGR2RGB)
                 RGBbands=np.zeros((channel,height,width))
                 #GRAY=np.zeros((1,height,width))
                 RGBsize=(height,width)
                 #for j in range(channel):
+                testbands=np.zeros((height,width,channel))
                 for j in range(0,channel):
                     band = RGBrsc.read(j+1)
                     band = np.where((band == 0)|(band==-10000) | (band==-9999), 1e-6, band)
-                    RGBbands[channel-(j+1), :, :] = band
+                    #band = (band-np.amin(band))/(np.amax(band)-np.amin(band))
+                    RGBbands[j, :, :] = band
+                    testbands[:,:,j]=band
+                '''
+                #RGBbands=np.flip(RGBbands,0)
+                testbands=np.reshape(testbands,(height*width,channel))
+                for i in range(height*width):
+                    nplist=testbands[i].tolist()
+                    if 1e-6 not in nplist[0:3]:
+                        if nplist[0]==nplist[1] and nplist[1]==nplist[2]:
+                            testbands[i]=np.ones((1,channel))*1e-6
+                testbands=np.reshape(testbands,(height,width,channel))
+                for j in range(channel):
+                    RGBbands[j,:,:]=testbands[:,:,j]
+                '''
                 RGB=img(RGBsize,RGBbands)
-                RGBlabel.text='Open file: '+QGISRGBFILE
                 print(RGBbands)
             except:
                 messagebox.showerror('Wrong File',message='Cannot open '+QGISRGBFILE)
@@ -3013,69 +3036,8 @@ def Open_RGBfile(entbox,usertype):
         #messagebox.showinfo(title='Open RGB file',message='open RGB GeoTiff file:'+QGISRGBFILE)
 
             #RGBrsc=cv2.imread(QGISRGBFILE,flags=cv2.IMREAD_LOAD_GDAL)
-
-            '''
-            #height,width,channel=np.shape(RGBrsc)
-            RGBrsc=gdal.Open(QGISRGBFILE)
-            RGBsize=(RGBrsc.RasterYSize,RGBrsc.RasterXSize)
-            bands=[]
-            bandrank={}
-            for j in range(3):
-                band=RGBrsc.GetRasterBand(j+1)
-                stats = band.GetStatistics( True, True )
-                print("[ STATS ] =  Minimum=%.3f, Maximum=%.3f, Mean=%.3f, StdDev=%.3f" % (
-                        stats[0], stats[1], stats[2], stats[3]))
-                tempdict={j:stats[1]}
-                bandrank.update(tempdict)
-                nodata=band.GetNoDataValue()
-                if type(nodata)==type(None):
-                    nodata=0
-                if (nodata<stats[0] or nodata>stats[1]) and nodata!=-10000 and nodata!=-9999:
-                    nodata=0
-
-                band=band.ReadAsArray()
-                nodataposition=np.where(band==nodata)
-                band=np.where(band==nodata,1e-6,band)
-                bands.append(band)
-            bands=np.array(bands)
-            RGBbands=np.zeros(bands.shape)
-            i=0
-            for e in sorted(bandrank,key=bandrank.get,reverse=True):
-                RGBbands[i,:,:]=bands[e,:,:]
-                i=i+1
-            '''
-
-        '''
-        if QGISRGBFILE.endswith('.jpg') is True or QGISRGBFILE.endswith('.jpeg') is True or QGISRGBFILE.endswith('.png') is True or QGISRGBFILE.endswith('.JPG') is True:
-            entbox.insert(END, QGISRGBFILE, "wrap")
-            entbox.config(stat=DISABLED)
-            RGBrsc=cv2.imread(QGISRGBFILE,flags=cv2.IMREAD_COLOR)
-            RGBrsccopy=cv2.imread(QGISRGBFILE,flags=cv2.IMREAD_COLOR)
-            height,width,channel=np.shape(RGBrsc)
-            RGBsize=(height,width)
-            RGBrsc=cv2.cvtColor(RGBrsc,cv2.COLOR_BGR2RGB)   #white background bright kernels
-            RGBrsc=cv2.GaussianBlur(RGBrsc,(5,5),cv2.BORDER_DEFAULT)
-            #GRAYrsc=cv2.cvtColor(RGBrsccopy,cv2.COLOR_BGR2Lab)  #black background bright kernels
-            GRAYrsc=cv2.cvtColor(RGBrsccopy,cv2.COLOR_BGR2RGB)   #white background black kernels
-            GRAYrsc=cv2.cvtColor(GRAYrsc,cv2.COLOR_BGR2GRAY)
-            GRAYrsc=cv2.GaussianBlur(GRAYrsc,(5,5),cv2.BORDER_DEFAULT)
-            ostu=filters.threshold_otsu(GRAYrsc)
-            GRAYrsc=GRAYrsc.astype('float32')
-            GRAYrsc=GRAYrsc/ostu
-
-            RGBbands=np.zeros((channel,height,width))
-            for j in range(channel):
-                band=RGBrsc[:,:,j]
-                band=np.where((band==0)|(band<0),1e-6,band)
-                ostu=filters.threshold_otsu(band)
-                band=band/ostu
-                RGBbands[j,:,:]=band
-            RGB=img(RGBsize,RGBbands)
-            GRAY=img(RGBsize,GRAYrsc)
-            #RGBlabel.text = 'Open file: ' + QGISRGBFILE
-            print(RGBbands)
-
-        '''
+        entbox.insert(END, QGISRGBFILE, "wrap")
+        entbox.config(stat=DISABLED)
 
     #Generate_NDVI()
 
@@ -3400,7 +3362,8 @@ def select_map(entbox):
         #panelWelcome=Label(text="Welcome to use PlantExtraction!\nPlease use the menubar on top to begin your image processing.")
         #panelWelcome.text="Welcome to use PlantExtraction!\nPlease use the menubar on top to begin your image processing."
 
-def export_resultsel(usertype,select):
+#def export_resultsel(usertype,select):
+def export_resultsel(usertype):
     iterkey=select.get()
     files=list(multi_results.keys())
     iterkeys=iterkey.split(',')
@@ -3441,7 +3404,9 @@ def export_resultsel(usertype,select):
             uniloc=np.where(labels==(uni))
             print(len(uniloc[0]))
         restoredband=originrestoredband.astype('float32')
-        restoredband=cv2.resize(src=restoredband,dsize=(RGB.size[1],RGB.size[0]),interpolation=cv2.INTER_LINEAR)
+
+
+        restoredband=cv2.resize(src=restoredband,dsize=(int(RGB.size[1]/3),int(RGB.size[0]/3)),interpolation=cv2.INTER_LINEAR)
 
         datatable={}
         origindata={}
@@ -3538,7 +3503,7 @@ def plotgaussian(frame,iter,filename):
     canvas.draw()
     canvas.get_tk_widget().pack(side=LEFT)
 
-def export_result(usertype):
+def commentout(usertype):
     #global labels,border,colortable
     if len(multi_results)==0:
         messagebox.showerror('Invalid Option','No Processed Image')
@@ -3552,12 +3517,14 @@ def export_result(usertype):
         iterkey=list(currlabeldict.keys())
         localframe=LabelFrame(resframe)
         localframe.pack()
+        '''
         v=StringVar()
         filelabel=Text(localframe,height=2,width=100)
         filelabel.insert(END,file)
         filelabel.pack()
         plotframe=LabelFrame(localframe)
         plotframe.pack()
+
         for i in range(len(iterkey)):
             subplotframe=LabelFrame(localframe)
             subplotframe.pack(side=LEFT)
@@ -3574,13 +3541,14 @@ def export_result(usertype):
             canvas.get_tk_widget().pack()
             b=Radiobutton(localframe,text=key,value=file+','+key,variable=v)
             b.pack(side=LEFT)
-        exportbutton=Button(localframe,text='Export',command=partial(export_resultsel,usertype,v))
+        '''
+        exportbutton=Button(localframe,text='Export',command=partial(export_resultsel,usertype))
         exportbutton.pack()
 
 
 
 
-def commentout(usertype):
+def export_result(usertype):
     files=multi_results.keys()
     path=filedialog.askdirectory()
     for file in files:
@@ -3666,7 +3634,7 @@ def commentout(usertype):
             indeclist=[ 0 for i in range(len(indicekeys)*3)]
             #originrestoredband=np.multiply(labels,modified_tif)
             #originrestoredband = np.multiply(labels, valid_tif)
-            originrestoredband=labels
+            originrestoredband=labels*valid_tif
             for uni in colortable:
                 print(uni,colortable[uni])
                 uniloc=np.where(labels==(uni))
@@ -4086,6 +4054,7 @@ def bands_calculation(usertype):
     out_ds.FlushCache()
     '''
     #messagebox.showinfo('Default color indexx',message=' color index were calculated.')
+
     if usertype==1:
         NDVI=GRAY.bands[:,:]
         tempdict={'LabOstu(darkbackground,grains)':NDVI}
@@ -4133,65 +4102,110 @@ def bands_calculation(usertype):
             ratio=int(max(height/450,width/450))
         else:
             ratio = 1
-        if channels>=3:
-            Greenness = RGB.bands[1, :, :] / (RGB.bands[0, :, :] + RGB.bands[1, :, :] + RGB.bands[2, :, :])
-            #Greenness=np.where(CannyEdge!=0,0,Greenness)
-            tempdict = {'Greenness': Greenness}
-            if 'Greenness' not in bandarrays:
-                bandarrays.update(tempdict)
-                image=cv2.resize(Greenness,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                worktempdict={'Greenness':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
-                #tempband=cv2.resize(Greenness,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                #robert_edge=filters.roberts(tempband)
-                #robert_edge=tkintercore.get_boundary(robert_edge)
-                #print(maxvalue)
-                #robert_edge=np.where(robert_edge<maxvalue,0,1)
-                #pyplt.imsave('greenedge.png',robert_edge)
-                #edgeimg=Image.open('greenedge.png')
-                #edgeimg.show()
-                workbandarrays.update(worktempdict)
-                treelist.insert(END,'Greenness')
-            NDI=128*((RGB.bands[1,:,:]-RGB.bands[0,:,:])/(RGB.bands[1,:,:]+RGB.bands[0,:,:])+1)
-            tempdict={'NDI':NDI}
-            if 'NDI' not in bandarrays:
-                bandarrays.update(tempdict)
-                image=cv2.resize(NDI,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                worktempdict={'NDI':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
-                workbandarrays.update(worktempdict)
-                treelist.insert(END,'NDI')
-            VEG=RGB.bands[1,:,:]/(np.power(RGB.bands[0,:,:],0.667)*np.power(RGB.bands[2,:,:],(1-0.667)))
-            tempdict={'VEG':VEG}
-            if 'VEG' not in bandarrays:
-                bandarrays.update(tempdict)
-                image=cv2.resize(VEG,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                worktempdict={'VEG':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
-                workbandarrays.update(worktempdict)
-                treelist.insert(END,'VEG')
-            CIVE=0.441*RGB.bands[0,:,:]-0.811*RGB.bands[1,:,:]+0.385*RGB.bands[2,:,:]+18.78745
-            tempdict={'CIVE':CIVE}
-            if 'CIVE' not in bandarrays:
-                bandarrays.update(tempdict)
-                image=cv2.resize(CIVE,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                worktempdict={'CIVE':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
-                workbandarrays.update(worktempdict)
-                treelist.insert(END,'CIVE')
-            MExG=1.262*RGB.bands[1,:,:]-0.884*RGB.bands[0,:,:]-0.311*RGB.bands[2,:,:]
-            tempdict={'MExG':MExG}
-            if 'MExG' not in bandarrays:
-                bandarrays.update(tempdict)
-                image=cv2.resize(MExG,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                worktempdict={'MExG':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
-                workbandarrays.update(worktempdict)
-                treelist.insert(END,'MExG')
+        dummyband=RGB.bands[1,:,:]-RGB.bands[0,:,:]
+        for i in range(channels):
+            RGB.bands[i,:,:]=np.where(dummyband==0.,1e-6,RGB.bands[i,:,:])
+        for i in range(channels):
+            tempband=RGB.bands[i]
+            tempdict={'Band'+str(i):tempband}
+            bandarrays.update(tempdict)
+            image=cv2.resize(tempband,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            #worktempdict={'Band'+str(i):cv2.GaussianBlur(cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)*image,(3,3),cv2.BORDER_DEFAULT)}
+            kernel=np.ones((2,2),np.float32)/4
+            #image=np.where(image==1.,1e-6,image)
+            #kernel=np.array([[1,2],[2,1]]).astype('float32')/4
+            worktempdict={'Band'+str(i):cv2.filter2D(image,-1,kernel)}
+            #worktempdict={'Band'+str(i):image}
+            #worktempdict={'Band'+str(i):cv2.bilateralFilter(image.astype('uint8'),5,20,20)}
+            workbandarrays.update(worktempdict)
+            treelist.insert(END,'Band'+str(i))
+        Greenness = RGB.bands[1, :, :] / (RGB.bands[0, :, :] + RGB.bands[1, :, :] + RGB.bands[2, :, :])
+        #Greenness=np.where(CannyEdge!=0,0,Greenness)
+        tempdict = {'Greenness': Greenness}
+        if 'Greenness' not in bandarrays:
+            bandarrays.update(tempdict)
+            image=cv2.resize(Greenness,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            worktempdict={'Greenness':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
+            #tempband=cv2.resize(Greenness,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            #robert_edge=filters.roberts(tempband)
+            #robert_edge=tkintercore.get_boundary(robert_edge)
+            #print(maxvalue)
+            #robert_edge=np.where(robert_edge<maxvalue,0,1)
+            #pyplt.imsave('greenedge.png',robert_edge)
+            #edgeimg=Image.open('greenedge.png')
+            #edgeimg.show()
+            workbandarrays.update(worktempdict)
+            treelist.insert(END,'Greenness')
+        NDI=128*((RGB.bands[1,:,:]-RGB.bands[0,:,:])/(RGB.bands[1,:,:]+RGB.bands[0,:,:])+1)
+        tempdict={'NDI':NDI}
+        if 'NDI' not in bandarrays:
+            bandarrays.update(tempdict)
+            image=cv2.resize(NDI,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            worktempdict={'NDI':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
+            workbandarrays.update(worktempdict)
+            treelist.insert(END,'NDI')
+        VEG=RGB.bands[1,:,:]/(np.power(RGB.bands[0,:,:],0.667)*np.power(RGB.bands[2,:,:],(1-0.667)))
+        tempdict={'VEG':VEG}
+        if 'VEG' not in bandarrays:
+            bandarrays.update(tempdict)
+            image=cv2.resize(VEG,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            worktempdict={'VEG':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
+            workbandarrays.update(worktempdict)
+            treelist.insert(END,'VEG')
+        CIVE=0.441*RGB.bands[0,:,:]-0.811*RGB.bands[1,:,:]+0.385*RGB.bands[2,:,:]+18.78745
+        tempdict={'CIVE':CIVE}
+        if 'CIVE' not in bandarrays:
+            bandarrays.update(tempdict)
+            image=cv2.resize(CIVE,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            #worktempdict={'CIVE':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
+            worktempdict={'CIVE':image}
+            workbandarrays.update(worktempdict)
+            treelist.insert(END,'CIVE')
+        MExG=1.262*RGB.bands[1,:,:]-0.884*RGB.bands[0,:,:]-0.311*RGB.bands[2,:,:]
+        tempdict={'MExG':MExG}
+        if 'MExG' not in bandarrays:
+            bandarrays.update(tempdict)
+            image=cv2.resize(MExG,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            worktempdict={'MExG':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
+            #worktempdict={'MExG':image}
+            workbandarrays.update(worktempdict)
+            treelist.insert(END,'MExG')
+        NGRDI=(RGB.bands[1,:,:]-RGB.bands[0,:,:])/(RGB.bands[0,:,:]+RGB.bands[1,:,:])
+        tempdict={'NGRDI':NGRDI}
+        if 'NGRDI' not in bandarrays:
+            bandarrays.update(tempdict)
+            worktempdict={'NGRDI':cv2.resize(NGRDI,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)}
+            workbandarrays.update(worktempdict)
+            treelist.insert(END,'NGRDI')
+        NDVI=(RGB.bands[0,:,:]-RGB.bands[2,:,:])/(RGB.bands[0,:,:]+RGB.bands[2,:,:])
+        tempdict={'NDVI':NDVI}
+        if 'NDVI' not in bandarrays:
+            bandarrays.update(tempdict)
+            image=cv2.resize(NDVI,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            kernel=np.ones((2,2),np.float32)/4
+            worktempdict={'NDVI':cv2.filter2D(image,-1,kernel)}
+            #worktempdict={'NDVI':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
+            workbandarrays.update(worktempdict)
+            treelist.insert(END,'NDVI')
         if channels>=5:
-            NDVI=(RGB.bands[3,:,:]-RGB.bands[1,:,:])/(RGB.bands[3,:,:]+RGB.bands[1,:,:])
+            NDVI=(RGB.bands[3,:,:]-RGB.bands[0,:,:])/(RGB.bands[3,:,:]+RGB.bands[0,:,:])
             tempdict={'NDVI':NDVI}
-            if 'NDVI' not in bandarrays:
-                bandarrays.update(tempdict)
-                image=cv2.resize(NDVI,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                worktempdict={'NDVI':cv2.GaussianBlur(image,(3,3),cv2.BORDER_DEFAULT)}
-                workbandarrays.update(worktempdict)
-                treelist.insert(END,'NDVI')
+            #if 'NDVI' not in bandarrays:
+            bandarrays.update(tempdict)
+            image=cv2.resize(NDVI,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            #worktempdict={'NDVI':cv2.GaussianBlur(image,(5,5),cv2.BORDER_DEFAULT)}
+            kernel=np.ones((2,2),np.float32)/4
+            worktempdict={'NDVI':cv2.filter2D(image,-1,kernel)}
+            #worktempdict={'NDVI':image}
+            workbandarrays.update(worktempdict)
+            #treelist.insert(END,'NDVI')
+            NDRE=(RGB.bands[3,:,:]-RGB.bands[4,:,:])/(RGB.bands[3,:,:]+RGB.bands[4,:,:])
+            tempdict={'NDRE':NDRE}
+            bandarrays.update(tempdict)
+            image=cv2.resize(NDRE,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            worktempdict={'NDRE':cv2.GaussianBlur(image,(5,5),cv2.BORDER_DEFAULT)}
+            workbandarrays.update(worktempdict)
+            treelist.insert(END,'NDRE')
         if channels==6:
             Height=RGB.bands[5,:,:]
             tempdict={'HEIGHT':Height}
@@ -4241,13 +4255,7 @@ def bands_calculation(usertype):
         worktempdict={'ExGR':cv2.resize(ExGR,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)}
         workbandarrays.update(worktempdict)
         treelist.insert(END,'ExGR')
-    NGRDI=(RGB.bands[1,:,:]-RGB.bands[0,:,:])/(RGB.bands[1,:,:]+RGB.bands[0,:,:])
-    tempdict={'NGRDI':NGRDI}
-    if 'NGRDI' not in bandarrays:
-        bandarrays.update(tempdict)
-        worktempdict={'NGRDI':cv2.resize(NGRDI,(int(RGB.size[1]/ratio),int(RGB.size[0]/ratio)),interpolation=cv2.INTER_LINEAR)}
-        workbandarrays.update(worktempdict)
-        treelist.insert(END,'NGRDI')
+
     VEG=RGB.bands[1,:,:]/(np.power(RGB.bands[0,:,:],0.667)*np.power(RGB.bands[2,:,:],(1-0.667)))
     tempdict={'VEG':VEG}
     if 'VEG' not in bandarrays:

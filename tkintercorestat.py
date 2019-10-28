@@ -1345,16 +1345,18 @@ def findcoin(area):
     sortedarea=sorted(maxarea,key=maxarea.get)
     sorteddensity=sorted(densityarea,key=densityarea.get)
     sortedlwratio=sorted(lwratio,key=lwratio.get,reverse=True)
-    for key in maxarea.keys():
-        areascore=0.5*sortedarea.index(key)
-        densityscore=0.5*sorteddensity.index(key)
-        lwratioscore=0.5*sortedlwratio.index(key)
-        totalscore=areascore+densityscore+lwratioscore
-        score.update({key:totalscore})
+    if maxarea[sortedarea[-1]]**0.5/maxarea[sortedarea[-2]]**0.5>8.0:
+        coinkey=sortedarea[-1]
+    else:
+        for key in maxarea.keys():
+            areascore=0.5*sortedarea.index(key)
+            densityscore=0.5*sorteddensity.index(key)
+            lwratioscore=0.5*sortedlwratio.index(key)
+            totalscore=areascore+densityscore+lwratioscore
+            score.update({key:totalscore})
+            sortedlist=sorted(score,key=score.get,reverse=True)
+            coinkey=sortedlist[0]
 
-
-    sortedlist=sorted(score,key=score.get,reverse=True)
-    coinkey=sortedlist[0]
     locs=numpy.where(area==coinkey)
     ulx,uly=min(locs[1]),min(locs[0])
     rlx,rly=max(locs[1]),max(locs[0])
