@@ -7,7 +7,7 @@ from PIL import Image,ImageDraw,ImageFont
 from PIL import ImageTk
 import cv2
 from skimage import filters
-import rasterio
+#import rasterio
 import matplotlib.pyplot as pyplt
 
 import numpy as np
@@ -143,6 +143,14 @@ def Open_File(filename):   #add to multi-image,multi-gray  #call band calculatio
         Multitype.update(tempdict)
         tempdict={filename:Grayimg}
         Multigraybands.update(tempdict)
+
+    except:
+        messagebox.showerror('Invalid Filename','Cannot open '+filename)
+        return
+    filenames.append(filename)
+
+def commentoutrasterio():
+    '''
     except:
         try:
             Filersc=rasterio.open(filename)
@@ -179,12 +187,8 @@ def Open_File(filename):   #add to multi-image,multi-gray  #call band calculatio
             tempdict={filename:Grayim}
             Multigraybands.update(tempdict)
             print(Filebands)
-        except:
-            messagebox.showerror('Invalid Filename','Cannot open '+filename)
-            return
-    filenames.append(filename)
-
-
+    '''
+    pass
 
 def Open_Multifile():
     global Multiimage,Multigray,Multitype,Multiimagebands,changefileframe,imageframe,Multigraybands,filenames
