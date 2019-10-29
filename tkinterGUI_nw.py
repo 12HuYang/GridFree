@@ -825,34 +825,34 @@ def batchextraction():
             if coin:
                 boundaryarea=tkintercorestat.boundarywatershed(displayband,1,'inner')
                 boundaryarea=np.where(boundaryarea<1,0,boundaryarea)
-                coindict=tkintercorestat.findcoin(boundaryarea)
+                coindict,miniarea=tkintercorestat.findcoin(boundaryarea)
                 coinarea=0
-                coinkeys=coindict.keys()
-                for key in coinkeys:
-                    coinarea+=len(coindict[key][0])
-                    displayband[coindict[key]]=0
+                topkey=list(coindict.keys())[0]
+                coinarea=len(coindict[topkey][0])
+                displayband[coindict[topkey]]=0
                 nocoinarea=float(np.count_nonzero(displayband))/(displayband.shape[0]*displayband.shape[1])
+                ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
                 print('nocoinarea',nocoinarea)
                 coinratio=coinarea/(displayband.shape[0]*displayband.shape[1])
                 print('coinratio:',coinratio)
                 time.sleep(3)
                 ratio=float(nocoinarea/coinratio)
                 print('ratio:',ratio)
-                if nonzeroratio<0.15:
-                    if coinratio**0.5<=0.2:# and nonzeroratio>=0.1:
-                        ratio=findratio([displayband.shape[0],displayband.shape[1]],[1000,1000])
-                        workingimg=cv2.resize(displayband,(int(displayband.shape[1]*ratio),int(displayband.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
-                else:
-                    ratio=findratio([displayband.shape[0],displayband.shape[1]],[450,450])
-                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                if nonzeroratio<0.20:
+                    #if coinratio**0.5<=0.2:# and nonzeroratio>=0.1:
+                    ratio=findratio([displayband.shape[0],displayband.shape[1]],[1600,1600])
+                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]*ratio),int(displayband.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+                #else:
+                    #ratio=findratio([displayband.shape[0],displayband.shape[1]],[450,450])
+                    #workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
             else:
-                if nonzeroratio<=0.15:# and nonzeroratio>=0.1:
+                if nonzeroratio<=0.20:# and nonzeroratio>=0.1:
                     ratio=findratio([displayband.shape[0],displayband.shape[1]],[1600,1600])
                     workingimg=cv2.resize(displayband,(int(displayband.shape[1]*ratio),int(displayband.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
                 else:
-                    if nonzeroratio>0.15:
-                        ratio=findratio([displayband.shape[0],displayband.shape[1]],[450,450])
-                        workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                    #if nonzeroratio>0.15:
+                    ratio=findratio([displayband.shape[0],displayband.shape[1]],[1000,1000])
+                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
                     #else:
                     #    if nonzeroratio<0.1:
                     #        ratio=findratio([displayband.shape[0],displayband.shape[1]],[1503,1503])
@@ -896,28 +896,38 @@ def extraction(frame):
     if coin:
         boundaryarea=tkintercorestat.boundarywatershed(currentlabels,1,'inner')
         boundaryarea=np.where(boundaryarea<1,0,boundaryarea)
-        coindict=tkintercorestat.findcoin(boundaryarea)
+        coindict,miniarea=tkintercorestat.findcoin(boundaryarea)
         coinarea=0
-        coinkeys=coindict.keys()
-        for key in coinkeys:
-            coinarea+=len(coindict[key][0])
-            currentlabels[coindict[key]]=0
+        topkey=list(coindict.keys())[0]
+        coinarea=len(coindict[topkey][0])
+        currentlabels[coindict[topkey]]=0
+        #for key in coinkeys:
+        #    coinarea+=len(coindict[key][0])
+        #    currentlabels[coindict[key]]=0
         nocoinarea=float(np.count_nonzero(currentlabels))/(currentlabels.shape[0]*currentlabels.shape[1])
         print('nocoinarea',nocoinarea)
         coinratio=coinarea/(currentlabels.shape[0]*currentlabels.shape[1])
         print('coinratio:',coinratio**0.5)
         time.sleep(3)
-        ratio=float((nocoinarea)/coinratio)
+        ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
+        print('miniarea:',miniarea)
+        print('coinarea:',coinarea)
         print('ratio:',ratio)
-        if nonzeroratio<0.15:
-            if coinratio**0.5<=0.2:# and nonzeroratio>=0.1:
-                print('cond1')
-                ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
-                workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
-        else:
-            print('cond2')
-            ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[450,450])
-            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        if nonzeroratio<0.2:
+            #if coinratio**0.5<=0.2:# and nonzeroratio>=0.1:
+            print('cond1')
+            ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1600,1600])
+            #ratio=float(16/miniarea)
+            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+        #else:
+        #    if miniarea<=10:
+        #        print('cond3')
+        #        ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1500,1500])
+        #        workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+        #    else:
+        #        print('cond2')
+        #        ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
+        #        workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         '''
         if ratio<1:
             print('1500x1500')
@@ -928,7 +938,7 @@ def extraction(frame):
             workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
         '''
         workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
-        coinarea=coindict[key]
+        coinarea=coindict[topkey]
         coinulx=min(coinarea[1])
         coinuly=min(coinarea[0])
         coinrlx=max(coinarea[1])
@@ -938,13 +948,13 @@ def extraction(frame):
         pixelmmratio=19.05**2/(coinlength*coinwidth)
     else:
     #nonzeroratio=float(nonzeros)/(currentlabels.shape[0]*currentlabels.shape[1])
-        if nonzeroratio<=0.16:# and nonzeroratio>=0.1:
+        if nonzeroratio<=0.2:# and nonzeroratio>=0.1:
             ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1600,1600])
             workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
         else:
-            if nonzeroratio>0.16:
-                ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[450,450])
-                workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            #if nonzeroratio>0.16:
+            ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
+            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
         pixelmmratio=1.0
         #else:
         #    if nonzeroratio<0.1:
@@ -954,6 +964,8 @@ def extraction(frame):
 
     #cv2.imshow('workingimg',workingimg)
     coin=False
+    print('ratio:',ratio)
+    print('workingimgsize:',workingimg.shape)
     labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
     multi_results.update({currentfilename:(labeldict,coinparts)})
     iterkeys=list(labeldict.keys())
@@ -986,8 +998,6 @@ def onFrameConfigure(inputcanvas):
 
 
 
-
-
 def removeedge(bands):
     global pointcontainer,displayorigin
     copyband=np.copy(bands)
@@ -997,6 +1007,9 @@ def removeedge(bands):
         copyband[:,i]=0  #left
         copyband[:,size[1]-1-i]=0 #right
         copyband[size[0]-1-i,:]=0
+    img=ImageTk.PhotoImage(Image.fromarray(copyband.astype('uint8')))
+    displayimg['ColorIndices']=img
+    changedisplayimg(imageframe,'ColorIndices')
     return copyband
 
 
@@ -1092,7 +1105,7 @@ refframe=LabelFrame(control_fr,text='Reference Setting',cursor='hand2')
 refframe.pack()
 
 refoption=[('Coin as Ref','1'),('No Ref','0')]
-refvar.set('1')
+refvar.set('0')
 for text,mode in refoption:
     b=Radiobutton(refframe,text=text,variable=refvar,value=mode)
     b.pack(side=LEFT,padx=15)
