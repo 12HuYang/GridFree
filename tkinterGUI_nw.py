@@ -1030,7 +1030,7 @@ def extraction(frame):
     print('workingimgsize:',workingimg.shape)
     if imgtypevar.get()=='0':
         labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
-    if imgtypevar.get()=='1':
+    #if imgtypevar.get()=='1':
         
     multi_results.update({currentfilename:(labeldict,coinparts)})
     iterkeys=list(labeldict.keys())
