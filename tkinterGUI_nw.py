@@ -58,6 +58,7 @@ emptymenu=Menu(root)
 root.config(menu=emptymenu)
 
 refvar=StringVar()
+imgtypevar=StringVar()
 edge=StringVar()
 kmeans=IntVar()
 filedropvar=StringVar()
@@ -106,10 +107,13 @@ def generatedisplayimg(filename):
     resize=cv2.resize(Multigray[filename],(int(width/ratio),int(height/ratio)),interpolation=cv2.INTER_LINEAR)
     grayimg=ImageTk.PhotoImage(Image.fromarray(resize.astype('uint8')))
     displayimg['Gray/NIR']=grayimg
-    pyplt.imsave('displayimg.png',displaybandarray[filename]['LabOstu'])
+    displayimg['Output']=ImageTk.PhotoImage(Image.fromarray(np.zeros((int(height/ratio),int(width/ratio))).astype('uint8')))
+    tempband=np.copy(displaybandarray[filename]['LabOstu'])
+    ratio=findratio([tempband.shape[0],tempband.shape[1]],[620,620])
+    tempband=cv2.resize(ratio,(int(tempband.shape[1]/ratio),int(tempband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+    pyplt.imsave('displayimg.png',tempband)
     indimg=cv2.imread('displayimg.png')
     displayimg['ColorIndices']=ImageTk.PhotoImage(Image.fromarray(indimg))
-    displayimg['Output']=ImageTk.PhotoImage(Image.fromarray(np.zeros((int(height/ratio),int(width/ratio))).astype('uint8')))
 
 
 def Open_File(filename):   #add to multi-image,multi-gray  #call band calculation
@@ -240,14 +244,26 @@ def singleband(file):
     bands=bands.astype('float32')
     bands=bands/ostu
     #display purpose
-    ratio=findratio([bandsize[0],bandsize[1]],[620,620])
+    if imgtypevar.get()=='0':
+        if bandsize[0]*bandsize[1]>2000*2000:
+            ratio=findratio([bandsize[0],bandsize[1]],[2000,2000])
+        else:
+            ratio=1
+    if imgtypevar.get()=='1':
+        if bandsize[0]*bandsize[1]>1000*1000:
+            ratio=findratio([bandsize[0],bandsize[1]],[500,500])
+        else:
+            #ratio=findratio([bandsize[0],bandsize[1]],[500,500])
+            #ratio=float(1/ratio)
+            ratio=1
     originbands={}
     displays={}
-    if 'LabOstu' not in originbandarray:
+    if 'LabOstu' not in originbands:
         originbands.update({'LabOstu':bands})
         displaybands=cv2.resize(bands,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #displaybands=displaybands.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         #kernel=np.ones((2,2),np.float32)/4
+        #displaybands=np.copy(bands)
         displays.update({'LabOstu':displaybands})
         #displaybandarray.update({'LabOstu':cv2.filter2D(displaybands,-1,kernel)})
     bands=Multiimagebands[file].bands
@@ -255,91 +271,116 @@ def singleband(file):
         bands[i,:,:]=cv2.GaussianBlur(bands[i,:,:],(3,3),cv2.BORDER_DEFAULT)
     NDI=128*((bands[1,:,:]-bands[0,:,:])/(bands[1,:,:]+bands[0,:,:])+1)
     tempdict={'NDI':NDI}
-    if 'NDI' not in originbandarray:
+    if 'NDI' not in originbands:
         originbands.update(tempdict)
         displaybands=cv2.resize(NDI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        #displaybands=np.copy(NDI)
         #kernel=np.ones((2,2),np.float32)/4
         #displaydict={'NDI':cv2.filter2D(displaybands,-1,kernel)}
         displaydict={'NDI':displaybands}
         #displaydict=displaydict.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         displays.update(displaydict)
-    displaybandarray.update({file:displays})
-    originbandarray.update({file:originbands})
-    '''
+
+    Red=bands[0,:,:]
+    Green=bands[1,:,:]
+    Blue=bands[2,:,:]
+    tempdict={'Band1':Red}
+    if 'Band1' not in originbands:
+        originbands.update(tempdict)
+        image=cv2.resize(Red,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        displaydict={'Band1':image}
+        displays.update(displaydict)
+    tempdict={'Band2':Green}
+    if 'Band2' not in originbands:
+        originbands.update(tempdict)
+        image=cv2.resize(Red,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        displaydict={'Band2':image}
+        displays.update(displaydict)
+    tempdict={'Band3':Blue}
+    if 'Band3' not in originbands:
+        originbands.update(tempdict)
+        image=cv2.resize(Red,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        displaydict={'Band3':image}
+        displays.update(displaydict)
     Greenness = bands[1, :, :] / (bands[0, :, :] + bands[1, :, :] + bands[2, :, :])
     tempdict = {'Greenness': Greenness}
     if 'Greenness' not in originbandarray:
-        originbandarray.update(tempdict)
+        originbands.update(tempdict)
         image=cv2.resize(Greenness,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
-        worktempdict={'Greenness':image}
-        displaybandarray.update(worktempdict)
+        displaydict={'Greenness':image}
+        #displaybandarray.update(worktempdict)
+        displays.update(displaydict)
     VEG=bands[1,:,:]/(np.power(bands[0,:,:],0.667)*np.power(bands[2,:,:],(1-0.667)))
     tempdict={'VEG':VEG}
     if 'VEG' not in originbandarray:
-        originbandarray.update(tempdict)
+        originbands.update(tempdict)
         image=cv2.resize(VEG,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        kernel=np.ones((4,4),np.float32)/16
+        #displaybandarray.update({'LabOstu':})
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
-        worktempdict={'VEG':image}
-        displaybandarray.update(worktempdict)
+        worktempdict={'VEG':cv2.filter2D(image,-1,kernel)}
+        displays.update(worktempdict)
     CIVE=0.441*bands[0,:,:]-0.811*bands[1,:,:]+0.385*bands[2,:,:]+18.78745
     tempdict={'CIVE':CIVE}
     if 'CIVE' not in originbandarray:
-        originbandarray.update(tempdict)
+        originbands.update(tempdict)
         image=cv2.resize(CIVE,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'CIVE':image}
-        displaybandarray.update(worktempdict)
+        displays.update(worktempdict)
     MExG=1.262*bands[1,:,:]-0.884*bands[0,:,:]-0.311*bands[2,:,:]
     tempdict={'MExG':MExG}
     if 'MExG' not in originbandarray:
-        originbandarray.update(tempdict)
+        originbands.update(tempdict)
         image=cv2.resize(MExG,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'MExG':image}
-        displaybandarray.update(worktempdict)
+        displays.update(worktempdict)
     NDVI=(bands[0,:,:]-bands[2,:,:])/(bands[0,:,:]+bands[2,:,:])
     tempdict={'NDVI':NDVI}
     if 'NDVI' not in originbandarray:
-        originbandarray.update(tempdict)
+        originbands.update(tempdict)
         image=cv2.resize(NDVI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'NDVI':image}
-        displaybandarray.update(worktempdict)
+        displays.update(worktempdict)
     NGRDI=(bands[1,:,:]-bands[0,:,:])/(bands[1,:,:]+bands[0,:,:])
     tempdict={'NGRDI':NGRDI}
     if 'NGRDI' not in originbandarray:
-        originbandarray.update(tempdict)
+        originbands.update(tempdict)
         image=cv2.resize(NGRDI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'NGRDI':image}
-        displaybandarray.update(worktempdict)
+        displays.update(worktempdict)
     if channel>=1:
         nirbands=Multigraybands[file].bands
         NDVI=(nirbands[0,:,:]-bands[1,:,:])/(nirbands[0,:,:]+bands[1,:,:])
         tempdict={'NDVI':NDVI}
         #if 'NDVI' not in originbandarray:
-        originbandarray.update(tempdict)
+        originbands.update(tempdict)
         image=cv2.resize(NDVI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'NDVI':image}
-        displaybandarray.update(worktempdict)
+        displays.update(worktempdict)
     if channel==3:
         bands=Multigraybands[file].bands
         Height=bands[2,:,:]
         tempdict={'HEIGHT':Height}
         if 'HEIGHT' not in originbandarray:
-            originbandarray.update(tempdict)
+            originbands.update(tempdict)
             image=cv2.resize(Height,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
             worktempdict={'HEIGHT':image}
-            displaybandarray.update(worktempdict)
+            displays.update(worktempdict)
     else:
         originbandarray.update({'HEIGHT':np.zeros(bandsize)})
         image=np.zeros((int(bandsize[0]/ratio),int(bandsize[0]/ratio)))
-        displaybandarray.update({'HEIGHT':image})
-    '''
+        worktempdict.update({'HEIGHT':image})
+        displays.update(worktempdict)
 
 
+    displaybandarray.update({file:displays})
+    originbandarray.update({file:originbands})
 
 
 
@@ -401,6 +442,8 @@ def generateplant(checkbox,bandchoice):
         return
 
     if int(kmeans.get())==1:
+        ratio=findratio([imageband.shape[0],imageband.shape[1]],[620,620])
+        imageband=cv2.resize(imageband,(int(imageband.shape[1]/ratio),int(imageband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         pyplt.imsave('displayimg.png',imageband)
         indimg=cv2.imread('displayimg.png')
         displayimg['ColorIndices']=ImageTk.PhotoImage(Image.fromarray(indimg))
@@ -449,6 +492,8 @@ def generateimgplant(displaylabels):
         if '1' in tup:
             tempdisplayimg=np.where(displaylabels==i,1,tempdisplayimg)
     currentlabels=np.copy(tempdisplayimg)
+    ratio=findratio([tempdisplayimg.shape[0],tempdisplayimg.shape[1]],[620,620])
+    tempdisplayimg=cv2.resize(tempdisplayimg,(int(tempdisplayimg.shape[1]/ratio),int(tempdisplayimg.shape[0]/ratio)))
     pyplt.imsave('displayimg.png',tempdisplayimg)
     indimg=cv2.imread('displayimg.png')
     displayimg['ColorIndices']=ImageTk.PhotoImage(Image.fromarray(indimg))
@@ -490,13 +535,19 @@ def changecluster():
             imageband=imageband+displaybandarray[currentfilename][key]
     if len(choicelist)==0:
         messagebox.showerror('No Indices is selected',message='Please select indicies to do KMeans Classification.')
-        pyplt.imsave('displayimg.png',displaybandarray[currentfilename]['LabOstu'])
+        tempband=np.copy(displaybandarray[currentfilename]['LabOstu'])
+        ratio=findratio([tempband.shape[0],tempband.shape[1]],[620,620])
+        tempband=cv2.resize(tempband,(int(tempband.shape[1]/ratio),int(tempband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        pyplt.imsave('displayimg.png',tempband)
         indimg=cv2.imread('displayimg.png')
         displayimg['ColorIndices']=ImageTk.PhotoImage(Image.fromarray(indimg))
         changedisplayimg(imageframe,'ColorIndices')
         return
     if int(kmeans.get())==1:
-        pyplt.imsave('displayimg.png',imageband)
+        tempband=np.copy(imageband)
+        ratio=findratio([tempband.shape[0],tempband.shape[1]],[620,620])
+        tempband=cv2.resize(tempband,(int(tempband.shape[1]/ratio),int(tempband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        pyplt.imsave('displayimg.png',tempband)
         indimg=cv2.imread('displayimg.png')
         displayimg['ColorIndices']=ImageTk.PhotoImage(Image.fromarray(indimg))
         changedisplayimg(imageframe,'ColorIndices')
@@ -641,7 +692,8 @@ def showcounting(tup):
                     canvastext = 'No label'
                 #rectext = canvas.create_text(midx, midy, fill='black', font='Times 8', text=canvastext)
                 #drawcontents.append(rectext)
-                draw.text((midx,midy),text=canvastext,font=font,fill='black')
+                if imgtypevar.get()=='0':
+                    draw.text((midx,midy),text=canvastext,font=font,fill='black')
                 #trainingdataset.append([originfile+'-training'+extension,'wheat',str(ulx),str(rlx),str(uly),str(rly)])
     kernersizes.update({filename:tempdict})
     content='item count:'+str(len(uniquelabels))+'\n File: '+filename
@@ -831,7 +883,7 @@ def batchextraction():
                 coinarea=len(coindict[topkey][0])
                 displayband[coindict[topkey]]=0
                 nocoinarea=float(np.count_nonzero(displayband))/(displayband.shape[0]*displayband.shape[1])
-                ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
+                #ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
                 print('nocoinarea',nocoinarea)
                 coinratio=coinarea/(displayband.shape[0]*displayband.shape[1])
                 print('coinratio:',coinratio)
@@ -841,15 +893,16 @@ def batchextraction():
                 if nonzeroratio<0.20:
                     #if coinratio**0.5<=0.2:# and nonzeroratio>=0.1:
                     ratio=findratio([displayband.shape[0],displayband.shape[1]],[1600,1600])
-                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]*ratio),int(displayband.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
-                #else:
-                    #ratio=findratio([displayband.shape[0],displayband.shape[1]],[450,450])
-                    #workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                else:
+                    ratio=findratio([displayband.shape[0],displayband.shape[1]],[1000,1000])
+                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
             else:
                 if nonzeroratio<=0.20:# and nonzeroratio>=0.1:
                     ratio=findratio([displayband.shape[0],displayband.shape[1]],[1600,1600])
-                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]*ratio),int(displayband.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
                 else:
+                    #workingimg=np.copy(displayband)
                     #if nonzeroratio>0.15:
                     ratio=findratio([displayband.shape[0],displayband.shape[1]],[1000,1000])
                     workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
@@ -915,10 +968,18 @@ def extraction(frame):
         print('ratio:',ratio)
         if nonzeroratio<0.2:
             #if coinratio**0.5<=0.2:# and nonzeroratio>=0.1:
+            #if coinarea<3000:
             print('cond1')
             ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1600,1600])
             #ratio=float(16/miniarea)
-            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+            #ratio=1.5
+            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        else:
+            print('cond2')
+            ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
+            #ratio=float(16/miniarea)
+            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            #workingimg=np.copy(currentlabels)
         #else:
         #    if miniarea<=10:
         #        print('cond3')
@@ -937,7 +998,7 @@ def extraction(frame):
         else:
             workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
         '''
-        workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+        #workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
         coinarea=coindict[topkey]
         coinulx=min(coinarea[1])
         coinuly=min(coinarea[0])
@@ -950,11 +1011,12 @@ def extraction(frame):
     #nonzeroratio=float(nonzeros)/(currentlabels.shape[0]*currentlabels.shape[1])
         if nonzeroratio<=0.2:# and nonzeroratio>=0.1:
             ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1600,1600])
-            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         else:
             #if nonzeroratio>0.16:
             ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
-            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            #workingimg=np.copy(currentlabels)
         pixelmmratio=1.0
         #else:
         #    if nonzeroratio<0.1:
@@ -966,7 +1028,10 @@ def extraction(frame):
     coin=False
     print('ratio:',ratio)
     print('workingimgsize:',workingimg.shape)
-    labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
+    if imgtypevar.get()=='0':
+        labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
+    if imgtypevar.get()=='1':
+        
     multi_results.update({currentfilename:(labeldict,coinparts)})
     iterkeys=list(labeldict.keys())
     iternum=len(iterkeys)
@@ -1012,8 +1077,23 @@ def removeedge(bands):
     changedisplayimg(imageframe,'ColorIndices')
     return copyband
 
-
-
+def clustercontent(var):
+    global cluster,bandchoice,contentframe
+    bandchoice={}
+    if var=='0':
+        cluster=['LabOstu','NDI']
+    if var=='1':
+        cluster=['Greenness','VEG','CIVE','MExG','NDVI','NGRDI','HEIGHT','Band1','Band2','Band3']
+    for widget in contentframe.winfo_children():
+        widget.pack_forget()
+    for key in cluster:
+        tempdict={key:Variable()}
+        bandchoice.update(tempdict)
+        ch=ttk.Checkbutton(contentframe,text=key,variable=bandchoice[key],command=changecluster)#,command=partial(autosetclassnumber,clusternumberentry,bandchoice))
+        #if filedropvar.get()=='seedsample.JPG':
+        #    if key=='NDI':
+        #        ch.invoke()
+        ch.pack(fill=X)
 
 ## ----Interface----
 
@@ -1028,6 +1108,8 @@ display_label.tag_config("just",justify=CENTER)
 display_label.insert(END,'Display Panel',"just")
 display_label.configure(state=DISABLED)
 display_label.pack(padx=10,pady=10)
+
+imgtypevar.set('0')
 Open_File('seedsample.JPG')
 singleband('seedsample.JPG')
 #cal indices
@@ -1057,6 +1139,13 @@ control_label.tag_config("just",justify=CENTER)
 control_label.insert(END,'Control Panel',"just")
 control_label.configure(state=DISABLED)
 control_label.pack()
+
+imgtypeframe=LabelFrame(control_fr,text='Image type')
+imgtypeframe.pack()
+imgtypeoption=[('Crop plots','1'),('Grain kernel','0')]
+for text,mode in imgtypeoption:
+    b=Radiobutton(imgtypeframe,text=text,variable=imgtypevar,value=mode,command=partial(clustercontent,mode))
+    b.pack(side=LEFT,padx=6)
 ### ---open file----
 openfilebutton=Button(control_fr,text='Open one/multiple images (tif,jpeg,png)',command=Open_Multifile,cursor='hand2')
 openfilebutton.pack()
