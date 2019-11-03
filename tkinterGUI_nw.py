@@ -1237,12 +1237,19 @@ def extraction(frame):
     print('ratio:',ratio)
     print('workingimgsize:',workingimg.shape)
     if imgtypevar.get()=='0':
+#<<<<<<< HEAD
         #labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
         labels,border,corlortable,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
     if imgtypevar.get()=='1':
         #labels,border,colortable,coinparts,labeldict=tkintercorestat_plot.init(workingimg,workingimg,'',workingimg,10,coin)
         labels,border,corlortable,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
     multi_results.update({currentfilename:(labeldict,{})})
+#=======
+    #labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
+    #if imgtypevar.get()=='1':
+        
+    #multi_results.update({currentfilename:(labeldict,coinparts)})
+#>>>>>>> 8af175b92d858c2523ccaf7db7238be6fbec0c8b
     iterkeys=list(labeldict.keys())
     iternum=len(iterkeys)
     print(labeldict)
