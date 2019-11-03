@@ -1283,7 +1283,10 @@ def findcoin(area):
     maxarea={}
     densityarea={}
     lwratio={}
-    miniarea=hist[sortedlist[-1]]
+
+    minilabel=sortedlist[-1]
+    minilocs=numpy.where(area==minilabel)
+    miniarea={minilabel:minilocs}
 
     for key in topfive:
         locs=numpy.where(area==key)
@@ -1447,300 +1450,298 @@ def findcoin(area):
 
             #intersect with coin boundingbox
 
-def intervaldivideloop(processintervals,area,sortedlist):
-    for i in reversed (range(len(processintervals))):
-        proceslabel=sortedlist[processintervals[i]]
-        locs=numpy.where(area==proceslabel)
+def resegdivideloop(area,maxthres):
+    global greatareas
+    greatareas=[]
+    unique,counts=numpy.unique(area,return_counts=True)
+    unique=unique[1:]
+    counts=counts[1:]
+    hist=dict(zip(unique,counts))
+    sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
+    topkey=sortedkeys.pop(0)
+    while len(sortedkeys)>0:
+        print('topkey=',topkey,hist[topkey])
+        if hist[topkey]>maxthres and topkey not in exceptions:
+            locs=numpy.where(area==topkey)
+            ulx,uly=min(locs[1]),min(locs[0])
+            rlx,rly=max(locs[1]),max(locs[0])
+            subarea=area[uly:rly+1,ulx:rlx+1]
+            tempsubarea=subarea/topkey
+            newtempsubarea=numpy.where(tempsubarea!=1.,0,1)
+            antitempsubarea=numpy.where((tempsubarea!=1.) & (tempsubarea!=0),subarea,0)
+            newsubarea=boundarywatershed(newtempsubarea,1,'inner')
+            labelunique,labcounts=numpy.unique(newsubarea,return_counts=True)
+            labelunique=labelunique.tolist()
+            if len(labelunique)>2:
+                newsubarea=newsubarea*topkey
+                newlabel=labelunique.pop(-1)
+                maxlabel=area.max()
+                add=1
+                while newlabel>1:
+                    newsubarea=numpy.where(newsubarea==topkey*newlabel,maxlabel+add,newsubarea)
+                    print('new label: '+str(maxlabel+add))
+                    newlabelcount=len(numpy.where(newsubarea==maxlabel+add)[0].tolist())
+                    print('add '+'label: '+str(maxlabel+add)+' count='+str(newlabelcount))
+                    newlabel=labelunique.pop(-1)
+                    add+=1
+                newsubarea=newsubarea+antitempsubarea.astype(int)
+                area[uly:rly+1,ulx:rlx+1]=newsubarea
+                unique, counts = numpy.unique(area, return_counts=True)
+                unique=unique[1:]
+                counts=counts[1:]
+                hist=dict(zip(unique,counts))
+                print('hist length='+str(len(counts)-1))
+                print('max label='+str(area.max()))
+                sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
+                topkey=sortedkeys.pop(0)
+            else:
+                if hist[topkey]>maxthres:
+                    if topkey not in greatareas:
+                        greatareas.append(topkey)
+                    topkey=sortedkeys.pop(0)
+                else:
+                    break
+        else:
+            topkey=sortedkeys.pop(0)
+    return area
+
+def resegcombineloop(area,maxthres,minthres):
+    global tinyareas
+    tinyareas=[]
+    unique, counts = numpy.unique(area, return_counts=True)
+    unique=unique[1:]
+    counts=counts[1:]
+    hist=dict(zip(unique,counts))
+    sortedkeys=list(sorted(hist,key=hist.get))
+    topkey=sortedkeys.pop(0)
+    while len(sortedkeys)>0:
+        print('tinytopkey=',topkey,hist[topkey])
+        if hist[topkey]<minthres and topkey not in exceptions:
+            locs=numpy.where(area==topkey)
+            ulx,uly=min(locs[1]),min(locs[0])
+            rlx,rly=max(locs[1]),max(locs[0])
+            subarea=area[uly:rly+1,ulx:rlx+1]
+            stop=False
+            poscombines=[]
+            for j in range(1,11):
+                up_unique=[]
+                down_unique=[]
+                left_unique=[]
+                right_unique=[]
+                maxlabel={}
+                tempcombines=[]
+                if uly-j>=0 and stop==False and len(up_unique)<2:
+                    uparray=area[uly-j:uly,ulx:rlx+1]
+                    up_unique=numpy.unique(uparray)
+                    for x in range(len(up_unique)):
+                        if up_unique[x]>0:
+                            tempdict={up_unique[x]:hist[up_unique[x]]}
+                            maxlabel.update(tempdict)
+                if rly+j<area.shape[0] and stop==False and len(down_unique)<2:
+                    downarray=area[rly+1:rly+j+1,ulx:rlx+1]
+                    down_unique=numpy.unique(downarray)
+                    for x in range(len(down_unique)):
+                        if down_unique[x]>0:
+                            tempdict={down_unique[x]:hist[down_unique[x]]}
+                            maxlabel.update(tempdict)
+                if ulx-j>=0 and stop==False and len(left_unique)<2:
+                    leftarray=area[uly:rly+1,ulx-j:ulx]
+                    left_unique=numpy.unique(leftarray)
+                    for x in range(len(left_unique)):
+                        if left_unique[x]>0:
+                            tempdict={left_unique[x]:hist[left_unique[x]]}
+                            maxlabel.update(tempdict)
+                if ulx+j<area.shape[1] and stop==False and len(right_unique)<2:
+                    rightarray=area[uly:rly+1,rlx+1:rlx+j+1]
+                    right_unique=numpy.unique(rightarray)
+                    for x in range(len(right_unique)):
+                        if right_unique[x]>0:
+                            tempdict={right_unique[x]:hist[right_unique[x]]}
+                            maxlabel.update(tempdict)
+                print(up_unique,down_unique,left_unique,right_unique)
+                tempcombines.append(up_unique)
+                tempcombines.append(down_unique)
+                tempcombines.append(left_unique)
+                tempcombines.append(right_unique)
+                poscombines.append(tempcombines)
+            tinylist=[]
+            while(len(poscombines)>0 and stop==False):
+                top=poscombines.pop(0)
+                tinylist.append(top)
+                toplist=[]
+                for j in range(4):
+                    toparray=top[j]
+                    topunique=numpy.unique(toparray)
+                    for ele in topunique:
+                        toplist.append(ele)
+                toplist=numpy.array(toplist)
+                combunique,combcount=numpy.unique(toplist,return_counts=True)
+                toplist=dict(zip(combunique,combcount))
+                toplist=list(sorted(toplist,key=toplist.get,reverse=True))
+                while(len(toplist)>0):
+                    top=toplist.pop(0)
+                    if top!=0:
+                        topcount=hist[top]
+                        if hist[topkey]+topcount>minthres and hist[topkey]+topcount<maxthres:
+                            area=combinecrops(area,subarea,topkey,top,ulx,uly,rlx,rly)
+                            stop=True
+                            unique, counts = numpy.unique(area, return_counts=True)
+                            unique=unique[1:]
+                            counts=counts[1:]
+                            hist=dict(zip(unique,counts))
+                            print('hist length='+str(len(counts)-1))
+                            print('max label='+str(area.max()))
+                            sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
+
+                    #topkey=sortedkeys.pop(0)
+            if len(poscombines)==0 and stop==False:  #combine to the closest one
+                if topkey not in tinyareas:
+                    tinyareas.append(topkey)
+            topkey=sortedkeys.pop(0)
+
+        else:
+            topkey=sortedkeys.pop(0)
+
+    return area
+
+def firstprocess(input,validmap,avgarea):
+    band=input
+    boundaryarea=boundarywatershed(band,1,'inner')
+    labeldict={}
+    boundaryarea=boundaryarea.astype(int)
+    originmethod,misslabel,localcolortable=relabel(boundaryarea)
+    labels=numpy.where(boundaryarea<1,0,boundaryarea)
+    copylabels=numpy.zeros(labels.shape)
+    copylabels[:,:]=labels
+    subtempdict={'labels':copylabels}
+    unique, counts = numpy.unique(labels, return_counts=True)
+    print(unique)
+    copycolortable={**colortable}
+    subtempdict.update({'colortable':copycolortable})
+    subtempdict.update({'counts':counts[1:]})
+    tempdict={'iter0':subtempdict}
+    labeldict.update(tempdict)
+    return labels,counts,colortable,labeldict
+
+def resegvalidation(minthres,maxthres,hist):
+    res=True
+    godivide=False
+    gocombine=False
+    sortedlist=sorted(hist,key=hist.get,reverse=True)
+    for item in sortedlist:
+        if hist[item]>maxthres:
+            res=False
+            godivide=True
+        if hist[item]<minthres:
+            res=False
+            gocombine=True
+            break
+    return res,godivide,gocombine
+
+def manualresegdivide(area):
+    global greatareas
+    unique, counts = numpy.unique(area, return_counts=True)
+    hist=dict(zip(unique,counts))
+    del hist[0]
+    normalcounts=[]
+    for key in hist.keys():
+        if key not in greatareas and key not in tinyareas:
+            normalcounts.append(hist[key])
+    meanpixel=sum(normalcounts)/len(normalcounts)
+    while(len(greatareas)>0):
+        topkey=greatareas.pop(0)
+        locs=numpy.where(area==topkey)
         ulx,uly=min(locs[1]),min(locs[0])
         rlx,rly=max(locs[1]),max(locs[0])
         subarea=area[uly:rly+1,ulx:rlx+1]
-        tempsubarea=subarea/proceslabel
-        newtempsubarea=numpy.where(tempsubarea!=1.,0,1)
+        subarea=subarea.astype(float)
+        tempsubarea=subarea/topkey
+        newtempsubarea=numpy.where(tempsubarea!=1.,0,1).astype(int)
         antitempsubarea=numpy.where((tempsubarea!=1.) & (tempsubarea!=0),subarea,0)
-        newsubarea=boundarywatershed(newtempsubarea,1,'inner')
+        times=len(locs[0])/meanpixel
+        averagearea=len(locs[0])/times
+        newsubarea=manualboundarywatershed(newtempsubarea,averagearea)
         labelunique,labcounts=numpy.unique(newsubarea,return_counts=True)
         labelunique=labelunique.tolist()
+        labcounts=labcounts.tolist()
         if len(labelunique)>2:
-            newsubarea=newsubarea*proceslabel
+            newsubarea=newsubarea*topkey
             newlabel=labelunique.pop(-1)
             maxlabel=area.max()
             add=1
             while newlabel>1:
-                newsubarea=numpy.where(newsubarea==proceslabel*newlabel,maxlabel+add,newsubarea)
+                newsubarea=numpy.where(newsubarea==topkey*newlabel,maxlabel+add,newsubarea)
                 print('new label: '+str(maxlabel+add))
                 newlabelcount=len(numpy.where(newsubarea==maxlabel+add)[0].tolist())
+                #if newlabelcount>=meanpixel and newlabelcount<uprange:
+                    #if (maxlabel+add) not in exceptions:    07102019
+                        #exceptions.append(maxlabel+add)     07102019
                 print('add '+'label: '+str(maxlabel+add)+' count='+str(newlabelcount))
                 newlabel=labelunique.pop(-1)
                 add+=1
 
             newsubarea=newsubarea+antitempsubarea.astype(int)
+
             area[uly:rly+1,ulx:rlx+1]=newsubarea
-            unique, counts = numpy.unique(area, return_counts=True)
-            hist=dict(zip(unique,counts))
-            del hist[0]
             print('hist length='+str(len(counts)-1))
             print('max label='+str(area.max()))
     return area
 
-def intervalcombineloop(processintervals,area,sortedlist):
-    for i in range(len(processintervals)):
-        unique,counts=numpy.unique(area,return_counts=True)
-        hist=dict(zip(unique,counts))
-        processlabel=sortedlist[processintervals[i]]
-        locs=numpy.where(area==processlabel)
-        ulx,uly=min(locs[1]),min(locs[0])
-        rlx,rly=max(locs[1]),max(locs[0])
-        subarea=area[uly:rly+1,ulx:rlx+1]
-        stop=False
-        poscombines=[]
-        for j in range(1,11):
-            up_unique=[]
-            down_unique=[]
-            left_unique=[]
-            right_unique=[]
-            maxlabel={}
-            tempcombines=[]
-            if uly-j>=0 and stop==False and len(up_unique)<2:
-                uparray=area[uly-j:uly,ulx:rlx+1]
-                up_unique=numpy.unique(uparray)
-                for x in range(len(up_unique)):
-                    if up_unique[x]>0:
-                        tempdict={up_unique[x]:hist[up_unique[x]]}
-                        maxlabel.update(tempdict)
-            if rly+j<area.shape[0] and stop==False and len(down_unique)<2:
-                downarray=area[rly+1:rly+j+1,ulx:rlx+1]
-                down_unique=numpy.unique(downarray)
-                for x in range(len(down_unique)):
-                    if down_unique[x]>0:
-                        tempdict={down_unique[x]:hist[down_unique[x]]}
-                        maxlabel.update(tempdict)
-            if ulx-j>=0 and stop==False and len(left_unique)<2:
-                leftarray=area[uly:rly+1,ulx-j:ulx]
-                left_unique=numpy.unique(leftarray)
-                for x in range(len(left_unique)):
-                    if left_unique[x]>0:
-                        tempdict={left_unique[x]:hist[left_unique[x]]}
-                        maxlabel.update(tempdict)
-            if ulx+j<area.shape[1] and stop==False and len(right_unique)<2:
-                rightarray=area[uly:rly+1,rlx+1:rlx+j+1]
-                right_unique=numpy.unique(rightarray)
-                for x in range(len(right_unique)):
-                    if right_unique[x]>0:
-                        tempdict={right_unique[x]:hist[right_unique[x]]}
-                        maxlabel.update(tempdict)
-            print(up_unique,down_unique,left_unique,right_unique)
-            tempcombines.append(up_unique)
-            tempcombines.append(down_unique)
-            tempcombines.append(left_unique)
-            tempcombines.append(right_unique)
-            poscombines.append(tempcombines)
-        tinylist=[]
-        while(len(poscombines)>0 and stop==False):
-            top=poscombines.pop(0)
-            tinylist.append(top)
-            toplist=[]
-            for j in range(4):
-                toparray=top[j]
-                topunique=numpy.unique(toparray)
-                for ele in topunique:
-                    toplist.append(ele)
-            toplist=numpy.array(toplist)
-            combunique,combcount=numpy.unique(toplist,return_counts=True)
-            toplist=dict(zip(combunique,combcount))
-            toplist=list(sorted(toplist,key=toplist.get,reverse=True))
-            #for k in range(len(toplist)):
-            #    top=toplist[k]
-            while(len(toplist)>0):
-            #if(len(toplist)>0):
-                top=toplist.pop(0)
-                if top!=0:
-                    topcount=hist[top]
-                    #if hist[i]+topcount>lowrange and hist[i]+topcount<uprange:
-                    area=combinecrops(area,subarea,processlabel,top,ulx,uly,rlx,rly)
-                    stop=True
-                    break
+def manualresegcombine(area):
+    global tinyareas
+    while(len(tinyareas)>0):
+        topkey=tinyareas.pop(0)
+        locs=numpy.where(area==topkey)
+        area[locs]=0
     return area
 
-def touchingcointmethod(unique,counts):
-    normalhist=dict(zip(unique[1:],counts[1:]))
-    sortedlist=dict(sorted((value,key) for (key,value) in normalhist.items()))
-    sortedarray=list(sortedlist.keys())
-    stat,p=shapiro(numpy.asarray(sortedarray))
-    alpha=0.05
-    if p<alpha:
-        end=-1
-        begin=1
-        while len(sortedarray)>0:
-            sortedarray=numpy.asarray(list(sortedlist.keys())[:end])
-            stat,p=shapiro(sortedarray)
-            if p<alpha:
-                sortedarray=numpy.asarray(list(sortedlist.keys()))[begin:]
-                stat,p=shapiro(sortedarray)
-                if p<alpha:
-                    sortedarray=numpy.asarray(list(sortedlist.keys()))[begin:end]
-                    stat,p=shapiro(sortedarray)
-                    if p<alpha:
-                        begin+=1
-                        end-=1
-                    else:
-                        break
-                else:
-                    end+=1
-                    break
-            else:
-                begin-=1
-                break
-        singlekernels=list(sortedlist.keys())[:end]
-        print(singlekernels)
-        '''
-        maxinterval=0
-        for i in range(len(singlekernels)):
-            if i+1<len(singlekernels):
-                inteval=singlekernels[i+1]-singlekernels[i]
-                if inteval>maxinterval:
-                    maxinterval=inteval
-        '''
-        multikernels=list(sortedlist.keys())[end:]
+def resegmentinput(inputlabels,minthres,maxthres):
+    global exceptions
+    exceptions=[]
+    labeldict={}
+    unique,counts=numpy.unique(inputlabels,return_counts=True)
+    unique=unique[1:]
+    counts=counts[1:]
+    hist=dict(zip(unique,counts))
+    validation,godivide,gocombine=resegvalidation(minthres,maxthres,hist)
+    lastgreatarea=[]
+    lasttinyarea=[]
+    labels=numpy.copy(inputlabels)
+    while(validation==False):
+        if godivide==True:
+            labels=resegdivideloop(labels,maxthres)
+            outputlabel,misslabel,localcolortable=relabel(labels)
+            if lastgreatarea==greatareas and len(lastgreatarea)!=0:
+                labels=manualresegdivide(labels)
+                print('lastgreatarea:',lastgreatarea)
+            lastgreatarea[:]=greatareas[:]
+        #validation,godivide,gocombine=resegvalidation(minthres,maxthres,hist)
+        if gocombine==True:
+            labels=resegcombineloop(labels,maxthres,minthres)
+            outputlabel,misslabel,localcolortable=relabel(labels)
+            if lasttinyarea==tinyareas and len(lasttinyarea)!=0:
+                #to manual combine or manual remove tiny thing
+                labels=manualresegcombine(labels)
+                print('lasttinyarea:',lasttinyarea)
+            lasttinyarea[:]=tinyareas[:]
+        unique,counts=numpy.unique(labels,return_counts=True)
+        unique=unique[1:]
+        counts=counts[1:]
+        hist=dict(zip(unique,counts))
+        validation,godivide,gocombine=resegvalidation(minthres,maxthres,hist)
+    unique,counts=numpy.unique(labels,return_counts=True)
+    #unique=unique[1:]
+    #counts=counts[1:]
+    originmethod,misslabel,localcolortable=relabel(labels)
+    copylabels=numpy.copy(labels)
+    subtempdict={'labels':copylabels}
+    copycolortable={**colortable}
+    subtempdict.update({'colortable':copycolortable})
+    subtempdict.update({'counts':counts[1:]})
 
-        #to do: find kernels from multikernels that less than maxinterval filter out kernels greater than maxinterval
-        '''
-        for i in range(len(multikernels)):
-            if i==0:
-                interval=multikernels[i]-singlekernels[-1]
-            else:
-                interval=multikernels[i]-multikernels[i-1]
-            if interval<maxinterval:
-                    singlekernels.append(multikernels[i])
-            else:
-                break
-        multikernels=multikernels[i:]
-        '''
-        print(multikernels)
-        while(len(multikernels)>0):
-            '''
-            processkernels=[]
-            for i in range(len(multikernels)):
-                if i==0:
-                    processkernels.append(multikernels[i])
-                if i+1<len(multikernels):
-                    interval=multikernels[i+1]-multikernels[i]
-                    if interval>maxinterval:
-                        break
-                    else:
-                        processkernels.append(multikernels[i+1])
-            multikernels=multikernels[i+1:]
-            '''
-            labels=intervaldivideloop(multikernels,labels,sortedlist)
-            unique, counts = numpy.unique(labels, return_counts=True)
-            normalhist=dict(zip(unique[1:],counts[1:]))
-            sortedlist=dict(sorted((value,key) for (key,value) in normalhist.items()))
-            kernellist=list(sortedlist.keys())
-            stat,p=shapiro(numpy.asarray(kernellist))
-            alpha=0.05
-            if p<alpha:
-                end=-1
-                begin=1
-                while len(kernellist)>0:
-                    kernellist=numpy.asarray(list(sortedlist.keys())[:end])
-                    stat,p=shapiro(kernellist)
-                    if p<alpha:
-                        kernellist=numpy.asarray(list(sortedlist.keys()))[begin:]
-                        stat,p=shapiro(kernellist)
-                        if p<alpha:
-                            kernellist=numpy.asarray(list(sortedlist.keys()))[begin:end]
-                            stat,p=shapiro(kernellist)
-                            if p<alpha:
-                                begin+=1
-                                end-=1
-                            else:
-                                break
-                        else:
-                            end+=1
-                            break
-                    else:
-                        begin-=1
-                        break
-                singlekernels=list(sortedlist.keys())[:end]  #need to do when end = -1, begin = 0 condition
-                #while p<alpha:
-                #    sortedarray=numpy.asarray(list(sortedlist.keys())[:end])
-                #    stat,p=shapiro(sortedarray)
-                #    end-=1
-                #singlekernels=list(sortedlist.keys())[:end]
-                '''
-                for i in range(len(kernellist)):
-                    if i==0:
-                        singlekernels.append(kernellist[i])
-                    else:
-                        interval=kernellist[i+1]-kernellist[i]
-                        if interval>maxinterval:
-                            break
-                        else:
-                            singlekernels.append(kernellist[i])
-                '''
-                multikernels=list(sortedlist.keys())[end:]
-                if end==-1 and begin>0:
-                    labels=intervalcombineloop(list(sortedlist.keys())[:begin],labels,sortedlist)
-                    unique, counts = numpy.unique(labels, return_counts=True)
-                    normalhist=dict(zip(unique[1:],counts[1:]))
-                    sortedlist=dict(sorted((value,key) for (key,value) in normalhist.items()))
-                    kernellist=list(sortedlist.keys())
-                    stat,cp=shapiro(numpy.asarray(kernellist))
-                    alpha=0.05
-                    if cp<alpha:
-                        end=-1
-                        begin=1
-                        while len(kernellist)>0:
-                            kernellist=numpy.asarray(list(sortedlist.keys())[:end])
-                            stat,cp=shapiro(kernellist)
-                            if cp<alpha:
-                                kernellist=numpy.asarray(list(sortedlist.keys()))[begin:]
-                                stat,cp=shapiro(kernellist)
-                                if cp<alpha:
-                                    kernellist=numpy.asarray(list(sortedlist.keys()))[begin:end]
-                                    stat,cp=shapiro(kernellist)
-                                    if cp<alpha:
-                                        begin+=1
-                                        end-=1
-                                    else:
-                                        break
-                                else:
-                                    end+=1
-                                    break
-                            else:
-                                begin-=1
-                                break
-                        singlekernels=list(sortedlist.keys())[:end]
-                        #while p<alpha:
-                        #    sortedarray=numpy.asarray(list(sortedlist.keys())[:end])
-                        #    stat,p=shapiro(sortedarray)
-                        #    end-=1
-                        #singlekernels=list(sortedlist.keys())[:end]
-                        '''
-                        for i in range(len(kernellist)):
-                            if i==0:
-                                singlekernels.append(kernellist[i])
-                            else:
-                                interval=kernellist[i+1]-kernellist[i]
-                                if interval>maxinterval:
-                                    break
-                                else:
-                                    singlekernels.append(kernellist[i])
-                        '''
-                        multikernels=list(sortedlist.keys())[end:]
-                # to do: if end==-1 and begin==0:
-
-
-            else:
-                break
-
-        #kernelindex=list(sortedlist.keys()).index(multikernels[0])
-        #sortedarray=numpy.asarray(list(sortedlist.keys())[:kernelindex])
-
-
-
-
-    minsinglesize=min(singlekernels)
-
+    tempdict={'iter'+str(0):subtempdict}
+    labeldict.update(tempdict)
+    return labels,counts,colortable,labeldict
 
 def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
     global miniarea
@@ -2221,11 +2222,13 @@ def init(input,validmap,map,layers,ittimes,coin):
     #lastlinecount=lastline
 
     #if occupiedratio>=0.5:
-    labels,res,colortable,greatareas,tinyareas,coinparts,labeldict=processinput(input,validmap,avgarea,layers,ittimes,coin,shrink)
+    #labels,res,colortable,greatareas,tinyareas,coinparts,labeldict=processinput(input,validmap,avgarea,layers,ittimes,coin,shrink)
+    labels,res,colortable,labeldict=firstprocess(input,validmap,avgarea)
     #else:
     #    labels,res,colortable,greatareas,tinyareas=kmeansprocess(pixellocs,input,counts)
 
-    return labels,res,colortable,greatareas,tinyareas,coinparts,labeldict
+    #return labels,res,colortable,greatareas,tinyareas,coinparts,labeldict
+    return labels,res,colortable,labeldict
 
 def manual(labels,map,boundary,colortable,greatareas,tinyareas):
     labels=manualdivide(labels,greatareas)
