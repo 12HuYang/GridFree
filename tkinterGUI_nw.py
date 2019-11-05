@@ -1114,10 +1114,10 @@ maxx=0
 minx=0
 bins=None
 loccanvas=None
-linelocs=[0,0]
+linelocs=[0,0,0,0]
 
 def resegment(labels,figcanvas):
-    global minx,maxx,bins,loccanvas,linelocs
+    global loccanvas,maxx,minx,maxy,miny,linelocs,bins,ybins
     figcanvas.unbind('<Any-Enter>')
     figcanvas.unbind('<Any-Leave>')
     figcanvas.unbind('<Button-1>')
@@ -1126,8 +1126,11 @@ def resegment(labels,figcanvas):
     thresholds=[cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1])]
     minthres=min(thresholds)
     maxthres=max(thresholds)
+    lwthresholds=[cal_yvalue(linelocs[2]),cal_yvalue(linelocs[3])]
+    maxlw=max(lwthresholds)
+    minlw=min(lwthresholds)
     print(minthres,maxthres)
-    labels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres)
+    labels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres,minlw,maxlw)
     multi_results.update({currentfilename:(labeldict,{})})
     iterkeys=list(labeldict.keys())
     iternum=len(iterkeys)
@@ -1143,6 +1146,7 @@ def resegment(labels,figcanvas):
     outputimgdict.update({currentfilename:tempimgdict})
     outputimgbands.update({currentfilename:tempimgbands})
     changeoutputimg(currentfilename,'1')
+    '''
     data=np.asarray(border[1:])
     hist,bin_edges=np.histogram(data,density=False)
     #figcanvas=Canvas(frame,width=400,height=350,bg='white')
@@ -1153,6 +1157,62 @@ def resegment(labels,figcanvas):
     bins=bin_edges.tolist()
     loccanvas=figcanvas
     linelocs=[minx,maxx]
+    '''
+    data=[]
+    uniquelabels=list(colortable.keys())
+    lenwid=[]
+    for uni in uniquelabels:
+        if uni!=0:
+            pixelloc = np.where(labels == uni)
+            try:
+                ulx = min(pixelloc[1])
+            except:
+                continue
+            uly = min(pixelloc[0])
+            rlx = max(pixelloc[1])
+            rly = max(pixelloc[0])
+            length=rly-uly
+            width=rlx-ulx
+            lenwid.append((length+width))
+            data.append(len(pixelloc[0]))
+    miny=min(lenwid)
+    maxy=max(lenwid)
+    minx=min(data)
+    maxx=max(data)
+    binwidth=(maxx-minx)/10
+    ybinwidth=(maxy-miny)/10
+    bin_edges=[]
+    y_bins=[]
+    for i in range(0,11):
+        bin_edges.append(minx+i*binwidth)
+    for i in range(0,11):
+        y_bins.append(miny+i*ybinwidth)
+    #bin_edges.append(maxx)
+    #bin_edges.append(maxx+binwidth)
+    #y_bins.append(maxy)
+    #y_bins.append(maxy+ybinwidth)
+    plotdata=[]
+    for i in range(len(data)):
+        plotdata.append((data[i],lenwid[i]))
+    scaledDatalist=[]
+    x_scalefactor=300/(maxx-minx)
+    y_scalefactor=250/(maxy-miny)
+    for (x,y) in plotdata:
+        xval=50+(x-minx)*x_scalefactor
+        yval=300-(y-miny)*y_scalefactor
+        scaledDatalist.append((xval,yval))
+
+    axistest.drawdots(25,325,375,25,bin_edges,y_bins,scaledDatalist,figcanvas)
+
+
+    loccanvas=figcanvas
+    #minx=25
+    #maxx=375
+    #maxy=325
+    #miny=25
+    linelocs=[minx,maxx,miny,maxy]
+    bins=bin_edges
+    ybins=y_bins
 
     figcanvas.bind('<Any-Enter>',item_enter)
     figcanvas.bind('<Any-Leave>',item_leave)
@@ -1160,15 +1220,25 @@ def resegment(labels,figcanvas):
     figcanvas.bind('<B1-Motion>',item_drag)
 
 
+def cal_yvalue(y):
+    y_scalefactor=250/(maxy-miny)
+    yval=(300-y)/y_scalefactor+miny
+    return yval
 
 def cal_xvalue(x):
     #print(maxx,minx,max(bins),min(bins))
-    binwidth=(maxx-minx)/(max(bins)-min(bins))
+    #binwidth=(maxx-minx)/(max(bins)-min(bins))
+    #binwidth=(max(bins)-min(bins))/12
     #print(x,minx,binwidth)
-    xloc=((x-minx)/binwidth)
-    #print(xloc+min(bins))
+    #xloc=((x-minx)/binwidth)
+    #print(xloc,min(bins))
     #value=min(bins)+xloc*binwidth
-    return xloc+min(bins)
+    #print(value)
+    x_scalefactor=300/(maxx-minx)
+    xval=(x-50)/x_scalefactor+minx
+
+    #print(x,xval)
+    return xval
 
 
 
@@ -1196,44 +1266,69 @@ def item_start_drag(event):
             loccanvas._lastX=event.x
             #loccanvas._lastY=event.y
             linelocs[0]=event.x
-        else:
-            if fill=='orange':
-                loccanvas._lastX=event.x
-                #loccanvas._lastY=event.y
-                linelocs[1]=event.x
-            else:
-                loccanvas._lastX=None
+        if fill=='orange':
+            loccanvas._lastX=event.x
+            #loccanvas._lastY=event.y
+            linelocs[1]=event.x
+        if fill=='blue':
+            loccanvas._lastY=event.y
+            linelocs[2]=event.y
+            #print('blue')
+        if fill=='purple':
+            loccanvas._lastY=event.y
+            linelocs[3]=event.y
+            #print('purple')
+        if fill!='red' and fill!='orange':
+            loccanvas._lastX=None
+        if fill!='blue' and fill!='purple':
+            loccanvas._lastY=None
     else:
         loccanvas._lastX=None
+        loccanvas._lastY=None
     pass
 
 def item_drag(event):
     global loccanvas,linelocs,xvalue
     x=event.x
     y=event.y
-    if x<minx:
-        x=minx
-    if x>maxx:
-        x=maxx
+    if x<25:
+        x=25
+    if x>375:
+        x=375
+    if y<25:
+        y=25
+    if y>325:
+        y=325
     try:
         fill=loccanvas.itemconfigure(CURRENT,'fill')[4]
+        print(fill)
     except:
         return
     #itemType=loccanvas.type(CURRENT)
-    try:
-        test=0-loccanvas._lastX
-    except:
-        return
-    loccanvas.move(CURRENT,x-loccanvas._lastX,0)
+    #try:
+    #    test=0-loccanvas._lastX
+    #    test=0-loccanvas._lastY
+    #except:
+    #    return
+
+    if fill=='red' or fill=='orange':
+        loccanvas.move(CURRENT,x-loccanvas._lastX,0)
+    if fill=='blue' or fill=='purple':
+        loccanvas.move(CURRENT,0,y-loccanvas._lastY)
     loccanvas._lastX=x
+    loccanvas._lastY=y
     if fill=='red':
         linelocs[0]=x
     if fill=='orange':
         linelocs[1]=x
+    if fill=='blue':
+        linelocs[2]=y
+    if fill=='purple':
+        linelocs[3]=y
             #print(line_a)
     #print(minline)
     #print(maxline)
-    print(cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1]))
+    print(cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1]),cal_yvalue(linelocs[2]),cal_yvalue(linelocs[3]))
     pass
 
 
@@ -1361,10 +1456,10 @@ def extraction(frame):
         if imgtypevar.get()=='0':
     #<<<<<<< HEAD
             #labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
-            labels,border,corlortable,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
+            labels,border,colortable,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
         if imgtypevar.get()=='1':
             #labels,border,colortable,coinparts,labeldict=tkintercorestat_plot.init(workingimg,workingimg,'',workingimg,10,coin)
-            labels,border,corlortable,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
+            labels,border,colortable,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
     multi_results.update({currentfilename:(labeldict,{})})
 #=======
     #labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
@@ -1391,6 +1486,8 @@ def extraction(frame):
     #resscaler=Scale(frame,from_=1,to=iternum,tickinterval=1,length=220,orient=HORIZONTAL,variable=itervar,command=partial(changeoutputimg,currentfilename))
     #resscaler.pack()
     changeoutputimg(currentfilename,'1')
+
+    '''
     data=np.asarray(border[1:])
     hist,bin_edges=np.histogram(data,density=False)
     figcanvas=Canvas(frame,width=400,height=350,bg='white')
@@ -1401,25 +1498,71 @@ def extraction(frame):
     bins=bin_edges.tolist()
     loccanvas=figcanvas
     linelocs=[minx,maxx]
+    '''
+    global loccanvas,maxx,minx,maxy,miny,linelocs,bins,ybins
+    data=[]
+    uniquelabels=list(colortable.keys())
+    lenwid=[]
+    for uni in uniquelabels:
+        if uni!=0:
+            pixelloc = np.where(labels == uni)
+            try:
+                ulx = min(pixelloc[1])
+            except:
+                continue
+            uly = min(pixelloc[0])
+            rlx = max(pixelloc[1])
+            rly = max(pixelloc[0])
+            length=rly-uly
+            width=rlx-ulx
+            lenwid.append((length+width))
+            data.append(len(pixelloc[0]))
+    miny=min(lenwid)
+    maxy=max(lenwid)
+    minx=min(data)
+    maxx=max(data)
+    binwidth=(maxx-minx)/10
+    ybinwidth=(maxy-miny)/10
+    bin_edges=[]
+    y_bins=[]
+    for i in range(0,11):
+        bin_edges.append(minx+i*binwidth)
+    for i in range(0,11):
+        y_bins.append(miny+i*ybinwidth)
+    #bin_edges.append(maxx)
+    #bin_edges.append(maxx+binwidth)
+    #y_bins.append(maxy)
+    #y_bins.append(maxy+ybinwidth)
+    plotdata=[]
+    for i in range(len(data)):
+        plotdata.append((data[i],lenwid[i]))
+    scaledDatalist=[]
+    x_scalefactor=300/(maxx-minx)
+    y_scalefactor=250/(maxy-miny)
+    for (x,y) in plotdata:
+        xval=50+(x-minx)*x_scalefactor
+        yval=300-(y-miny)*y_scalefactor
+        scaledDatalist.append((xval,yval))
+
+    figcanvas=Canvas(frame,width=400,height=350,bg='white')
+    figcanvas.pack()
+    axistest.drawdots(25,325,375,25,bin_edges,y_bins,scaledDatalist,figcanvas)
+
+
+    loccanvas=figcanvas
+    #minx=25
+    #maxx=375
+    #maxy=325
+    #miny=25
+    linelocs=[minx,maxx,miny,maxy]
+    bins=bin_edges
+    ybins=y_bins
 
     figcanvas.bind('<Any-Enter>',item_enter)
     figcanvas.bind('<Any-Leave>',item_leave)
     figcanvas.bind('<Button-1>',item_start_drag)
     figcanvas.bind('<B1-Motion>',item_drag)
-    #n,bins,patches=pyplt.hist(border[1:],bins='auto')
-    #fig=Figure(figsize=(5,4),dpi=100)
-    #pltfig=fig.add_subplot(111)
-    #pltfig.hist(border[1:],bins='auto')
-    #histcanvas=FigureCanvasTkAgg(fig,master=frame)
-    #histcanvas.draw()
-    #histcanvas.get_tk_widget().pack()
-    #pyplt.savefig('foo.png')
-    #time.sleep(5)
-    #figimg=cv2.imread('foo.png')
-    #figcanvas=Canvas(frame,width=200,height=200,bg='white')
-    #figcanvas.pack()
-    #figimg=ImageTk.PhotoImage(Image.fromarray(figimg))
-    #figcanvas.create_image(0,0,image=figimg,anchor=NW)
+
     reseg=Button(frame,text='Re-process',command=partial(resegment,labels,figcanvas),padx=5,pady=5)
     reseg.pack()
 
@@ -1683,7 +1826,7 @@ for i in range(10):
 #refreshebutton=Button(filter_fr,text='Refresh ColorIndices',cursor='hand2',command=changecluster)
 #refreshebutton.pack()
 ### --- ref and edge settings ---
-refframe=LabelFrame(filter_fr,text='Reference Setting',cursor='hand2')
+refframe=LabelFrame(filter_fr,text='Reference Setting',cursor='hand2',bd=0)
 refframe.pack()
 
 refoption=[('Use Ref','1'),('No Ref','0')]

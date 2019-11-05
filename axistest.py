@@ -93,6 +93,43 @@ def item_drag(event):
 
     pass
 '''
+
+def drawdots(ulx,uly,rlx,rly,x_bins,y_bins,datalist,canvas):
+    global loccanvas,minx,maxx,totalbins,bins,linelocs
+    loccanvas=canvas
+
+    minx=ulx
+    maxx=rlx
+
+    canvas.create_line(ulx,uly,rlx,uly,arrow=LAST,width=2)
+    canvas.create_line(ulx,uly,ulx,rly,arrow=LAST,width=2)
+
+    vlinelocs=[ulx,rlx]
+    hlinelocs=[rly,uly]
+
+    canvas.create_text(ulx+5,rly-10,text='L+W',font=('Times',12),anchor=E)
+    canvas.create_text(rlx,uly+10,text='Area',font=('Times',12),anchor=N)
+
+    xbinwidth=(rlx-ulx-50)/(len(x_bins)-1)
+    for i in range(len(x_bins)):
+        x=ulx+(i*xbinwidth)
+        canvas.create_line(x+25,uly+5,x+25,uly,width=2)
+        canvas.create_text(x+25,uly+5,text='%d'%(x_bins[i]),font=('Times',12),anchor=N)
+
+    ybinwidth=(uly-rly-50)/(len(y_bins)-1)
+    for i in range(len(y_bins)):
+        y=uly-(i*ybinwidth)
+        canvas.create_line(ulx-5,y-25,ulx,y-25,width=2)
+        canvas.create_text(ulx-6,y-25,text='%d'%(y_bins[i]),font=('Times',12),anchor=E)
+
+    for (xs,ys) in datalist:
+        canvas.create_oval(xs-1,ys-1,xs+1,ys+1,width=1,outline='black',fill='SkyBlue')
+
+    canvas.create_line(ulx,rly,ulx,uly,arrow=LAST,fill='red',width=2)
+    canvas.create_line(rlx,rly,rlx,uly,arrow=LAST,fill='orange',width=2)
+    canvas.create_line(ulx,rly+1,rlx,rly+1,arrow=FIRST,fill='blue',width=2)
+    canvas.create_line(ulx,uly-1,rlx,uly-1,arrow=FIRST,fill='purple',width=2)
+
 def drawPlot(ulx,uly,rlx,rly,hist,bin_edges,canvas):
     global loccanvas,minx,maxx,totalbins,bins,linelocs
     loccanvas=canvas
