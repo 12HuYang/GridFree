@@ -1248,6 +1248,21 @@ def findmissitem(originimage,area,coinparts):
         res=area+boundaryarea
     return res
 
+def coinlabels(area):
+    originmethod,misslabel,localcolortable=relabel(area)
+    labeldict={}
+    unique,counts=numpy.unique(area,return_counts=True)
+    counts=counts[1:]
+    copylabels=numpy.zeros(area.shape)
+    copylabels[:,:]=area
+    subtempdict={'labels':copylabels}
+    print(unique[1:])
+    copycolortable={**colortable}
+    subtempdict.update({'colortable':copycolortable})
+    subtempdict.update({'counts':counts[1:]})
+    tempdict={'iter0':subtempdict}
+    labeldict.update(tempdict)
+    return area,counts,colortable,labeldict
 
 
 def findcoin(area):
@@ -1286,7 +1301,7 @@ def findcoin(area):
 
     minilabel=sortedlist[-1]
     minilocs=numpy.where(area==minilabel)
-    miniarea={minilabel:minilocs}
+    miniarea=sortedlist
 
     for key in topfive:
         locs=numpy.where(area==key)
@@ -1592,6 +1607,7 @@ def resegcombineloop(area,maxthres,minthres):
                             print('hist length='+str(len(counts)-1))
                             print('max label='+str(area.max()))
                             sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
+                            break
 
                     #topkey=sortedkeys.pop(0)
             if len(poscombines)==0 and stop==False:  #combine to the closest one
@@ -1629,7 +1645,7 @@ def resegvalidation(minthres,maxthres,hist):
     gocombine=False
     sortedlist=sorted(hist,key=hist.get,reverse=True)
     for item in sortedlist:
-        if hist[item]>maxthres:
+        if hist[item]>maxthres and item not in exceptions:
             res=False
             godivide=True
         if hist[item]<minthres:
@@ -1639,7 +1655,7 @@ def resegvalidation(minthres,maxthres,hist):
     return res,godivide,gocombine
 
 def manualresegdivide(area):
-    global greatareas
+    global greatareas,exceptions
     unique, counts = numpy.unique(area, return_counts=True)
     hist=dict(zip(unique,counts))
     del hist[0]
@@ -1685,6 +1701,8 @@ def manualresegdivide(area):
             area[uly:rly+1,ulx:rlx+1]=newsubarea
             print('hist length='+str(len(counts)-1))
             print('max label='+str(area.max()))
+        else:
+            exceptions.append(topkey)
     return area
 
 def manualresegcombine(area):

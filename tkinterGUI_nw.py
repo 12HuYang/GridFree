@@ -79,6 +79,10 @@ coinbox=None
 currentfilename='seedsample.JPG'
 currentlabels=None
 workingimg=None
+
+boundaryarea=None
+outputbutton=None
+font=None
 ## Funcitons
 def distance(p1,p2):
     return np.sum((p1-p2)**2)
@@ -502,8 +506,9 @@ def generatecheckbox(frame,classnum):
     for i in range(10):
         dictkey=str(i+1)
         tempdict={dictkey:Variable()}
+        tempdict[dictkey].set('0')
         checkboxdict.update(tempdict)
-        ch=Checkbutton(checkboxframe,text=dictkey,variable=checkboxdict[dictkey],command=changecluster)
+        ch=Checkbutton(checkboxframe,text=dictkey,variable=checkboxdict[dictkey],command=partial(changecluster,''))
         if i+1>int(kmeans.get()):
             ch.config(state=DISABLED)
         ch.pack(side=LEFT)
@@ -567,7 +572,7 @@ def kmeansclassify(choicelist,reshapedtif):
         clusterdisplay.update({''.join(choicelist):tempdict})
     return displaylabels
 
-def changecluster():
+def changecluster(event):
     keys=bandchoice.keys()
     choicelist=[]
     imageband=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
@@ -638,6 +643,7 @@ def showinitcounting(tup):
 
 def showcounting(tup):
     global multi_results,kernersizes#,pixelmmratio,kernersizes
+    global font
     labels=tup[0]
     counts=tup[1]
     colortable=tup[2]
@@ -667,6 +673,28 @@ def showcounting(tup):
             tempband[coinlocs]=1
 
     global recborder
+    for uni in uniquelabels:
+        if uni!=0:
+            pixelloc = np.where(labels == uni)
+            try:
+                ulx = min(pixelloc[1])
+            except:
+                continue
+            uly = min(pixelloc[0])
+            rlx = max(pixelloc[1])
+            rly = max(pixelloc[0])
+            midx = ulx + int((rlx - ulx) / 2)
+            midy = uly + int((rly - uly) / 2)
+            print(ulx, uly, rlx, rly)
+            draw.polygon([(ulx,uly),(rlx,uly),(rlx,rly),(ulx,rly)],outline='red')
+            if uni in colortable:
+                canvastext = str(colortable[uni])
+            else:
+                canvastext = 'No label'
+            if imgtypevar.get()=='0':
+                draw.text((midx,midy),text=canvastext,font=font,fill='black')
+
+    '''   kernelsize computation
     for uni in uniquelabels:
         if uni !=0:
             pixelloc = np.where(labels == uni)
@@ -758,7 +786,9 @@ def showcounting(tup):
                 if imgtypevar.get()=='0':
                     draw.text((midx,midy),text=canvastext,font=font,fill='black')
                 #trainingdataset.append([originfile+'-training'+extension,'wheat',str(ulx),str(rlx),str(uly),str(rly)])
+
     kernersizes.update({filename:tempdict})
+    '''
     content='item count:'+str(len(uniquelabels))+'\n File: '+filename
     contentlength=len(content)+50
     #rectext=canvas.create_text(10,10,fill='black',font='Times 16',text=content,anchor=NW)
@@ -801,10 +831,97 @@ def export_result(iterver):
         labels=labeldict[itervalue]['labels']
         counts=labeldict[itervalue]['counts']
         colortable=labeldict[itervalue]['colortable']
+
         head_tail=os.path.split(file)
         originfile,extension=os.path.splitext(head_tail[1])
         if len(path)>0:
             imageband=outputimgbands[file][itervalue]
+            draw=ImageDraw.Draw(imageband)
+            uniquelabels=list(colortable.keys())
+            tempdict={}
+            for uni in uniquelabels:
+                if uni !=0:
+                    pixelloc = np.where(labels == uni)
+                    try:
+                        ulx = min(pixelloc[1])
+                    except:
+                        continue
+                    uly = min(pixelloc[0])
+                    rlx = max(pixelloc[1])
+                    rly = max(pixelloc[0])
+                    print(ulx, uly, rlx, rly)
+                    midx = ulx + int((rlx - ulx) / 2)
+                    midy = uly + int((rly - uly) / 2)
+                    length={}
+                    currborder=tkintercore.get_boundaryloc(labels,uni)
+                    for i in range(len(currborder[0])):
+                        for j in range(i+1,len(currborder[0])):
+                            templength=float(((currborder[0][i]-currborder[0][j])**2+(currborder[1][i]-currborder[1][j])**2)**0.5)
+                            length.update({(i,j):templength})
+                    sortedlength=sorted(length,key=length.get,reverse=True)
+                    try:
+                        topcouple=sortedlength[0]
+                    except:
+                        continue
+                    kernellength=length[topcouple]
+                    i=topcouple[0]
+                    j=topcouple[1]
+                    x0=currborder[1][i]
+                    y0=currborder[0][i]
+                    x1=currborder[1][j]
+                    y1=currborder[0][j]
+                    #slope=float((y0-y1)/(x0-x1))
+                    linepoints=[(currborder[1][i],currborder[0][i]),(currborder[1][j],currborder[0][j])]
+                    #draw.line(linepoints,fill='yellow')
+                    #points=linepixels(currborder[1][i],currborder[0][i],currborder[1][j],currborder[0][j])
+
+                    lengthpoints=cal_kernelsize.bresenhamline(x0,y0,x1,y1)  #x0,y0,x1,y1
+                    for point in lengthpoints:
+                        if imgtypevar.get()=='0':
+                            draw.point([int(point[0]),int(point[1])],fill='yellow')
+                    tengentaddpoints=cal_kernelsize.tengentadd(x0,y0,x1,y1,rlx,rly,labels,uni)
+                    #for point in tengentaddpoints:
+                        #if int(point[0])>=ulx and int(point[0])<=rlx and int(point[1])>=uly and int(point[1])<=rly:
+                    #    draw.point([int(point[0]),int(point[1])],fill='green')
+                    tengentsubpoints=cal_kernelsize.tengentsub(x0,y0,x1,y1,ulx,uly,labels,uni)
+                    #for point in tengentsubpoints:
+                    #    draw.point([int(point[0]),int(point[1])],fill='green')
+                    width=1e10
+                    pointmatch=[]
+                    for i in range(len(tengentaddpoints)):
+                        point=tengentaddpoints[i]
+                        try:
+                            templabel=labels[int(point[1]),int(point[0])]
+                        except:
+                            continue
+                        if templabel==uni:
+                            for j in range(len(tengentsubpoints)):
+                                subpoint=tengentsubpoints[j]
+                                tempwidth=float(((point[0]-subpoint[0])**2+(point[1]-subpoint[1])**2)**0.5)
+                                if tempwidth<width:
+                                    pointmatch[:]=[]
+                                    pointmatch.append(point)
+                                    pointmatch.append(subpoint)
+                                    width=tempwidth
+                    if len(pointmatch)>0:
+                        x0=int(pointmatch[0][0])
+                        y0=int(pointmatch[0][1])
+                        x1=int(pointmatch[1][0])
+                        y1=int(pointmatch[1][1])
+                        if imgtypevar.get()=='0':
+                            draw.line([(x0,y0),(x1,y1)],fill='yellow')
+                        print('kernelwidth='+str(width*pixelmmratio))
+                        print('kernellength='+str(kernellength*pixelmmratio))
+                        #print('kernelwidth='+str(kernelwidth*pixelmmratio))
+                        tempdict.update({uni:[kernellength,width,kernellength*pixelmmratio,width*pixelmmratio]})
+
+
+                    #print(event.x, event.y, labels[event.x, event.y], ulx, uly, rlx, rly)
+
+                    #recborder = canvas.create_rectangle(ulx, uly, rlx, rly, outline='red')
+                    #drawcontents.append(recborder)
+
+            kernersizes.update({file:tempdict})
             originheight,originwidth=Multigraybands[file].size
             image=imageband.resize([originwidth,originheight],resample=Image.BILINEAR)
             image.save(path+'/'+originfile+'-countresult'+'.png',"PNG")
@@ -1122,7 +1239,7 @@ def item_drag(event):
 
 def extraction(frame):
     global kernersizes,multi_results,workingimg,outputimgdict,outputimgbands,pixelmmratio
-    global currentlabels,panelA
+    global currentlabels,panelA,outputbutton
     if int(kmeans.get())==1:
         messagebox.showerror('Invalid Class #',message='#Class = 1, try change it to 2 or more, and refresh Color-Index.')
         return
@@ -1156,6 +1273,7 @@ def extraction(frame):
         #for key in coinkeys:
         #    coinarea+=len(coindict[key][0])
         #    currentlabels[coindict[key]]=0
+        '''
         coinarea=len(refarea[0])
         nocoinarea=float(np.count_nonzero(currentlabels))/(currentlabels.shape[0]*currentlabels.shape[1])
         print('nocoinarea',nocoinarea)
@@ -1181,6 +1299,7 @@ def extraction(frame):
             #ratio=float(16/miniarea)
             workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
             #workingimg=np.copy(currentlabels)
+        '''
         #else:
         #    if miniarea<=10:
         #        print('cond3')
@@ -1212,6 +1331,9 @@ def extraction(frame):
         if coinsize.get()=='3':
             refsize=int(sizeentry.get())
             pixelmmratio=refsize/(coinlength*coinwidth)
+        copyboundaryarea=np.copy(boundaryarea)
+        copyboundaryarea[refarea]=0
+        labels,border,colortable,labeldict=tkintercorestat.coinlabels(copyboundaryarea)
     else:
     #nonzeroratio=float(nonzeros)/(currentlabels.shape[0]*currentlabels.shape[1])
         if nonzeroratio<=0.2:# and nonzeroratio>=0.1:
@@ -1233,16 +1355,16 @@ def extraction(frame):
         #        workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
 
     #cv2.imshow('workingimg',workingimg)
-    coin=False
-    print('ratio:',ratio)
-    print('workingimgsize:',workingimg.shape)
-    if imgtypevar.get()=='0':
-#<<<<<<< HEAD
-        #labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
-        labels,border,corlortable,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
-    if imgtypevar.get()=='1':
-        #labels,border,colortable,coinparts,labeldict=tkintercorestat_plot.init(workingimg,workingimg,'',workingimg,10,coin)
-        labels,border,corlortable,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
+        coin=False
+        print('ratio:',ratio)
+        print('workingimgsize:',workingimg.shape)
+        if imgtypevar.get()=='0':
+    #<<<<<<< HEAD
+            #labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
+            labels,border,corlortable,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
+        if imgtypevar.get()=='1':
+            #labels,border,colortable,coinparts,labeldict=tkintercorestat_plot.init(workingimg,workingimg,'',workingimg,10,coin)
+            labels,border,corlortable,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
     multi_results.update({currentfilename:(labeldict,{})})
 #=======
     #labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
@@ -1301,9 +1423,9 @@ def extraction(frame):
     reseg=Button(frame,text='Re-process',command=partial(resegment,labels,figcanvas),padx=5,pady=5)
     reseg.pack()
 
-
-    outputbutton=Button(control_fr,text='Export Results',command=partial(export_result,'0'),padx=5,pady=5)
-    outputbutton.pack()
+    if outputbutton is None:
+        outputbutton=Button(control_fr,text='Export Results',command=partial(export_result,'0'),padx=5,pady=5)
+        outputbutton.pack()
     #batchextraction()
     pass
 
@@ -1391,10 +1513,20 @@ def highlightcoin(boundaryarea,coindict,miniarea):
         if coinsize.get()=='1':
             topkey=list(coindict.keys())[0]
             refarea=coindict[topkey]
+            print(topkey)
         if coinsize.get()=='2':
-            topkey=list(miniarea.keys())[0]
-            refarea=miniarea[topkey]
+            topkey=miniarea[-1]
+            coinarea=np.where(tempband==topkey)
+            i=2
+            while(len(coinarea[0])==0):
+                topkey=miniarea[-i]
+                coinarea=np.where(tempband==topkey)
+                i+=1
+            copyboundary=np.copy(boundaryarea)
+            refarea=np.where(copyboundary==topkey)
+            print(topkey)
         coinarea=np.where(tempband==topkey)
+        print(coinarea)
         ulx,uly=min(coinarea[1]),min(coinarea[0])
         rlx,rly=max(coinarea[1]),max(coinarea[0])
         coinbox=panelA.create_rectangle(ulx,uly,rlx,rly,outline='red')
@@ -1402,7 +1534,7 @@ def highlightcoin(boundaryarea,coindict,miniarea):
 
 
 def refchoice(refsubframe):
-    global coinsize,sizeentry,coinbox,panelA
+    global coinsize,sizeentry,coinbox,panelA,boundaryarea
     refsubframe.grid_forget()
     for widget in refsubframe.winfo_children():
         widget.pack_forget()
@@ -1425,6 +1557,7 @@ def refchoice(refsubframe):
         sizeentry.pack(side=LEFT,padx=5)
         sizeunit=Label(refsubframe,text='mm^2')
         sizeunit.pack()
+
 
 ## ----Interface----
 
@@ -1481,7 +1614,7 @@ buttonframe.pack()
 
 filter_fr=LabelFrame(control_fr,text='Control Panel')
 filter_fr.pack()
-imgtypeframe=LabelFrame(filter_fr,text='Image type')
+imgtypeframe=LabelFrame(filter_fr,text='Image type',bd=0)
 imgtypeframe.pack()
 imgtypeoption=[('Crop plots','1'),('Grain kernel','0')]
 for text,mode in imgtypeoption:
@@ -1492,13 +1625,13 @@ openfilebutton=Button(buttonframe,text='Open one/multiple images (tif,jpeg,png)'
 openfilebutton.pack()
 ### ---change file---
 changefileframe=LabelFrame(filter_fr,text='Change Files',cursor='hand2')
-changefileframe.pack()
+#changefileframe.pack()
 
 filedropvar.set(filenames[0])
 changefiledrop=OptionMenu(changefileframe,filedropvar,*filenames,command=partial(changeimage,imageframe))
 changefiledrop.pack()
 ### ---choose color indices---
-chframe=LabelFrame(filter_fr,text='Select indicies below',cursor='hand2')
+chframe=LabelFrame(filter_fr,text='Select indicies below',cursor='hand2',bd=0)
 chframe.pack()
 chcanvas=Canvas(chframe,width=200,height=100,scrollregion=(0,0,400,400))
 chcanvas.pack(side=LEFT)
@@ -1520,7 +1653,7 @@ for key in cluster:
     ch.pack(fill=X)
 
 ### ----Class NUM----
-kmeansgenframe=LabelFrame(filter_fr,text='Select # of class',cursor='hand2')
+kmeansgenframe=LabelFrame(filter_fr,text='Select # of class',cursor='hand2',bd=0)
 kmeansgenframe.pack()
 kmeanslabel=LabelFrame(kmeansgenframe,bd=0)
 checkboxframe=LabelFrame(kmeansgenframe,cursor='hand2',bd=0)#,text='Select classes',cursor='hand2')
@@ -1531,10 +1664,13 @@ kmeans.set(1)
 kmeansbar=ttk.Scale(kmeanslabel,from_=1,to=10,length=350,orient=HORIZONTAL,variable=kmeans,cursor='hand2',command=partial(generatecheckbox,checkboxframe))
 kmeansbar.pack()
 
+kmeansbar.bind('<ButtonRelease-1>',changecluster)
+
 checkboxframe.pack()
 for i in range(10):
     dictkey=str(i+1)
     tempdict={dictkey:Variable()}
+    tempdict[dictkey].set('0')
     checkboxdict.update(tempdict)
     ch=Checkbutton(checkboxframe,text=dictkey,variable=checkboxdict[dictkey])
     if i+1>int(kmeans.get()):
@@ -1544,8 +1680,8 @@ for i in range(10):
         ch.invoke()
 #generatecheckbox(checkboxframe,2)
 
-refreshebutton=Button(filter_fr,text='Refresh ColorIndices',cursor='hand2',command=changecluster)
-refreshebutton.pack()
+#refreshebutton=Button(filter_fr,text='Refresh ColorIndices',cursor='hand2',command=changecluster)
+#refreshebutton.pack()
 ### --- ref and edge settings ---
 refframe=LabelFrame(filter_fr,text='Reference Setting',cursor='hand2')
 refframe.pack()
