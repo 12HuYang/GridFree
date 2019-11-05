@@ -1554,7 +1554,7 @@ def extraction(frame):
     #maxx=375
     #maxy=325
     #miny=25
-    linelocs=[minx,maxx,miny,maxy]
+    linelocs=[25,375,325,25]
     bins=bin_edges
     ybins=y_bins
 

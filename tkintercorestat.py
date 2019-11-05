@@ -60,8 +60,15 @@ def combinecrops(area,subarea,i,ele,ulx,uly,rlx,rly):
     if i<ele:
         localarea=numpy.where(localarea==ele,i,localarea)
     else:
+        #subarealocs=numpy.where(area==i)
+        #subulx,subuly=min(subarealocs[1]),min(subarealocs[0])
+        #subrlx,subrly=max(subarealocs[1]),max(subarealocs[0])
         subarea=numpy.where(subarea==i,ele,subarea)
+        #try:
         localarea[uly:rly+1,ulx:rlx+1]=subarea
+        #except:
+        #    localarea[subuly:subrly+1,subulx:subrlx+1]=subarea
+
     unique = numpy.unique(localarea)
     print(unique)
     return localarea
@@ -1529,7 +1536,7 @@ def resegdivideloop(area,maxthres,maxlw):
             topkey=sortedkeys.pop(0)
     return area
 
-def resegcombineloop(area,maxthres,minthres,mmaxlw,minlw):
+def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
     global tinyareas
     tinyareas=[]
     unique, counts = numpy.unique(area, return_counts=True)
@@ -1620,7 +1627,7 @@ def resegcombineloop(area,maxthres,minthres,mmaxlw,minlw):
                             combinewidth=rlx-ulx
                             combinelw=combinelength+combinewidth
                             if hist[topkey]+topcount>minthres and hist[topkey]+topcount<maxthres:
-                                if combinelw>minlw and combinelw<maxthres:
+                                if combinelw>minlw and combinelw<maxlw:
                                     area=combinecrops(area,subarea,topkey,top,ulx,uly,rlx,rly)
                                     stop=True
                                     unique, counts = numpy.unique(area, return_counts=True)
@@ -1695,7 +1702,7 @@ def manualresegdivide(area):
     for key in hist.keys():
         if key not in greatareas and key not in tinyareas:
             normalcounts.append(hist[key])
-    meanpixel=sum(normalcounts)/len(normalcounts)
+        meanpixel=sum(normalcounts)/len(normalcounts)
     while(len(greatareas)>0):
         topkey=greatareas.pop(0)
         locs=numpy.where(area==topkey)
