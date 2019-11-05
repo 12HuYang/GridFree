@@ -227,6 +227,7 @@ def commentoutrasterio():
 def Open_Multifile():
     global Multiimage,Multigray,Multitype,Multiimagebands,changefileframe,imageframe,Multigraybands,filenames
     global changefiledrop,filedropvar,originbandarray,displaybandarray,clusterdisplay,currentfilename,resviewframe
+    global refsubframe,outputbutton
 
     MULTIFILES=filedialog.askopenfilenames()
     if len(MULTIFILES)>0:
@@ -239,6 +240,13 @@ def Open_Multifile():
         originbandarray={}
         displaybandarray={}
         clusterdisplay={}
+        refvar.set('0')
+        for widget in refsubframe.winfo_children():
+            widget.pack_forget()
+        for widget in resviewframe.winfo_children():
+            widget.pack_forget()
+        if outputbutton is not None:
+            outputbutton.pack_forget()
         for i in range(len(MULTIFILES)):
             Open_File(MULTIFILES[i])
             singleband(MULTIFILES[i])
@@ -512,6 +520,8 @@ def generatecheckbox(frame,classnum):
         if i+1>int(kmeans.get()):
             ch.config(state=DISABLED)
         ch.pack(side=LEFT)
+        #if i==0:
+        #    ch.invoke()
     #for i in range(int(classnum)):
     #    dictkey='class '+str(i+1)
     #    tempdict={dictkey:Variable()}
@@ -1210,7 +1220,7 @@ def resegment(labels,figcanvas):
     #maxx=375
     #maxy=325
     #miny=25
-    linelocs=[minx,maxx,miny,maxy]
+    linelocs=[25,375,325,25]
     bins=bin_edges
     ybins=y_bins
 
@@ -1437,11 +1447,22 @@ def extraction(frame):
         else:
             #if nonzeroratio>0.16:
             if imgtypevar.get()=='0':
-                ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
-                workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            else:
-                ratio=1
-                workingimg=np.copy(currentlabels)
+                print('imgtype',imgtypevar.get())
+                if currentlabels.shape[0]*currentlabels.shape[1]>1000*1000:
+                    ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
+                    workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                else:
+                    ratio=1
+                    workingimg=np.copy(currentlabels)
+            if imgtypevar.get()=='1':
+                print('imgtype',imgtypevar.get())
+                if currentlabels.shape[0]*currentlabels.shape[1]>1000*1000:
+                    ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[620,620])
+                    workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                else:
+                    ratio=1
+                    workingimg=np.copy(currentlabels)
+
         pixelmmratio=1.0
         #else:
         #    if nonzeroratio<0.1:
@@ -1695,6 +1716,8 @@ def refchoice(refsubframe):
         for text,mode in refoption:
             b=Radiobutton(refsubframe,text=text,variable=coinsize,value=mode,command=partial(highlightcoin,boundaryarea,coindict,miniarea))
             b.pack(side=LEFT,padx=5)
+            if mode=='1':
+                b.invoke()
         sizeentry=Entry(refsubframe,width=5)
         sizeentry.insert(END,10)
         sizeentry.pack(side=LEFT,padx=5)
@@ -1739,7 +1762,8 @@ buttondisplay=LabelFrame(display_fr,bd=0)
 buttondisplay.config(cursor='hand2')
 buttondisplay.pack()
 
-disbuttonoption={'Origin':'1','Gray/NIR':'2','ColorIndices':'3','Output':'4'}
+#disbuttonoption={'Origin':'1','Gray/NIR':'2','ColorIndices':'3','Output':'4'}
+disbuttonoption={'Origin':'1','ColorIndices':'3','Output':'4'}
 for text in disbuttonoption:
     b=Radiobutton(buttondisplay,text=text,variable=displaybut_var,value=disbuttonoption[text],command=partial(changedisplayimg,imageframe,text))
     b.pack(side=LEFT,padx=20,pady=5)
@@ -1802,7 +1826,7 @@ kmeanslabel=LabelFrame(kmeansgenframe,bd=0)
 checkboxframe=LabelFrame(kmeansgenframe,cursor='hand2',bd=0)#,text='Select classes',cursor='hand2')
 kmeanslabel.pack()
 
-kmeans.set(1)
+kmeans.set(2)
 #kmeansbar=Scale(kmeanslabel,from_=1,to=10,tickinterval=1,length=270,showvalue=0,orient=HORIZONTAL,variable=kmeans,command=partial(generatecheckbox,checkboxframe))
 kmeansbar=ttk.Scale(kmeanslabel,from_=1,to=10,length=350,orient=HORIZONTAL,variable=kmeans,cursor='hand2',command=partial(generatecheckbox,checkboxframe))
 kmeansbar.pack()

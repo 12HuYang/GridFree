@@ -60,14 +60,14 @@ def combinecrops(area,subarea,i,ele,ulx,uly,rlx,rly):
     if i<ele:
         localarea=numpy.where(localarea==ele,i,localarea)
     else:
-        #subarealocs=numpy.where(area==i)
-        #subulx,subuly=min(subarealocs[1]),min(subarealocs[0])
-        #subrlx,subrly=max(subarealocs[1]),max(subarealocs[0])
+        subarealocs=numpy.where(area==i)
+        subulx,subuly=min(subarealocs[1]),min(subarealocs[0])
+        subrlx,subrly=max(subarealocs[1]),max(subarealocs[0])
         subarea=numpy.where(subarea==i,ele,subarea)
-        #try:
-        localarea[uly:rly+1,ulx:rlx+1]=subarea
-        #except:
-        #    localarea[subuly:subrly+1,subulx:subrlx+1]=subarea
+        try:
+            localarea[uly:rly+1,ulx:rlx+1]=subarea
+        except:
+            localarea[subuly:subrly+1,subulx:subrlx+1]=subarea
 
     unique = numpy.unique(localarea)
     print(unique)
