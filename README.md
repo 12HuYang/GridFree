@@ -6,11 +6,13 @@
 <!--#### RUN ```pip3 install plantlabeller``` to install from terminal, if you cannot run ```pip3```, use ```python3 -m pip install plantlabeller```.
 #### Linux user may need to use ```sudo pip3 install plantlabeller``` or ```sudo python3 -m pip install plantlabeller```.-->
 #### MacOS
+* install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 * execute ```python3 -m pip install -r requirements.txt``` to install required packages
 <!--* execute ```brew install gdal``` to install required packages
 * execute ```python3 -m pip install rasterio``` to install required packages-->
 * execute ```./run``` on a terminal to run the software
 #### Linux OS
+* install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 * execute ```python3 -m pip install -r requirements.txt``` to install required packages
 <!--* execute ```sudo add-apt-repository ppa:ubuntugis/ppa```
 * execute ```sudo apt-get update```
