@@ -125,10 +125,10 @@ def drawdots(ulx,uly,rlx,rly,x_bins,y_bins,datalist,canvas):
     for (xs,ys) in datalist:
         canvas.create_oval(xs-1,ys-1,xs+1,ys+1,width=1,outline='black',fill='SkyBlue')
 
-    canvas.create_line(ulx,rly,ulx,uly,arrow=LAST,fill='red',width=2)
-    canvas.create_line(rlx,rly,rlx,uly,arrow=LAST,fill='orange',width=2)
-    canvas.create_line(ulx,rly+1,rlx,rly+1,arrow=FIRST,fill='blue',width=2)
-    canvas.create_line(ulx,uly-1,rlx,uly-1,arrow=FIRST,fill='purple',width=2)
+    canvas.create_line(ulx+12,rly,ulx+12,uly,arrow=LAST,fill='red',width=2)
+    canvas.create_line(rlx-12,rly,rlx-12,uly,arrow=LAST,fill='orange',width=2)
+    canvas.create_line(ulx,rly+12,rlx,rly+12,arrow=FIRST,fill='blue',width=2)
+    canvas.create_line(ulx,uly-12,rlx,uly-12,arrow=FIRST,fill='purple',width=2)
 
 def drawPlot(ulx,uly,rlx,rly,hist,bin_edges,canvas):
     global loccanvas,minx,maxx,totalbins,bins,linelocs

@@ -1524,7 +1524,7 @@ def resegdivideloop(area,maxthres,maxlw):
                     sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
                     topkey=sortedkeys.pop(0)
                 else:
-                    if hist[topkey]>maxthres:
+                    if hist[topkey]>maxthres or topkeylw>maxlw:
                         if topkey not in greatareas:
                             greatareas.append(topkey)
                         topkey=sortedkeys.pop(0)
@@ -1532,6 +1532,8 @@ def resegdivideloop(area,maxthres,maxlw):
                         break
             else:
                 topkey=sortedkeys.pop(0)
+                #if topkey not in greatareas:
+                #    greatareas.append(topkey)
         else:
             topkey=sortedkeys.pop(0)
     return area
@@ -1645,6 +1647,8 @@ def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
                         tinyareas.append(topkey)
                 topkey=sortedkeys.pop(0)
             else:
+                #if topkey not in tinyareas:
+                #    tinyareas.append(topkey)
                 topkey=sortedkeys.pop(0)
 
         else:
@@ -1702,7 +1706,7 @@ def manualresegdivide(area):
     for key in hist.keys():
         if key not in greatareas and key not in tinyareas:
             normalcounts.append(hist[key])
-        meanpixel=sum(normalcounts)/len(normalcounts)
+    meanpixel=sum(normalcounts)/len(normalcounts)
     while(len(greatareas)>0):
         topkey=greatareas.pop(0)
         locs=numpy.where(area==topkey)
@@ -1769,8 +1773,9 @@ def resegmentinput(inputlabels,minthres,maxthres,minlw,maxlw):
             labels=resegdivideloop(labels,maxthres,maxlw)
             outputlabel,misslabel,localcolortable=relabel(labels)
             if lastgreatarea==greatareas and len(lastgreatarea)!=0:
-                labels=manualresegdivide(labels)
                 print('lastgreatarea:',lastgreatarea)
+                labels=manualresegdivide(labels)
+
             lastgreatarea[:]=greatareas[:]
         #validation,godivide,gocombine=resegvalidation(minthres,maxthres,hist)
         if gocombine==True:
@@ -1778,8 +1783,9 @@ def resegmentinput(inputlabels,minthres,maxthres,minlw,maxlw):
             outputlabel,misslabel,localcolortable=relabel(labels)
             if lasttinyarea==tinyareas and len(lasttinyarea)!=0:
                 #to manual combine or manual remove tiny thing
-                labels=manualresegcombine(labels)
                 print('lasttinyarea:',lasttinyarea)
+                labels=manualresegcombine(labels)
+
             lasttinyarea[:]=tinyareas[:]
         unique,counts=numpy.unique(labels,return_counts=True)
         unique=unique[1:]
