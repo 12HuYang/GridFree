@@ -1481,7 +1481,7 @@ def resegdivideloop(area,maxthres,maxlw):
     hist=dict(zip(unique,counts))
     sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
     topkey=sortedkeys.pop(0)
-    while len(sortedkeys)>0:
+    while len(sortedkeys)>=0:
         print('topkey=',topkey,hist[topkey])
         topkeylocs=numpy.where(area==topkey)
         ulx,uly=min(topkeylocs[1]),min(topkeylocs[0])
@@ -1527,15 +1527,25 @@ def resegdivideloop(area,maxthres,maxlw):
                     if hist[topkey]>maxthres or topkeylw>maxlw:
                         if topkey not in greatareas:
                             greatareas.append(topkey)
-                        topkey=sortedkeys.pop(0)
+                        if len(sortedkeys)>0:
+                            topkey=sortedkeys.pop(0)
+                        else:
+                            return area
                     else:
                         break
             else:
-                topkey=sortedkeys.pop(0)
+                if len(sortedkeys)>0:
+                    topkey=sortedkeys.pop(0)
+                else:
+                    return area
+
                 #if topkey not in greatareas:
                 #    greatareas.append(topkey)
         else:
-            topkey=sortedkeys.pop(0)
+            if len(sortedkeys)>0:
+                topkey=sortedkeys.pop(0)
+            else:
+                return area
     return area
 
 def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
@@ -1547,7 +1557,7 @@ def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
     hist=dict(zip(unique,counts))
     sortedkeys=list(sorted(hist,key=hist.get))
     topkey=sortedkeys.pop(0)
-    while len(sortedkeys)>0:
+    while len(sortedkeys)>=0:
         print('tinytopkey=',topkey,hist[topkey])
         topkeylocs=numpy.where(area==topkey)
         ulx,uly=min(topkeylocs[1]),min(topkeylocs[0])
@@ -1645,14 +1655,23 @@ def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
                 if len(poscombines)==0 and stop==False:  #combine to the closest one
                     if topkey not in tinyareas:
                         tinyareas.append(topkey)
-                topkey=sortedkeys.pop(0)
+                if len(sortedkeys)>0:
+                    topkey=sortedkeys.pop(0)
+                else:
+                    return area
             else:
                 #if topkey not in tinyareas:
                 #    tinyareas.append(topkey)
-                topkey=sortedkeys.pop(0)
+                if len(sortedkeys)>0:
+                    topkey=sortedkeys.pop(0)
+                else:
+                    return area
 
         else:
-            topkey=sortedkeys.pop(0)
+            if len(sortedkeys)>0:
+                topkey=sortedkeys.pop(0)
+            else:
+                return area
 
     return area
 
