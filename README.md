@@ -1,18 +1,17 @@
 # GridFree: A pixel-level label tools to segment high-throughput images
 ## Implement Python version >= 3.6.5
+* install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/FreeCADITS/master/Training_intro.png)-->
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/compare.png)
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/normaldistribution.png)-->
 <!--#### RUN ```pip3 install plantlabeller``` to install from terminal, if you cannot run ```pip3```, use ```python3 -m pip install plantlabeller```.
 #### Linux user may need to use ```sudo pip3 install plantlabeller``` or ```sudo python3 -m pip install plantlabeller```.-->
 #### MacOS
-* install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 * execute ```python3 -m pip install -r requirements.txt``` to install required packages
 <!--* execute ```brew install gdal``` to install required packages
 * execute ```python3 -m pip install rasterio``` to install required packages-->
 * execute ```./run``` on a terminal to run the software
 #### Linux OS
-* install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 * execute ```python3 -m pip install -r requirements.txt``` to install required packages
 <!--* execute ```sudo add-apt-repository ppa:ubuntugis/ppa```
 * execute ```sudo apt-get update```
@@ -20,7 +19,6 @@
 * execute ```python3 -m pip install rasterio``` -->
 * execute ```./run``` on a terminal to run the software
 #### Windows OS 
-* install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 * run ```cmd``` go to the path you downloaded GridFree
 * execute ```py -m pip install -r requirements.txt``` to install required packages
 * execute ```py -m pip install opencv-python``` for opencv package
