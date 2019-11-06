@@ -230,7 +230,7 @@ def commentoutrasterio():
 def Open_Multifile():
     global Multiimage,Multigray,Multitype,Multiimagebands,changefileframe,imageframe,Multigraybands,filenames
     global changefiledrop,filedropvar,originbandarray,displaybandarray,clusterdisplay,currentfilename,resviewframe
-    global refsubframe,outputbutton,reseglabels,refbutton,figcanvas
+    global refsubframe,outputbutton,reseglabels,refbutton,figcanvas,loccanvas
 
     MULTIFILES=filedialog.askopenfilenames()
     if len(MULTIFILES)>0:
@@ -249,10 +249,11 @@ def Open_Multifile():
         bandchoice['NDI'].set('1')
         refbutton.config(state=DISABLED)
         figcanvas.delete(ALL)
+        #loccanvas=None
         for widget in refsubframe.winfo_children():
             widget.config(state=DISABLED)
-        for widget in resviewframe.winfo_children():
-            widget.config(state=DISABLED)
+        #for widget in resviewframe.winfo_children():
+        #    widget.config(state=DISABLED)
         if outputbutton is not None:
             outputbutton.config(state=DISABLED)
         for i in range(len(MULTIFILES)):
@@ -268,8 +269,14 @@ def Open_Multifile():
         currentfilename=filenames[0]
         for i in range(len(cluster)):
             bandchoice[cluster[i]].set('')
+        #changedisplayimg(imageframe,'Origin')
+        kmeans.set(2)
+        reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],1))
+        colordicesband=kmeansclassify(['LabOstu'],reshapemodified_tif)
+        generateimgplant(colordicesband)
         changedisplayimg(imageframe,'Origin')
-        kmeans.set(1)
+        bandchoice['LabOstu'].set('1')
+
 
 
 
@@ -1241,7 +1248,7 @@ def resegment():
     axistest.drawdots(25,325,375,25,bin_edges,y_bins,scaledDatalist,figcanvas)
 
 
-    loccanvas=figcanvas
+    #loccanvas=figcanvas
     #minx=25
     #maxx=375
     #maxy=325
@@ -1280,47 +1287,47 @@ def cal_xvalue(x):
 
 
 def item_enter(event):
-    global loccanvas
-    loccanvas.config(cursor='hand2')
-    loccanvas._restorItem=None
-    loccanvas._restoreOpts=None
-    itemType=loccanvas.type(CURRENT)
+    global figcanvas
+    figcanvas.config(cursor='hand2')
+    figcanvas._restorItem=None
+    figcanvas._restoreOpts=None
+    itemType=figcanvas.type(CURRENT)
     #print(itemType)
 
     pass
 
 def item_leave(event):
-    global loccanvas
+    global figcanvas
     pass
 
 def item_start_drag(event):
-    global loccanvas,linelocs
-    itemType=loccanvas.type(CURRENT)
+    global figcanvas,linelocs
+    itemType=figcanvas.type(CURRENT)
     print(itemType)
     if itemType=='line':
-        fill=loccanvas.itemconfigure(CURRENT,'fill')[4]
+        fill=figcanvas.itemconfigure(CURRENT,'fill')[4]
         if fill=='red':
-            loccanvas._lastX=event.x
+            figcanvas._lastX=event.x
             #loccanvas._lastY=event.y
             linelocs[0]=event.x
         if fill=='orange':
-            loccanvas._lastX=event.x
+            figcanvas._lastX=event.x
             #loccanvas._lastY=event.y
             linelocs[1]=event.x
         if fill=='blue':
-            loccanvas._lastY=event.y
+            figcanvas._lastY=event.y
             linelocs[2]=event.y
             #print('blue')
         if fill=='purple':
-            loccanvas._lastY=event.y
+            figcanvas._lastY=event.y
             linelocs[3]=event.y
             #print('purple')
         if fill!='red' and fill!='orange':
-            loccanvas._lastX=None
+            figcanvas._lastX=None
         if fill!='blue' and fill!='purple':
-            loccanvas._lastY=None
+            figcanvas._lastY=None
     else:
-        tup=loccanvas.find_all()
+        tup=figcanvas.find_all()
         print(tup)
         tup=list(tup)
         redarrow=tup[-4]
@@ -1329,27 +1336,35 @@ def item_start_drag(event):
         purplearrow=tup[-1]
         currx=event.x
         curry=event.y
+        if currx<25:
+            currx=25
+        if currx>375:
+            currx=375
+        if curry<25:
+            curry=25
+        if curry>325:
+            curry=325
         dist=[abs(linelocs[0]-currx),abs(linelocs[1]-currx),abs(linelocs[2]-curry),abs(linelocs[3]-curry)]
         print(dist)
         #print(loccanvas.bbox(redarrow),loccanvas.bbox(orangearrow),loccanvas.bbox(bluearrow),loccanvas.bbox(purplearrow))
         mindist=min(dist)
         mindistind=dist.index(mindist)
         if mindistind==0:
-            loccanvas.move(redarrow,currx-linelocs[0],0)
-            loccanvas._lastX=currx
+            figcanvas.move(redarrow,currx-linelocs[0],0)
+            figcanvas._lastX=currx
             linelocs[0]=currx
         if mindistind==1:
-            loccanvas.move(orangearrow,currx-linelocs[1],0)
-            loccanvas._lastX=currx
+            figcanvas.move(orangearrow,currx-linelocs[1],0)
+            figcanvas._lastX=currx
             linelocs[1]=currx
         if mindistind==2:
-            loccanvas.move(bluearrow,0,curry-linelocs[2])
+            figcanvas.move(bluearrow,0,curry-linelocs[2])
             linelocs[2]=curry
-            loccanvas._lastY=curry
+            figcanvas._lastY=curry
         if mindistind==3:
-            loccanvas.move(purplearrow,0,curry-linelocs[3])
+            figcanvas.move(purplearrow,0,curry-linelocs[3])
             linelocs[3]=curry
-            loccanvas._lastY=curry
+            figcanvas._lastY=curry
 
         #print(tup)
         #loccanvas._lastX=None
@@ -1357,7 +1372,7 @@ def item_start_drag(event):
     pass
 
 def item_drag(event):
-    global loccanvas,linelocs,xvalue
+    global figcanvas,linelocs,xvalue
     x=event.x
     y=event.y
     if x<25:
@@ -1369,7 +1384,7 @@ def item_drag(event):
     if y>325:
         y=325
     try:
-        fill=loccanvas.itemconfigure(CURRENT,'fill')[4]
+        fill=figcanvas.itemconfigure(CURRENT,'fill')[4]
         print(fill)
     except:
         return
@@ -1381,11 +1396,11 @@ def item_drag(event):
     #    return
 
     if fill=='red' or fill=='orange':
-        loccanvas.move(CURRENT,x-loccanvas._lastX,0)
+        figcanvas.move(CURRENT,x-figcanvas._lastX,0)
     if fill=='blue' or fill=='purple':
-        loccanvas.move(CURRENT,0,y-loccanvas._lastY)
-    loccanvas._lastX=x
-    loccanvas._lastY=y
+        figcanvas.move(CURRENT,0,y-figcanvas._lastY)
+    figcanvas._lastX=x
+    figcanvas._lastY=y
     if fill=='red':
         linelocs[0]=x
     if fill=='orange':
@@ -1404,7 +1419,7 @@ def item_drag(event):
 def extraction(frame):
     global kernersizes,multi_results,workingimg,outputimgdict,outputimgbands,pixelmmratio
     global currentlabels,panelA,outputbutton,reseglabels,refbutton,figcanvas,resegbutton,refvar
-    global refsubframe
+    global refsubframe,loccanvas
     if int(kmeans.get())==1:
         messagebox.showerror('Invalid Class #',message='#Class = 1, try change it to 2 or more, and refresh Color-Index.')
         return
@@ -1636,7 +1651,7 @@ def extraction(frame):
     axistest.drawdots(25,325,375,25,bin_edges,y_bins,scaledDatalist,figcanvas)
 
 
-    loccanvas=figcanvas
+    #loccanvas=figcanvas
     #minx=25
     #maxx=375
     #maxy=325
