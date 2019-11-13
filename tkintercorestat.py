@@ -200,6 +200,57 @@ def labelgapnp(area):
         area[key[0],key[1]]=nodelist[key].label
     return area
 
+def tempbanddenoicecommentout(area,labelname):
+    subarea=numpy.copy(area)
+    tempsubarea=subarea/labelname
+    newtempsubarea=numpy.where(tempsubarea!=1.,0,1)
+    newsubarea=boundarywatershed(newtempsubarea,1,'inner')
+    labelunique,labcounts=numpy.unique(newsubarea,return_counts=True)
+    labelunique=labelunique.tolist()
+    if len(labelunique)>2:
+        hist=dict(zip(labelunique[1:],labcounts[1:]))
+        sortedlabels=sorted(hist,key=hist.get,reverse=True)
+        copylabels=numpy.copy(area)
+        copylabels=numpy.where(copylabels==labelname,0,copylabels)
+        toplabels=numpy.where(newsubarea==sortedlabels[0])
+        copylabels[toplabels]=labelname
+        return copylabels
+    else:
+        return subarea
+
+
+def tempbanddenoice(area,labelname,benchmark):
+    print(benchmark)
+    gaps={}
+    last=None
+    copyarea=numpy.copy(area)
+    nodearea=numpy.where(copyarea==labelname)
+    print(nodearea)
+    yloc=nodearea[0].tolist()
+    for i in range(len(yloc)):
+        curry=yloc[i]
+        if last==None:
+            last=curry
+            continue
+        else:
+            diff=curry-last
+            if diff>1:
+                gaps.update({i:diff})
+            last=curry
+    #sortedgaps=sorted(gaps,key=gaps.get,reverse=True)
+    print(gaps)
+    keys=list(gaps.keys())
+    if len(keys)>0:
+        gap=keys[0]
+        noisey=nodearea[0][gap:]
+        noisex=nodearea[1][gap:]
+        noiselocs=(noisey,noisex)
+        print(noiselocs)
+        copyarea[noiselocs]=0
+        return copyarea
+    else:
+        return area
+
 
 def labelgap(area):
     x=[0,-1,-1,-1,0,1,1,1]
@@ -1648,7 +1699,7 @@ def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
                                     hist=dict(zip(unique,counts))
                                     print('hist length='+str(len(counts)-1))
                                     print('max label='+str(area.max()))
-                                    sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
+                                    sortedkeys=list(sorted(hist,key=hist.get))
                                     break
 
                         #topkey=sortedkeys.pop(0)
@@ -1682,6 +1733,7 @@ def firstprocess(input,validmap,avgarea):
     boundaryarea=boundaryarea.astype(int)
     originmethod,misslabel,localcolortable=relabel(boundaryarea)
     labels=numpy.where(boundaryarea<1,0,boundaryarea)
+    labels=renamelabels(labels)
     copylabels=numpy.zeros(labels.shape)
     copylabels[:,:]=labels
     subtempdict={'labels':copylabels}
@@ -1716,16 +1768,18 @@ def resegvalidation(minthres,maxthres,hist,minlw,maxlw,area):
                 break
     return res,godivide,gocombine
 
-def manualresegdivide(area):
+def manualresegdivide(area,maxthres,minthres):
     global greatareas,exceptions
     unique, counts = numpy.unique(area, return_counts=True)
     hist=dict(zip(unique,counts))
     del hist[0]
+
     normalcounts=[]
     for key in hist.keys():
         if key not in greatareas and key not in tinyareas:
             normalcounts.append(hist[key])
     meanpixel=sum(normalcounts)/len(normalcounts)
+
     while(len(greatareas)>0):
         topkey=greatareas.pop(0)
         locs=numpy.where(area==topkey)
@@ -1736,9 +1790,10 @@ def manualresegdivide(area):
         tempsubarea=subarea/topkey
         newtempsubarea=numpy.where(tempsubarea!=1.,0,1).astype(int)
         antitempsubarea=numpy.where((tempsubarea!=1.) & (tempsubarea!=0),subarea,0)
-        times=len(locs[0])/meanpixel
-        averagearea=len(locs[0])/times
-        newsubarea=manualboundarywatershed(newtempsubarea,averagearea)
+        #times=len(locs[0])/meanpixel
+        #averagearea=len(locs[0])/times
+        #averagearea=(minthres+maxthres)/2
+        newsubarea=manualboundarywatershed(newtempsubarea,meanpixel)
         labelunique,labcounts=numpy.unique(newsubarea,return_counts=True)
         labelunique=labelunique.tolist()
         labcounts=labcounts.tolist()
@@ -1793,7 +1848,7 @@ def resegmentinput(inputlabels,minthres,maxthres,minlw,maxlw):
             outputlabel,misslabel,localcolortable=relabel(labels)
             if lastgreatarea==greatareas and len(lastgreatarea)!=0:
                 print('lastgreatarea:',lastgreatarea)
-                labels=manualresegdivide(labels)
+                labels=manualresegdivide(labels,maxthres,minthres)
 
             lastgreatarea[:]=greatareas[:]
         #validation,godivide,gocombine=resegvalidation(minthres,maxthres,hist)
@@ -1811,6 +1866,7 @@ def resegmentinput(inputlabels,minthres,maxthres,minlw,maxlw):
         counts=counts[1:]
         hist=dict(zip(unique,counts))
         validation,godivide,gocombine=resegvalidation(minthres,maxthres,hist,minlw,maxlw,labels)
+    labels=renamelabels(labels)
     unique,counts=numpy.unique(labels,return_counts=True)
     #unique=unique[1:]
     #counts=counts[1:]
@@ -2311,6 +2367,122 @@ def init(input,validmap,map,layers,ittimes,coin):
 
     #return labels,res,colortable,greatareas,tinyareas,coinparts,labeldict
     return labels,res,colortable,labeldict
+
+def restore_value(dz,shape):
+    a=numpy.ones(shape)*dz
+    return a
+
+def pool_forward(A_prev, hparameters, mode = "max"):
+    """
+    Implements the forward pass of the pooling layer
+
+    Arguments:
+    A_prev -- Input data, numpy array of shape (m, n_H_prev, n_W_prev, n_C_prev)
+    hparameters -- python dictionary containing "f" and "stride"
+    mode -- the pooling mode you would like to use, defined as a string ("max" or "average")
+
+    Returns:
+    A -- output of the pool layer, a numpy array of shape (m, n_H, n_W, n_C)
+    cache -- cache used in the backward pass of the pooling layer, contains the input and hparameters
+    """
+
+    # Retrieve dimensions from the input shape
+    (n_H_prev, n_W_prev) = A_prev.shape
+    #print(A_prev)
+
+    # Retrieve hyperparameters from "hparameters"
+    f = hparameters["f"]
+    stride = hparameters["stride"]
+
+    # Define the dimensions of the output
+    n_H = int(1 + (n_H_prev - f) / stride)
+    n_W = int(1 + (n_W_prev - f) / stride)
+
+    # Initialize output matrix A
+    A = numpy.zeros((n_H, n_W))
+
+    ### START CODE HERE ###
+    #for i in range(0,m):                         # loop over the training examples
+    for h in range(0,n_H):                     # loop on the vertical axis of the output volume
+        for w in range(0,n_W):                 # loop on the horizontal axis of the output volume
+#            for c in range (0,n_C):            # loop over the channels of the output volume
+                #a_prev=A_prev[i]
+                # Find the corners of the current "slice" (≈4 lines)
+            vert_start = stride*h
+            vert_end = stride*h+f
+            horiz_start = stride*w
+            horiz_end = stride*w+f
+            #print(vert_start,vert_end,horiz_start,horiz_end)
+            # Use the corners to define the current slice on the ith training example of A_prev, channel c. (≈1 line)
+            a_prev_slice = A_prev[vert_start:vert_end,horiz_start:horiz_end]
+            #print(a_prev_slice)
+            # Compute the pooling operation on the slice. Use an if statment to differentiate the modes. Use np.max/np.mean.
+            if mode == "max":
+                A[h, w] = numpy.max(a_prev_slice)
+                #if A[h,w]>0:
+                #    print('max',A[h,w],'h',h,'w',w)
+                #    print(a_prev_slice)
+            elif mode == "average":
+                A[h, w] = numpy.mean(a_prev_slice)
+
+    ### END CODE HERE ###
+
+    # Store the input and hparameters in "cache" for pool_backward()
+    cache = (A_prev, hparameters)
+
+    # Making sure your output shape is correct
+    assert(A.shape == (n_H, n_W))
+
+    return A, cache
+
+def pool_backward(dA, cache):
+    """
+    Implements the backward pass of the pooling layer
+
+    Arguments:
+    dA -- gradient of cost with respect to the output of the pooling layer, same shape as A
+    cache -- cache output from the forward pass of the pooling layer, contains the layer's input and hparameters
+    mode -- the pooling mode you would like to use, defined as a string ("max" or "average")
+
+    Returns:
+    dA_prev -- gradient of cost with respect to the input of the pooling layer, same shape as A_prev
+    """
+
+    # Retrieve information from cache (≈1 line)
+    (A_prev, hparameters) = cache
+
+    # Retrieve hyperparameters from "hparameters" (≈2 lines)
+    stride = hparameters["stride"]
+    f = hparameters["f"]
+
+    # Retrieve dimensions from A_prev's shape and dA's shape (≈2 lines)
+    #m, n_H_prev, n_W_prev, n_C_prev = A_prev.shape
+    #m, n_H, n_W, n_C = dA.shape
+    n_H,n_W=dA.shape
+    # Initialize dA_prev with zeros (≈1 line)
+    dA_prev = numpy.zeros(A_prev.shape)
+
+    #for i in range(m):                       # loop over the training examples
+
+        # select training example from A_prev (≈1 line)
+        #a_prev = A_prev[i,:]
+
+    for h in range(n_H):                   # loop on the vertical axis
+        for w in range(n_W):               # loop on the horizontal axis
+            #for c in range(n_C):           # loop over the channels (depth)
+
+                # Find the corners of the current "slice" (≈4 lines)
+                vert_start = stride*h
+                vert_end = stride*h+f
+                horiz_start = stride*w
+                horiz_end = stride*w+f
+                da=dA[h,w]
+                shape=(f,f)
+                dA_prev[vert_start:vert_end,horiz_start:horiz_end]+=restore_value(da,shape)
+
+    assert(dA_prev.shape == A_prev.shape)
+
+    return dA_prev
 
 def manual(labels,map,boundary,colortable,greatareas,tinyareas):
     labels=manualdivide(labels,greatareas)
