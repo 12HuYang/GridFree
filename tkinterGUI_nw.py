@@ -38,7 +38,8 @@ displayimg={'Origin':None,
             'Gray/NIR':None,
             'ColorIndices':None,
             'Output':None}
-cluster=['LabOstu','NDI'] #,'Greenness','VEG','CIVE','MExG','NDVI','NGRDI','HEIGHT']
+#cluster=['LabOstu','NDI'] #,'Greenness','VEG','CIVE','MExG','NDVI','NGRDI','HEIGHT']
+cluster=['LabOstu','NDI','Greenness','VEG','CIVE','MExG','NDVI','NGRDI','HEIGHT','Band1','Band2','Band3']
 filenames=[]
 
 Multiimage={}
@@ -718,7 +719,7 @@ def showcounting(tup):
     if labels.shape[1]<850:
         font=ImageFont.truetype('cmb10.ttf',size=16)
     else:
-        font=ImageFont.truetype('cmb10.ttf',size=28)
+        font=ImageFont.truetype('cmb10.ttf',size=20)
     if len(coinparts)>0:
         tempband=np.zeros(labels.shape)
         coinkeys=coinparts.keys()
@@ -746,11 +747,12 @@ def showcounting(tup):
             else:
                 canvastext = 'No label'
             if imgtypevar.get()=='0':
-                draw.text((midx-1, midy+1), text=canvastext, font=font, fill='black')
-                draw.text((midx+1, midy+1), text=canvastext, font=font, fill='black')
-                draw.text((midx-1, midy-1), text=canvastext, font=font, fill='black')
-                draw.text((midx+1, midy-1), text=canvastext, font=font, fill='black')
-                draw.text((midx,midy),text=canvastext,font=font,fill=(141,2,31,0))
+                draw.text((midx-1, midy+1), text=canvastext, font=font, fill='white')
+                draw.text((midx+1, midy+1), text=canvastext, font=font, fill='white')
+                draw.text((midx-1, midy-1), text=canvastext, font=font, fill='white')
+                draw.text((midx+1, midy-1), text=canvastext, font=font, fill='white')
+                #draw.text((midx,midy),text=canvastext,font=font,fill=(141,2,31,0))
+                draw.text((midx,midy),text=canvastext,font=font,fill='black')
 
 
     '''   kernelsize computation
@@ -851,11 +853,12 @@ def showcounting(tup):
     content='item count:'+str(len(uniquelabels))+'\n File: '+filename
     contentlength=len(content)+50
     #rectext=canvas.create_text(10,10,fill='black',font='Times 16',text=content,anchor=NW)
-    draw.text((10-1, 10+1), text=content, font=font, fill='black')
-    draw.text((10+1, 10+1), text=content, font=font, fill='black')
-    draw.text((10-1, 10-1), text=content, font=font, fill='black')
-    draw.text((10+1, 10-1), text=content, font=font, fill='black')
-    draw.text((10,10),text=content,font=font,fill=(141,2,31,0))
+    draw.text((10-1, 10+1), text=content, font=font, fill='white')
+    draw.text((10+1, 10+1), text=content, font=font, fill='white')
+    draw.text((10-1, 10-1), text=content, font=font, fill='white')
+    draw.text((10+1, 10-1), text=content, font=font, fill='white')
+    #draw.text((10,10),text=content,font=font,fill=(141,2,31,0))
+    draw.text((10,10),text=content,font=font,fill='black')
     #image.save(originfile+'-countresult'+extension,"JPEG")
     firstimg=Multigraybands[currentfilename]
     height,width=firstimg.size
@@ -1203,6 +1206,7 @@ def resegment():
     maxlw=max(lwthresholds)
     minlw=min(lwthresholds)
     print(minthres,maxthres)
+    #labels=np.copy(reseglabels)
     labels=np.copy(reseglabels)
     #if reseglabels is None:
     #    reseglabels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres,minlw,maxlw)
@@ -1757,10 +1761,10 @@ def removeedge(bands):
 def clustercontent(var):
     global cluster,bandchoice,contentframe
     bandchoice={}
-    if var=='0':
-        cluster=['LabOstu','NDI']
-    if var=='1':
-        cluster=['Greenness','VEG','CIVE','MExG','NDVI','NGRDI','HEIGHT','Band1','Band2','Band3']
+    #if var=='0':
+
+    #if var=='1':
+    cluster=['LabOstu','NDI','Greenness','VEG','CIVE','MExG','NDVI','NGRDI','HEIGHT','Band1','Band2','Band3']
     for widget in contentframe.winfo_children():
         widget.pack_forget()
     for key in cluster:
@@ -1944,7 +1948,11 @@ def refchoice(refsubframe):
         #tempband=cv2.resize(processlabel.astype('float32'),(int(processlabel.shape[1]/ratio),int(processlabel.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         print(ratio)
         if int(ratio)>1:
-            convband,cache=tkintercorestat.pool_forward(processlabel,{"f":int(ratio),"stride":int(ratio)})
+            if processlabel.shape[0]*processlabel.shape[1]>850*850:
+                convband,cache=tkintercorestat.pool_forward(processlabel,{"f":int(ratio),"stride":int(ratio)})
+            else:
+                cache=(np.zeros((processlabel.shape[0]*ratio,processlabel.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
+                convband=tkintercorestat.pool_backward(processlabel,cache)
         else:
             convband=processlabel
         highlightcoin()
