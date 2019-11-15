@@ -324,6 +324,7 @@ def singleband(file):
     bands=bands.astype('float32')
     bands=bands/ostu
     #display purpose
+    '''
     if imgtypevar.get()=='0':
         if bandsize[0]*bandsize[1]>2000*2000:
             ratio=findratio([bandsize[0],bandsize[1]],[2000,2000])
@@ -336,6 +337,11 @@ def singleband(file):
             #ratio=findratio([bandsize[0],bandsize[1]],[500,500])
             #ratio=float(1/ratio)
             ratio=1
+    '''
+    if bandsize[0]*bandsize[1]>2000*2000:
+        ratio=findratio([bandsize[0],bandsize[1]],[2000,2000])
+    else:
+        ratio=1
     originbands={}
     displays={}
     if 'LabOstu' not in originbands:
@@ -719,7 +725,7 @@ def showcounting(tup):
     if labels.shape[1]<850:
         font=ImageFont.truetype('cmb10.ttf',size=16)
     else:
-        font=ImageFont.truetype('cmb10.ttf',size=20)
+        font=ImageFont.truetype('cmb10.ttf',size=22)
     if len(coinparts)>0:
         tempband=np.zeros(labels.shape)
         coinkeys=coinparts.keys()
@@ -1570,14 +1576,15 @@ def extraction(frame):
         workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
     else:
         #if nonzeroratio>0.16:
-        if imgtypevar.get()=='0':
-            print('imgtype',imgtypevar.get())
-            if currentlabels.shape[0]*currentlabels.shape[1]>1000*1000:
-                ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
-                workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            else:
-                ratio=1
-                workingimg=np.copy(currentlabels)
+        #if imgtypevar.get()=='0':
+        print('imgtype',imgtypevar.get())
+        if currentlabels.shape[0]*currentlabels.shape[1]>1000*1000:
+            ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
+            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        else:
+            ratio=1
+            workingimg=np.copy(currentlabels)
+        '''
         if imgtypevar.get()=='1':
             print('imgtype',imgtypevar.get())
             if currentlabels.shape[0]*currentlabels.shape[1]>1000*1000:
@@ -1586,6 +1593,7 @@ def extraction(frame):
             else:
                 ratio=1
                 workingimg=np.copy(currentlabels)
+        '''
 
     pixelmmratio=1.0
         #else:
@@ -1817,6 +1825,7 @@ def customcoin(event,processlabels,tempband):
     print(tempband.shape)
     coinlabel=tempband[y,x]
     print('coinlabel',coinlabel,'x',x,'y',y)
+    refarea=None
     if coinlabel==0:
         #messagebox.showerror('Invalid',message='Please pick areas have items.')
         return
