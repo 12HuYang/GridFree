@@ -917,6 +917,21 @@ def export_result(iterver):
             draw=ImageDraw.Draw(imageband)
             uniquelabels=list(colortable.keys())
             tempdict={}
+            if coinsize.get()=='1':
+                if refarea is not None:
+                    pixelmmratio=((19.05/2)**2*3.14/len(refarea[0]))**0.5
+                else:
+                    pixelmmratio=1.0
+            else:
+                if coinsize.get()=='3':
+                    specarea=float(sizeentry.get())
+                    if refarea is not None:
+                        pixelmmratio=(specarea/len(refarea[0]))**0.5
+                    else:
+                        pixelmmratio=1.0
+                else:
+                    pixelmmratio=1.0
+            print('coinsize',coinsize.get(),'pixelmmratio',pixelmmratio)
             for uni in uniquelabels:
                 if uni !=0:
                     pixelloc = np.where(labels == uni)
@@ -991,7 +1006,7 @@ def export_result(iterver):
                         print('kernelwidth='+str(width*pixelmmratio))
                         print('kernellength='+str(kernellength*pixelmmratio))
                         #print('kernelwidth='+str(kernelwidth*pixelmmratio))
-                        tempdict.update({uni:[kernellength,width,kernellength*pixelmmratio,width*pixelmmratio]})
+                        tempdict.update({uni:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
 
 
                     #print(event.x, event.y, labels[event.x, event.y], ulx, uly, rlx, rly)
@@ -1033,9 +1048,12 @@ def export_result(iterver):
                 subarea=subarea.tolist()
                 amount=len(uniloc[0])
                 print(amount)
-                sizes=currentsizes[uni]
+                try:
+                    sizes=currentsizes[uni]
+                except:
+                    continue
                 #templist=[amount,length,width]
-                templist=[amount,sizes[0],sizes[1],sizes[2],sizes[3]]
+                templist=[amount,sizes[0],sizes[1],sizes[2],sizes[3],sizes[4]]
                 tempdict={colortable[uni]:templist+indeclist}  #NIR,Redeyes,R,G,B,NDVI,area
                 print(tempdict)
                 for ki in range(len(indicekeys)):
@@ -1045,18 +1063,18 @@ def export_result(iterver):
                     for k in range(len(uniloc[0])):
                         #print(uniloc[0][k],uniloc[1][k])
                         try:
-                            tempdict[colortable[uni]][5+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
+                            tempdict[colortable[uni]][6+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
                         except IndexError:
                             print(uniloc[0][k],uniloc[1][k])
-                        tempdict[colortable[uni]][6+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
+                        tempdict[colortable[uni]][7+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
                         pixellist.append(originNDVI[uniloc[0][k]][uniloc[1][k]])
-                    tempdict[colortable[uni]][ki*3+5]=tempdict[colortable[uni]][ki*3+5]/amount
-                    tempdict[colortable[uni]][ki*3+7]=np.std(pixellist)
+                    tempdict[colortable[uni]][ki*3+6]=tempdict[colortable[uni]][ki*3+6]/amount
+                    tempdict[colortable[uni]][ki*3+8]=np.std(pixellist)
                 datatable.update(tempdict)
             filename=path+'/'+originfile+'-outputdata.csv'
             with open(filename,mode='w') as f:
                 csvwriter=csv.writer(f)
-                rowcontent=['Index','Plot','Area(#pixel)','Length(#pixel)','Width(#pixel)','Length(mm)','Width(mm)']
+                rowcontent=['Index','Plot','Area(#pixel)','Length(#pixel)','Width(#pixel)','Area(mm2)','Length(mm)','Width(mm)']
                 for key in indicekeys:
                     rowcontent.append('avg-'+str(key))
                     rowcontent.append('sum-'+str(key))
