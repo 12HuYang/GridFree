@@ -28,6 +28,7 @@
 * Windows 64 bit OS execute ```py -m pip install rasterio‑1.0.24+gdal24‑cp36‑cp36m‑win_amd64.whl```-->
 * execute ```python tkinterGUI_nw.py``` to run the software
 * ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/win-smallw-startdemo.gif)
+* YouTube: https://youtu.be/l4XJyWgPTHs
 <!--#### dup1OUTPUT.tif 
 dup1OUTPUT.tif is a sample filed image, download it to GridFree folder:
 https://drive.google.com/file/d/1hZzEpsqDWq7yrXRgDWwbDmQCY2iGni3Z/view?usp=sharing-->
