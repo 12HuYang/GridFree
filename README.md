@@ -19,7 +19,7 @@
 * execute ```python3 -m pip install rasterio``` -->
 * execute ```./run``` on a terminal to run the software
 #### Windows OS 
-* run ```cmd``` go to the path you downloaded GridFree
+* run ```cmd``` go to the path you downloaded GridFree, you can execute ```cd``` space ```your download path```
 * execute ```python -m pip install -r requirements.txt``` to install required packages
 * execute ```python -m pip install opencv-python``` for opencv package
 * execute ```python -m pip install scikit-image``` for package installation
