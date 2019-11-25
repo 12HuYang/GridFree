@@ -20,13 +20,13 @@
 * execute ```./run``` on a terminal to run the software
 #### Windows OS 
 * run ```cmd``` go to the path you downloaded GridFree
-* execute ```py -m pip install -r requirements.txt``` to install required packages
-* execute ```py -m pip install opencv-python``` for opencv package
-* execute ```py -m pip install scikit-image``` for package installation
-* execute ```py -m pip install sklearn``` for package installation
+* execute ```python -m pip install -r requirements.txt``` to install required packages
+* execute ```python -m pip install opencv-python``` for opencv package
+* execute ```python -m pip install scikit-image``` for package installation
+* execute ```python -m pip install sklearn``` for package installation
 <!--* Windows 32bit OS execute ```py -m pip install rasterio‑1.0.24+gdal24‑cp36‑cp36m‑win32.whl```
 * Windows 64 bit OS execute ```py -m pip install rasterio‑1.0.24+gdal24‑cp36‑cp36m‑win_amd64.whl```-->
-* execute ```py tkinterGUI.py``` to run the software
+* execute ```py tkinterGUI_nw.py``` to run the software
 <!--#### dup1OUTPUT.tif 
 dup1OUTPUT.tif is a sample filed image, download it to GridFree folder:
 https://drive.google.com/file/d/1hZzEpsqDWq7yrXRgDWwbDmQCY2iGni3Z/view?usp=sharing-->
