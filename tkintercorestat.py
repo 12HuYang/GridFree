@@ -2350,12 +2350,12 @@ def init(input,validmap,map,layers,ittimes,coin):
         #    distance=ndi.distance_transform_edt(input)
         #    input=numpy.where(distance==1.0,0,input)
     '''
-    uniquelabel,labelcounts=numpy.unique(labellist,return_counts=True)
-    distance=ndi.distance_transform_edt(input)
-    localmax=peak_local_max(distance,labels=input,footprint=numpy.ones((3,3)),indices=False)
-    makers=ndi.label(localmax)[0]
-    labels=watershed(-distance,mask=input)
-    print(labels)
+    #uniquelabel,labelcounts=numpy.unique(labellist,return_counts=True)
+    #distance=ndi.distance_transform_edt(input)
+    #localmax=peak_local_max(distance,labels=input,footprint=numpy.ones((3,3)),indices=False)
+    #makers=ndi.label(localmax)[0]
+    #labels=watershed(-distance,makers,mask=input)
+    #print(labels)
 
     #lastlinecount=lastline
 
