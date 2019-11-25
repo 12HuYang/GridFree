@@ -47,3 +47,6 @@ Modify matplotlibrc file ADD: ```backend: TkAgg```
 - [1] ImageJ https://imagej.nih.gov/ij/download.html
 - [2] SeedCounter https://www.frontiersin.org/articles/10.3389/fpls.2016.01990/full
 - [3] GrainScan https://plantmethods.biomedcentral.com/articles/10.1186/1746-4811-10-23-->
+#### Seed Sample Demo
+![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/sampleseed-demo.gif)
+* YouTube: https://youtu.be/x0_ptDJphUM
