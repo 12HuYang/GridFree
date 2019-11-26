@@ -909,7 +909,10 @@ def export_result(iterver):
         labels=labeldict[itervalue]['labels']
         counts=labeldict[itervalue]['counts']
         colortable=labeldict[itervalue]['colortable']
-
+        #originheight,originwidth=Multigraybands[file].size
+        #copylabels=np.copy(labels)
+        #copylabels[refarea]=65535
+        #labels=cv2.resize(copylabels.astype('float32'),dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
         head_tail=os.path.split(file)
         originfile,extension=os.path.splitext(head_tail[1])
         if len(path)>0:
@@ -919,14 +922,18 @@ def export_result(iterver):
             tempdict={}
             if coinsize.get()=='1':
                 if refarea is not None:
+                    #realref=np.where(labels==65535.0)
                     pixelmmratio=((19.05/2)**2*3.14/len(refarea[0]))**0.5
+                    #pixelmmratio=((19.05/2)**2*3.14/len(realref[0]))**0.5
                 else:
                     pixelmmratio=1.0
             else:
                 if coinsize.get()=='3':
                     specarea=float(sizeentry.get())
                     if refarea is not None:
+                        #realref=np.where(labels==65535.0)
                         pixelmmratio=(specarea/len(refarea[0]))**0.5
+                        #pixelmmratio=(specarea/len(realref[0]))**0.5
                     else:
                         pixelmmratio=1.0
                 else:
@@ -934,7 +941,7 @@ def export_result(iterver):
             print('coinsize',coinsize.get(),'pixelmmratio',pixelmmratio)
             for uni in uniquelabels:
                 if uni !=0:
-                    pixelloc = np.where(labels == uni)
+                    pixelloc = np.where(labels == float(uni))
                     try:
                         ulx = min(pixelloc[1])
                     except:
@@ -1018,9 +1025,9 @@ def export_result(iterver):
             originheight,originwidth=Multigraybands[file].size
             image=imageband.resize([originwidth,originheight],resample=Image.BILINEAR)
             image.save(path+'/'+originfile+'-countresult'+'.png',"PNG")
-            originrestoredband=labels
+            originrestoredband=np.copy(labels)
             restoredband=originrestoredband.astype('float32')
-            restoredband=cv2.resize(src=restoredband,dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
+            #restoredband=cv2.resize(src=restoredband,dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
             print(restoredband.shape)
             currentsizes=kernersizes[file]
             indicekeys=list(originbandarray[file].keys())
@@ -1302,7 +1309,10 @@ def resegment():
     for i in range(len(data)):
         plotdata.append((data[i],lenwid[i]))
     scaledDatalist=[]
-    x_scalefactor=300/(maxx-minx)
+    try:
+        x_scalefactor=300/(maxx-minx)
+    except:
+        return
     y_scalefactor=250/(maxy-miny)
     for (x,y) in plotdata:
         xval=50+(x-minx)*x_scalefactor
