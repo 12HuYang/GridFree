@@ -7,18 +7,23 @@
 <!--#### RUN ```pip3 install plantlabeller``` to install from terminal, if you cannot run ```pip3```, use ```python3 -m pip install plantlabeller```.
 #### Linux user may need to use ```sudo pip3 install plantlabeller``` or ```sudo python3 -m pip install plantlabeller```.-->
 #### MacOS
+##### install
 * execute ```python3 -m pip install -r requirements.txt``` to install required packages
 <!--* execute ```brew install gdal``` to install required packages
 * execute ```python3 -m pip install rasterio``` to install required packages-->
+##### run the software
 * execute ```./run``` on a terminal to run the software
 #### Linux OS
+#####  install
 * execute ```python3 -m pip install -r requirements.txt``` to install required packages
 <!--* execute ```sudo add-apt-repository ppa:ubuntugis/ppa```
 * execute ```sudo apt-get update```
 * execute ```sudo apt-get install python-numpy gdal-bin libgdal-dev```
 * execute ```python3 -m pip install rasterio``` -->
+##### run the software
 * execute ```./run``` on a terminal to run the software
 #### Windows OS 
+##### install
 * run ```cmd``` go to the path you downloaded GridFree, you can execute ```cd``` space ```your download path```
 * execute ```python -m pip install -r requirements.txt``` to install required packages
 * execute ```python -m pip install opencv-python``` for opencv package
@@ -26,6 +31,7 @@
 * execute ```python -m pip install sklearn``` for package installation
 <!--* Windows 32bit OS execute ```py -m pip install rasterio‑1.0.24+gdal24‑cp36‑cp36m‑win32.whl```
 * Windows 64 bit OS execute ```py -m pip install rasterio‑1.0.24+gdal24‑cp36‑cp36m‑win_amd64.whl```-->
+##### run the software
 * execute ```python tkinterGUI_nw.py``` to run the software
 * ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/win-smallw-startdemo.gif)
 * YouTube: https://youtu.be/l4XJyWgPTHs
