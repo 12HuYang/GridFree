@@ -29,12 +29,12 @@
 * execute ```python -m pip install opencv-python``` for opencv package
 * execute ```python -m pip install scikit-image``` for package installation
 * execute ```python -m pip install sklearn``` for package installation
+* ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/win-smallw-startdemo.gif)
+* YouTube: https://youtu.be/l4XJyWgPTHs
 <!--* Windows 32bit OS execute ```py -m pip install rasterio‑1.0.24+gdal24‑cp36‑cp36m‑win32.whl```
 * Windows 64 bit OS execute ```py -m pip install rasterio‑1.0.24+gdal24‑cp36‑cp36m‑win_amd64.whl```-->
 ##### run the software
 * execute ```python tkinterGUI_nw.py``` to run the software
-* ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/win-smallw-startdemo.gif)
-* YouTube: https://youtu.be/l4XJyWgPTHs
 <!--#### dup1OUTPUT.tif 
 dup1OUTPUT.tif is a sample filed image, download it to GridFree folder:
 https://drive.google.com/file/d/1hZzEpsqDWq7yrXRgDWwbDmQCY2iGni3Z/view?usp=sharing-->
