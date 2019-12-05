@@ -101,20 +101,21 @@ def drawdots(ulx,uly,rlx,rly,x_bins,y_bins,datalist,canvas):
     minx=ulx
     maxx=rlx
 
-    canvas.create_line(ulx,uly,rlx,uly,arrow=LAST,width=2)
-    canvas.create_line(ulx,uly,ulx,rly,arrow=LAST,width=2)
-
+    canvas.create_line(ulx,uly,rlx,uly,width=2)
+    canvas.create_line(ulx,uly,ulx,rly,width=2)
+    canvas.create_line(ulx,rly,rlx,rly,width=2)
+    canvas.create_line(rlx,uly,rlx,rly,width=2)
     vlinelocs=[ulx,rlx]
     hlinelocs=[rly,uly]
 
-    canvas.create_text(ulx+5,rly-10,text='L+W',font=('Times',12),anchor=E)
-    canvas.create_text(rlx,uly+10,text='Area',font=('Times',12),anchor=N)
+    canvas.create_text(ulx-25-10,int(uly/2)+25,text='\n'.join('L+W'),font=('Times',12),anchor=E)
+    canvas.create_text(int(rlx/2)+50,uly+30,text='Area',font=('Times',12),anchor=N)
 
     xbinwidth=(rlx-ulx-50)/(len(x_bins)-1)
     for i in range(len(x_bins)):
         x=ulx+(i*xbinwidth)
         canvas.create_line(x+25,uly+5,x+25,uly,width=2)
-        canvas.create_text(x+25,uly+5,text='%d'%(x_bins[i]),font=('Times',12),anchor=N)
+        canvas.create_text(x+25,uly+6,text='%d'%(x_bins[i]),font=('Times',12),anchor=N)
 
     ybinwidth=(uly-rly-50)/(len(y_bins)-1)
     for i in range(len(y_bins)):
@@ -125,10 +126,10 @@ def drawdots(ulx,uly,rlx,rly,x_bins,y_bins,datalist,canvas):
     for (xs,ys) in datalist:
         canvas.create_oval(xs-1,ys-1,xs+1,ys+1,width=1,outline='black',fill='SkyBlue')
 
-    canvas.create_line(ulx+12,rly,ulx+12,uly,arrow=LAST,fill='red',width=2)
-    canvas.create_line(rlx-12,rly,rlx-12,uly,arrow=LAST,fill='orange',width=2)
+    canvas.create_line(ulx+12,rly,ulx+12,uly,arrow=LAST,fill='red',width=2,dash=(5,1))
+    canvas.create_line(rlx-12,rly,rlx-12,uly,arrow=LAST,fill='red',width=2)
     canvas.create_line(ulx,rly+12,rlx,rly+12,arrow=FIRST,fill='blue',width=2)
-    canvas.create_line(ulx,uly-12,rlx,uly-12,arrow=FIRST,fill='purple',width=2)
+    canvas.create_line(ulx,uly-12,rlx,uly-12,arrow=FIRST,fill='blue',width=2,dash=(5,1))
 
 def drawPlot(ulx,uly,rlx,rly,hist,bin_edges,canvas):
     global loccanvas,minx,maxx,totalbins,bins,linelocs

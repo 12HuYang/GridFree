@@ -73,7 +73,7 @@ def combinecrops(area,subarea,i,ele,ulx,uly,rlx,rly):
     print(unique)
     return localarea
 
-def sortline(linelist,midx,midy,linenum):
+def sortline(linelist,midx,midy,linenum,labellist=labellist,elesize=elesize):
     localy={}
     localx={}
     for ele in linelist:
@@ -90,7 +90,7 @@ def sortline(linelist,midx,midy,linenum):
             pass
 
 
-def relabel(area):
+def relabel(area,elesize=elesize,labellist=labellist):
     unique=numpy.unique(area).tolist()
     unique=unique[1:]
     midx={}
@@ -119,7 +119,7 @@ def relabel(area):
             if linecount<len(elesize):
                 if len(linelist)%elesize[linecount]==0:
                     #sortline(linelist,midx,midy,linecount-1)
-                    sortline(linelist,midx,midy,linecount)
+                    sortline(linelist,midx,midy,linecount,labellist=labellist,elesize=elesize)
                     linelist[:]=[]
                     #colcount=1
                     linecount+=1
@@ -1726,6 +1726,16 @@ def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
 
     return area
 
+def get_colortable(area):
+    originmethod,misslabel,localcolotable=relabel(area)
+    copycolortable={**colortable}
+    return copycolortable
+
+def get_mapcolortable(area,inputelesize,inputlabellist):
+    riginmethod,misslabel,localcolotable=relabel(area,elesize=inputelesize,labellist=inputlabellist)
+    copycolortable={**colortable}
+    return copycolortable
+
 def firstprocess(input,validmap,avgarea):
     band=input
     boundaryarea=boundarywatershed(band,1,'inner')
@@ -1778,7 +1788,10 @@ def manualresegdivide(area,maxthres,minthres):
     for key in hist.keys():
         if key not in greatareas and key not in tinyareas:
             normalcounts.append(hist[key])
-    meanpixel=sum(normalcounts)/len(normalcounts)
+    try:
+        meanpixel=sum(normalcounts)/len(normalcounts)
+    except:
+        return area
 
     while(len(greatareas)>0):
         topkey=greatareas.pop(0)
