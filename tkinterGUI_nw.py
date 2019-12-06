@@ -1248,7 +1248,7 @@ def resegment():
     figcanvas.unbind('<B1-Motion>')
     figcanvas.delete(ALL)
     panelA.unbind('<Button-1>')
-    refvar.set('0')
+    #refvar.set('0')
     #for widget in refsubframe.winfo_children():
     #    widget.config(state=DISABLED)
     thresholds=[cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1])]
@@ -1874,7 +1874,7 @@ def customcoin(event,processlabels,tempband):
     print(tempband.shape)
     coinlabel=tempband[y,x]
     print('coinlabel',coinlabel,'x',x,'y',y)
-    refarea=None
+    #refarea=None
     if coinlabel==0:
         #messagebox.showerror('Invalid',message='Please pick areas have items.')
         return
