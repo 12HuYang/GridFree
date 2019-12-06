@@ -991,16 +991,17 @@ def export_result(iterver):
                     for point in lengthpoints:
                         if imgtypevar.get()=='0':
                             draw.point([int(point[0]),int(point[1])],fill='yellow')
-                    tengentaddpoints=cal_kernelsize.tengentadd(x0,y0,x1,y1,rlx,rly,labels,uni)
+                    tengentaddpoints=cal_kernelsize.tengentadd(x0,y0,x1,y1,rlx,rly,labels,uni) #find tangent line above
                     #for point in tengentaddpoints:
                         #if int(point[0])>=ulx and int(point[0])<=rlx and int(point[1])>=uly and int(point[1])<=rly:
                     #    draw.point([int(point[0]),int(point[1])],fill='green')
-                    tengentsubpoints=cal_kernelsize.tengentsub(x0,y0,x1,y1,ulx,uly,labels,uni)
+                    tengentsubpoints=cal_kernelsize.tengentsub(x0,y0,x1,y1,ulx,uly,labels,uni) #find tangent line below
                     #for point in tengentsubpoints:
                     #    draw.point([int(point[0]),int(point[1])],fill='green')
-                    width=1e10
-                    pointmatch=[]
-                    for i in range(len(tengentaddpoints)):
+                    pointmatchdict={}
+                    for i in range(len(tengentaddpoints)):  #find the pixel pair with shortest distance
+                        width=kernellength
+                        pointmatch=[]
                         point=tengentaddpoints[i]
                         try:
                             templabel=labels[int(point[1]),int(point[0])]
@@ -1015,6 +1016,11 @@ def export_result(iterver):
                                     pointmatch.append(point)
                                     pointmatch.append(subpoint)
                                     width=tempwidth
+                        if len(pointmatch)>0:
+                            print('pointmatch',pointmatch)
+                            pointmatchdict.update({(pointmatch[0],pointmatch[1]):width})
+                    widthsort=sorted(pointmatchdict,key=pointmatchdict.get,reverse=True)
+                    pointmatch=widthsort[0]
                     if len(pointmatch)>0:
                         x0=int(pointmatch[0][0])
                         y0=int(pointmatch[0][1])
