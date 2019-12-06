@@ -53,8 +53,9 @@ Modify matplotlibrc file ADD: ```backend: TkAgg```
 - [1] ImageJ https://imagej.nih.gov/ij/download.html
 - [2] SeedCounter https://www.frontiersin.org/articles/10.3389/fpls.2016.01990/full
 - [3] GrainScan https://plantmethods.biomedcentral.com/articles/10.1186/1746-4811-10-23-->
-#### Seed Sample Demo
+#### Chickpea segment demo
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/sampleseed-demo.gif)
-* YouTube: https://youtu.be/048nuYZ6-LY
+YouTube: https://youtu.be/048nuYZ6-LY
+#### Corns segment demo
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/corns_demo.gif)
 * YouTube: https://youtu.be/1ngHQsUFWH4
