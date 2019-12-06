@@ -58,4 +58,4 @@ Modify matplotlibrc file ADD: ```backend: TkAgg```
 YouTube: https://youtu.be/048nuYZ6-LY
 #### Corns segment demo
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/corns_demo.gif)
-* YouTube: https://youtu.be/1ngHQsUFWH4
+YouTube: https://youtu.be/1ngHQsUFWH4
