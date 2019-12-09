@@ -35,7 +35,7 @@ class img():
         self.bands=bands
 
 displayimg={'Origin':None,
-            'Gray/NIR':None,
+            'Color Deviation':None,
             'ColorIndices':None,
             'Output':None}
 #cluster=['LabOstu','NDI'] #,'Greenness','VEG','CIVE','MExG','NDVI','NGRDI','HEIGHT']
@@ -164,12 +164,6 @@ def generatedisplayimg(filename):
     #    resize=cv2.resize(Multigray[filename],(int(width*ratio),int(height*ratio)),interpolation=cv2.INTER_LINEAR)
     #else:
         #resize=cv2.resize(Multigray[filename],(int(width/ratio),int(height/ratio)),interpolation=cv2.INTER_LINEAR)
-    resize=cv2.resize(Multigray[filename],(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
-    grayimg=ImageTk.PhotoImage(Image.fromarray(resize.astype('uint8')))
-    tempdict={}
-    tempdict.update({'Size':resize.shape})
-    tempdict.update({'Image':grayimg})
-    displayimg['Gray/NIR']=tempdict
     tempdict={}
     tempdict.update({'Size':resize.shape})
     #if height*width<850*850:
@@ -193,6 +187,13 @@ def generatedisplayimg(filename):
     tempdict.update({'Size':tempband.shape})
     tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(indimg))})
     displayimg['ColorIndices']=tempdict
+
+    #resize=cv2.resize(Multigray[filename],(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
+    #grayimg=ImageTk.PhotoImage(Image.fromarray(resize.astype('uint8')))
+    #tempdict={}
+    #tempdict.update({'Size':resize.shape})
+    #tempdict.update({'Image':grayimg})
+    displayimg['Color Deviation']=tempdict
 
 
 
@@ -632,11 +633,15 @@ def generateplant(checkbox,bandchoice):
                 reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
                 displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
             generateimgplant(displaylabels)
+            pyplt.imsave('allcolorindex.png',displaylabels)
             return
         else:
             reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
             displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
             generateimgplant(displaylabels)
+            pyplt.imsave('allcolorindex.png',displaylabels)
+
+
 
 
 def generatecheckbox(frame,classnum):
@@ -672,17 +677,25 @@ def generateimgplant(displaylabels):
     for key in keys:
         plantchoice.append(checkboxdict[key].get())
     tempdisplayimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
+    colordivimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
     for i in range(len(plantchoice)):
         tup=plantchoice[i]
         if '1' in tup:
             tempdisplayimg=np.where(displaylabels==i,1,tempdisplayimg)
+    uniquecolor=np.unique(tempdisplayimg)
+    if len(uniquecolor)==1 and uniquecolor[0]==1:
+        tempdisplayimg=np.copy(displaylabels).astype('float32')
     currentlabels=np.copy(tempdisplayimg)
+    tempcolorimg=np.copy(displaylabels).astype('float32')
     ratio=findratio([tempdisplayimg.shape[0],tempdisplayimg.shape[1]],[850,850])
     if tempdisplayimg.shape[0]*tempdisplayimg.shape[1]<850*850:
         tempdisplayimg=cv2.resize(tempdisplayimg,(int(tempdisplayimg.shape[1]*ratio),int(tempdisplayimg.shape[0]*ratio)))
+        colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]*ratio),int(colordivimg.shape[0]*ratio)))
     else:
         tempdisplayimg=cv2.resize(tempdisplayimg,(int(tempdisplayimg.shape[1]/ratio),int(tempdisplayimg.shape[0]/ratio)))
+        colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]/ratio),int(colordivimg.shape[0]/ratio)))
     pyplt.imsave('displayimg.png',tempdisplayimg)
+    pyplt.imsave('allcolorindex.png',colordivimg)
     #bands=Image.fromarray(tempdisplayimg)
     #bands=bands.convert('L')
     #bands.save('displayimg.png')
@@ -691,6 +704,16 @@ def generateimgplant(displaylabels):
     tempdict.update({'Size':tempdisplayimg.shape})
     tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(indimg))})
     displayimg['ColorIndices']=tempdict
+
+    #indimg=cv2.imread('allcolorindex.png')
+    #tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(indimg))})
+    #
+    colorimg=cv2.imread('allcolorindex.png')
+    colordivdict={}
+    colordivdict.update({'Size':tempdisplayimg.shape})
+    colordivdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colorimg))})
+    displayimg['Color Deviation']=colordivdict
+
     changedisplayimg(imageframe,'ColorIndices')
     changekmeans=True
 
@@ -720,6 +743,7 @@ def kmeansclassify(choicelist,reshapedtif):
     return displaylabels
 
 def changecluster(event):
+    #global kmeanscanvas
     keys=bandchoice.keys()
     choicelist=[]
     imageband=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
@@ -728,6 +752,17 @@ def changecluster(event):
         if '1' in tup:
             choicelist.append(key)
             imageband=imageband+displaybandarray[currentfilename][key]
+    colornum=int(kmeans.get())
+    colorstrip=np.zeros((10,35*colornum),'float32')
+    for i in range(colornum):
+        for j in range(0,35):
+            colorstrip[:,i*35+j]=i+1
+    pyplt.imsave('colorstrip.png',colorstrip)
+    #kmeanscanvas.delete(ALL)
+    #colorimg=cv2.imread('colorstrip.png')
+    #colorimg=ImageTk.PhotoImage(Image.fromarray(colorimg))
+    #kmeanscanvas.create_image(0,0,image=colorimg,anchor=NW)
+    #kmeanscanvas.pack()
     if len(choicelist)==0:
         messagebox.showerror('No Indices is selected',message='Please select indicies to do KMeans Classification.')
         tempband=np.copy(displaybandarray[currentfilename]['LabOstu'])
@@ -765,11 +800,15 @@ def changecluster(event):
                 reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
                 displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
             generateimgplant(displaylabels)
+            pyplt.imsave('allcolorindex.png',displaylabels)
+            #kmeanscanvas.update()
             return
         else:
             reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
             displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
             generateimgplant(displaylabels)
+            pyplt.imsave('allcolorindex.png',displaylabels)
+        #changedisplayimg(imageframe,'Color Deviation')
 
 
 
@@ -2412,6 +2451,11 @@ for i in range(10):
     if i+1>int(kmeans.get()):
         ch.config(state=DISABLED)
     ch.pack(side=LEFT)
+
+#kmeanscanvasframe=LabelFrame(kmeansgenframe,bd='0')
+#kmeanscanvasframe.pack()
+#kmeanscanvas=Canvas(kmeanscanvasframe,width=350,height=10,bg='blue')
+#kmeanscanvas.pack()
 
 reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],1))
 colordicesband=kmeansclassify(['LabOstu'],reshapemodified_tif)
