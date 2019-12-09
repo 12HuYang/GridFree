@@ -99,6 +99,7 @@ labelplotmap={}
 mappath=''
 elesize=[]
 labellist=[]
+figdotlist={}
 
 
 maxx=0
@@ -336,6 +337,7 @@ def Open_Multifile():
         refvar.set('0')
         kmeans.set('2')
         panelA.delete(ALL)
+        panelA.unbind('<Button-1>')
         refarea=None
         if 'NDI' in bandchoice:
             bandchoice['NDI'].set('1')
@@ -1020,7 +1022,10 @@ def export_result(iterver):
                             print('pointmatch',pointmatch)
                             pointmatchdict.update({(pointmatch[0],pointmatch[1]):width})
                     widthsort=sorted(pointmatchdict,key=pointmatchdict.get,reverse=True)
-                    pointmatch=widthsort[0]
+                    try:
+                        pointmatch=widthsort[0]
+                    except:
+                        continue
                     if len(pointmatch)>0:
                         x0=int(pointmatch[0][0])
                         y0=int(pointmatch[0][1])
@@ -1241,13 +1246,13 @@ def batchextraction():
 
 def resegment():
     global loccanvas,maxx,minx,maxy,miny,linelocs,bins,ybins,reseglabels,figcanvas,refvar,refsubframe,panelA
-    global labelplotmap
+    global labelplotmap,figdotlist
     figcanvas.unbind('<Any-Enter>')
     figcanvas.unbind('<Any-Leave>')
     figcanvas.unbind('<Button-1>')
     figcanvas.unbind('<B1-Motion>')
     figcanvas.delete(ALL)
-    panelA.unbind('<Button-1>')
+    #panelA.unbind('<Button-1>')
     #refvar.set('0')
     #for widget in refsubframe.winfo_children():
     #    widget.config(state=DISABLED)
@@ -1349,7 +1354,8 @@ def resegment():
         yval=300-(y-miny)*y_scalefactor+25
         unilabel=templabelplotmap[key]
         labelplotmap.update({(int(xval),int(yval)):unilabel})
-    axistest.drawdots(25+50,325+25,375+50,25+25,bin_edges,y_bins,scaledDatalist,figcanvas)
+    figdotlist={}
+    axistest.drawdots(25+50,325+25,375+50,25+25,bin_edges,y_bins,scaledDatalist,figcanvas,figdotlist)
 
 
     #loccanvas=figcanvas
@@ -1369,6 +1375,8 @@ def resegment():
     figcanvas.bind('<B1-Motion>',item_drag)
     if refarea is not None:
         reseglabels[refarea]=65535
+
+
 
 def cal_yvalue(y):
     y_scalefactor=250/(maxy-miny)
@@ -1440,31 +1448,52 @@ def item_start_drag(event):
     else:
         if itemType=='oval':
             outline=figcanvas.itemconfigure(CURRENT,'outline')[4]
-            currx=event.x
-            curry=event.y
             print('outline',outline)
-            print('x',currx,'y',curry)
-            labelkey=None
-            if (currx,curry) in labelplotmap: #or (currx-1,curry) in labelplotmap or (currx+1,curry) in labelplotmap\
-                    #or (currx,curry-1) in labelplotmap or (currx,curry+1) in labelplotmap:
-                labelkey=labelplotmap[(currx,curry)]
-            if (currx-1,curry) in labelplotmap:
-                labelkey=labelplotmap[(currx-1,curry)]
-            if (currx+1,curry) in labelplotmap:
-                labelkey=labelplotmap[(currx+1,curry)]
-            if (currx,curry-1) in labelplotmap:
-                labelkey=labelplotmap[(currx,curry-1)]
-            if (currx,curry+1) in labelplotmap:
-                labelkey=labelplotmap[(currx,curry+1)]
-            if type(labelkey)!=type(None):
-                if len(dotflash)>0:
-                    for i in range(len(dotflash)):
-                        figcanvas.delete(dotflash.pop(0))
-                a=figcanvas.create_oval(currx-1,curry-1,currx+1,curry+1,width=1,outline='Orange',fill='Orange')
-                dotflash.append(a)
-                #labelkey=labelplotmap[(currx,curry)]
-                print(labelkey)
-                seedfigflash(labelkey)
+        currx=event.x
+        curry=event.y
+        print('x',currx,'y',curry)
+        if (currx,curry) in labelplotmap: #or (currx-1,curry) in labelplotmap or (currx+1,curry) in labelplotmap\
+                #or (currx,curry-1) in labelplotmap or (currx,curry+1) in labelplotmap:
+            labelkey=labelplotmap[(currx,curry)]
+        else:
+            plotlist=list(labelplotmap.keys())
+            distlist=[]
+            for i in range(len(plotlist)):
+                dist=(abs(currx-plotlist[i][0])+abs(curry-plotlist[i][1]))**0.5
+                distlist.append(dist)
+            shortestdist=min(distlist)
+            shortestdistindex=distlist.index(shortestdist)
+            labelkey=labelplotmap[plotlist[shortestdistindex]]
+            if len(dotflash)>0:
+                for i in range(len(dotflash)):
+                    figcanvas.delete(dotflash.pop(0))
+            dotx=plotlist[shortestdistindex][0]
+            doty=plotlist[shortestdistindex][1]
+            a=figcanvas.create_oval(dotx-1,doty-1,dotx+1,doty+1,width=1,outline='Orange',fill='Orange')
+            dotflash.append(a)
+        print(labelkey)
+        seedfigflash(labelkey)
+
+        '''
+        if (currx-1,curry) in labelplotmap:
+            labelkey=labelplotmap[(currx-1,curry)]
+        if (currx+1,curry) in labelplotmap:
+            labelkey=labelplotmap[(currx+1,curry)]
+        if (currx,curry-1) in labelplotmap:
+            labelkey=labelplotmap[(currx,curry-1)]
+        if (currx,curry+1) in labelplotmap:
+            labelkey=labelplotmap[(currx,curry+1)]
+        if type(labelkey)!=type(None):
+            if len(dotflash)>0:
+                for i in range(len(dotflash)):
+                    figcanvas.delete(dotflash.pop(0))
+            a=figcanvas.create_oval(currx-1,curry-1,currx+1,curry+1,width=1,outline='Orange',fill='Orange')
+            dotflash.append(a)
+            #labelkey=labelplotmap[(currx,curry)]
+            print(labelkey)
+            seedfigflash(labelkey)
+        '''
+    ''''
         else:
             tup=figcanvas.find_all()
             print(tup)
@@ -1505,6 +1534,7 @@ def item_start_drag(event):
                 linelocs[3]=curry
                 figcanvas._lastY=curry
     pass
+    '''''
 
 def item_drag(event):
     global figcanvas,linelocs,xvalue
@@ -1583,13 +1613,14 @@ def process():
             else:
                 resegment()
     gen_convband()
-    highlightcoin()
+    #highlightcoin()
 
 #def extraction(frame):
 def extraction():
     global kernersizes,multi_results,workingimg,outputimgdict,outputimgbands,pixelmmratio
     global currentlabels,panelA,outputbutton,reseglabels,refbutton,figcanvas,resegbutton,refvar
     global refsubframe,loccanvas,originlabels,changekmeans,originlabeldict,refarea
+    global figdotlist
     if int(kmeans.get())==1:
         messagebox.showerror('Invalid Class #',message='#Class = 1, try change it to 2 or more, and refresh Color-Index.')
         return
@@ -1675,7 +1706,10 @@ def extraction():
     #resscaler=Scale(frame,from_=1,to=iternum,tickinterval=1,length=220,orient=HORIZONTAL,variable=itervar,command=partial(changeoutputimg,currentfilename))
     #resscaler.pack()
     changeoutputimg(currentfilename,'1')
-
+    processlabel=np.copy(reseglabels)
+    tempband=np.copy(convband)
+    panelA.bind('<Button-1>',lambda event,arg=processlabel:customcoin(event,processlabel,tempband))
+    panelA.config(cursor='hand2')
     '''
     data=np.asarray(border[1:])
     hist,bin_edges=np.histogram(data,density=False)
@@ -1746,7 +1780,8 @@ def extraction():
         labelplotmap.update({(int(xval),int(yval)):unilabel})
     #print(labelplotmap)
     #print(scaledDatalist)
-    axistest.drawdots(25+50,325+25,375+50,25+25,bin_edges,y_bins,scaledDatalist,figcanvas)
+    figdotlist={}
+    axistest.drawdots(25+50,325+25,375+50,25+25,bin_edges,y_bins,scaledDatalist,figcanvas,figdotlist)
 
 
     #loccanvas=figcanvas
@@ -1977,12 +2012,12 @@ def seedfigflash(topkey):
     else:
         uly,rly=min(coinarea[0]),max(coinarea[0])
     coinbox=panelA.create_rectangle(ulx,uly,rlx+2,rly+2,outline='yellow')
-    panelA.after(500,lambda :runflash(ulx,uly,rlx,rly,'red'))
-    panelA.after(1000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
+    panelA.after(300,lambda :runflash(ulx,uly,rlx,rly,'red'))
+    panelA.after(600,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
+    panelA.after(900,lambda :runflash(ulx,uly,rlx,rly,'red'))
+    panelA.after(1200,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
     panelA.after(1500,lambda :runflash(ulx,uly,rlx,rly,'red'))
-    panelA.after(2000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
-    panelA.after(2500,lambda :runflash(ulx,uly,rlx,rly,'red'))
-    panelA.after(3000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
+    panelA.after(1800,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
 
 
 
@@ -2108,6 +2143,15 @@ def del_reflabel():
     outputimgbands.update({currentfilename:tempimgbands})
     changeoutputimg(currentfilename,'1')
     #update plot
+    print('done image')
+    copyplotmap=labelplotmap.copy()
+    for k,v in copyplotmap.items():
+        if v==reflabel:
+            figindex=figdotlist[k]
+            figcanvas.delete(figindex)
+    tup=list(figcanvas.find_all())
+    figcanvas.delete(tup[-1])
+    '''
     data=[]
     uniquelabels=list(newcolortables.keys())
     lenwid=[]
@@ -2183,6 +2227,7 @@ def del_reflabel():
     figcanvas.bind('<Any-Leave>',item_leave)
     figcanvas.bind('<Button-1>',item_start_drag)
     figcanvas.bind('<B1-Motion>',item_drag)
+    '''
 
 
 #def refchoice(refsubframe):
@@ -2247,6 +2292,8 @@ def refchoice():
 ## ----Display----
 display_fr=Frame(root,width=640,height=640)
 control_fr=Frame(root,width=320,height=320)
+bottomframe=Frame(root)
+bottomframe.pack(side=BOTTOM)
 display_fr.pack(side=LEFT)
 control_fr.pack(side=LEFT)
 #display_label=Text(display_fr,height=1,width=100)
@@ -2274,25 +2321,25 @@ panelA.create_image(0,0,image=displayimg['Origin']['Image'],anchor=NW)
 panelA.pack(padx=20,pady=20,expand=YES)
 
 
-buttondisplay=LabelFrame(display_fr,bd=0)
+buttondisplay=LabelFrame(bottomframe,bd=0)
 buttondisplay.config(cursor='hand2')
-buttondisplay.pack()
+buttondisplay.pack(side=LEFT)
 
-#disbuttonoption={'Origin':'1','Gray/NIR':'2','ColorIndices':'3','Output':'4'}
-disbuttonoption={'Origin':'1','ColorIndices':'3','Output':'4'}
+openfilebutton=Button(buttondisplay,text='Image',command=Open_Multifile,cursor='hand2')
+openfilebutton.pack(side=LEFT,padx=20,pady=5)
+mapbutton=Button(buttondisplay,text='Map',cursor='hand2',command=Open_Map)
+mapbutton.pack(side=LEFT,padx=20,pady=5)
+
+disbuttonoption={'Origin':'1','ColorIndices':'3','Color Deviation':'2','Output':'4'}
+#disbuttonoption={'Origin':'1','ColorIndices':'3','Output':'4'}
 for text in disbuttonoption:
     b=Radiobutton(buttondisplay,text=text,variable=displaybut_var,value=disbuttonoption[text],command=partial(changedisplayimg,imageframe,text))
     b.pack(side=LEFT,padx=20,pady=5)
     if disbuttonoption[text]=='1':
         b.invoke()
 ### ---open file----
-openfilebutton=Button(buttondisplay,text='Image',command=Open_Multifile,cursor='hand2')
-openfilebutton.pack(side=LEFT,padx=20,pady=5)
-mapbutton=Button(buttondisplay,text='Map',cursor='hand2',command=Open_Map)
-mapbutton.pack(side=LEFT,padx=20,pady=5)
-outputbutton=Button(buttondisplay,text='Export',command=partial(export_result,'0'))
-outputbutton.pack(side=LEFT,padx=20,pady=5)
-outputbutton.config(state=DISABLED)
+
+
 ## ----Control----
 #control_label=Text(control_fr,height=1,width=50)
 #control_label.tag_config("just",justify=CENTER)
@@ -2398,38 +2445,44 @@ resviewframe=LabelFrame(control_fr,cursor='hand2',bd=0)
 figcanvas=Canvas(resviewframe,width=450,height=400,bg='white')
 figcanvas.pack()
 resviewframe.pack()
-refframe=LabelFrame(control_fr,cursor='hand2',bd=0)
-refframe.pack()
+#refframe=LabelFrame(control_fr,cursor='hand2',bd=0)
+refframe=LabelFrame(bottomframe,cursor='hand2',bd=0)
+refframe.pack(side=LEFT)
 
 refoption=[('Use Ref','1'),('No Ref','0')]
 refvar.set('0')
 refsubframe=LabelFrame(refframe,bd=0)
 column=0
-refoption=[('Max','1'),('Min','2'),('Spec','3')]
-for text,mode in refoption:
-    b=Radiobutton(refsubframe,text=text,variable=coinsize,value=mode,command=highlightcoin)#,command=partial(highlightcoin,processlabels,coindict,miniarea))
-    b.pack(side=LEFT,padx=5)
-    if mode=='1':
-        b.invoke()
+#refoption=[('Max','1'),('Min','2'),('Spec','3')]
+#for text,mode in refoption:
+#    b=Radiobutton(refsubframe,text=text,variable=coinsize,value=mode,command=highlightcoin)#,command=partial(highlightcoin,processlabels,coindict,miniarea))
+#    b.pack(side=LEFT,padx=5)
+#    if mode=='1':
+#        b.invoke()
+refsubframe.pack(side=LEFT)
+delrefbutton=Button(refsubframe,text='Del',command=del_reflabel)
+delrefbutton.pack(side=LEFT, padx=20,pady=5)
+refbutton=Checkbutton(refsubframe,text='Ref',variable=refvar,command=refchoice)
+#refbutton.config(state=DISABLED)
+refbutton.pack(side=LEFT)
 sizeentry=Entry(refsubframe,width=5)
 sizeentry.insert(END,285)
 sizeentry.pack(side=LEFT,padx=5)
 sizeunit=Label(refsubframe,text='mm^2')
 sizeunit.pack(side=LEFT)
-refsubframe.pack(side=LEFT)
-delrefbutton=Button(refsubframe,text='Del',command=del_reflabel)
-delrefbutton.pack(side=LEFT)
+
 #delrefbutton.config(state=DISABLED)
 #refbutton=Checkbutton(refsubframe,text='Ref',variable=refvar,command=partial(refchoice,refsubframe))
-refbutton=Checkbutton(refsubframe,text='Ref',variable=refvar,command=refchoice)
-#refbutton.config(state=DISABLED)
-refbutton.pack(side=LEFT)
+
 for widget in refsubframe.winfo_children():
     widget.config(state=DISABLED)
 #extractbutton=Button(refframe,text='Process',command=partial(extraction))
 extractbutton=Button(refframe,text='Process',command=process)
 extractbutton.configure(activebackground='blue')
-extractbutton.pack(side=LEFT)
+extractbutton.pack(side=LEFT,padx=20,pady=5)
+outputbutton=Button(refframe,text='Export',command=partial(export_result,'0'))
+outputbutton.pack(side=LEFT,padx=20,pady=5)
+outputbutton.config(state=DISABLED)
 #resegbutton=Button(extractionframe,text='Re-Segment',command=resegment)
 #resegbutton.pack(side=LEFT)
 #resegbutton.config(state=DISABLED)

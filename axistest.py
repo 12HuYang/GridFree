@@ -94,7 +94,7 @@ def item_drag(event):
     pass
 '''
 
-def drawdots(ulx,uly,rlx,rly,x_bins,y_bins,datalist,canvas):
+def drawdots(ulx,uly,rlx,rly,x_bins,y_bins,datalist,canvas,inputfigdotlist):
     global loccanvas,minx,maxx,totalbins,bins,linelocs
     loccanvas=canvas
 
@@ -124,8 +124,8 @@ def drawdots(ulx,uly,rlx,rly,x_bins,y_bins,datalist,canvas):
         canvas.create_text(ulx-6,y-25,text='%d'%(y_bins[i]),font=('Times',12),anchor=E)
 
     for (xs,ys) in datalist:
-        canvas.create_oval(xs-1,ys-1,xs+1,ys+1,width=1,outline='black',fill='SkyBlue')
-
+        a=canvas.create_oval(xs-1,ys-1,xs+1,ys+1,width=1,outline='black',fill='SkyBlue')
+        inputfigdotlist.update({(xs,ys):a})
     canvas.create_line(ulx+12,rly,ulx+12,uly,arrow=LAST,fill='red',width=2,dash=(5,1))
     canvas.create_line(rlx-12,rly,rlx-12,uly,arrow=LAST,fill='red',width=2)
     canvas.create_line(ulx,rly+12,rlx,rly+12,arrow=FIRST,fill='blue',width=2)
