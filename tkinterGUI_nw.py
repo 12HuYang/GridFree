@@ -743,7 +743,7 @@ def kmeansclassify(choicelist,reshapedtif):
     return displaylabels
 
 def changecluster(event):
-    #global kmeanscanvas
+    global kmeanscanvasframe
     keys=bandchoice.keys()
     choicelist=[]
     imageband=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
@@ -753,12 +753,12 @@ def changecluster(event):
             choicelist.append(key)
             imageband=imageband+displaybandarray[currentfilename][key]
     colornum=int(kmeans.get())
-    colorstrip=np.zeros((10,35*colornum),'float32')
-    for i in range(colornum):
-        for j in range(0,35):
-            colorstrip[:,i*35+j]=i+1
-    pyplt.imsave('colorstrip.png',colorstrip)
-    #kmeanscanvas.delete(ALL)
+    for widget in kmeanscanvasframe.winfo_children():
+        widget.pack_forget()
+    widget.delete(ALL)
+    widget.config(width=350,height=10)
+    widget.create_image(0,0,image=colorstripdict['colorstrip'+str(colornum)],anchor=NW)
+    widget.pack()
     #colorimg=cv2.imread('colorstrip.png')
     #colorimg=ImageTk.PhotoImage(Image.fromarray(colorimg))
     #kmeanscanvas.create_image(0,0,image=colorimg,anchor=NW)
@@ -2452,15 +2452,26 @@ for i in range(10):
         ch.config(state=DISABLED)
     ch.pack(side=LEFT)
 
-#kmeanscanvasframe=LabelFrame(kmeansgenframe,bd='0')
-#kmeanscanvasframe.pack()
-#kmeanscanvas=Canvas(kmeanscanvasframe,width=350,height=10,bg='blue')
-#kmeanscanvas.pack()
+kmeanscanvasframe=LabelFrame(kmeansgenframe,bd='0')
+kmeanscanvasframe.pack()
+kmeanscanvas=Canvas(kmeanscanvasframe,width=350,height=10,bg='Black')
+
 
 reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],1))
 colordicesband=kmeansclassify(['LabOstu'],reshapemodified_tif)
 generateimgplant(colordicesband)
 changedisplayimg(imageframe,'Origin')
+
+colorstrip=np.zeros((15,35*2),'float32')
+for i in range(2):
+    for j in range(0,35):
+        colorstrip[:,i*35+j]=i+1
+pyplt.imsave('colorstrip.png',colorstrip)
+kmeanscanvas.delete(ALL)
+colorimg=cv2.imread('colorstrip.png')
+colorimg=ImageTk.PhotoImage(Image.fromarray(colorimg))
+kmeanscanvas.create_image(0,0,image=colorimg,anchor=NW)
+kmeanscanvas.pack()
 #generatecheckbox(checkboxframe,2)
 
 #refreshebutton=Button(filter_fr,text='Refresh ColorIndices',cursor='hand2',command=changecluster)
@@ -2531,5 +2542,10 @@ outputbutton.config(state=DISABLED)
 #resegbutton.pack(side=LEFT)
 #resegbutton.config(state=DISABLED)
 changekmeans=False
+colorstripdict={}
+for i in range(1,11):
+    loadimg=cv2.imread('colorstrip'+str(i)+'.png')
+    photoimg=ImageTk.PhotoImage(Image.fromarray(loadimg))
+    colorstripdict.update({'colorstrip'+str(i):photoimg})
 root.mainloop()
 
