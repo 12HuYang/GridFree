@@ -752,7 +752,7 @@ def addcolorstrip():
             widget.pack_forget()
         widget.delete(ALL)
         widget.config(width=350,height=10)
-        widget.create_image(0,0,image=colorstripdict['colorstrip'+str(colornum)],anchor=NW)
+        widget.create_image(3,0,image=colorstripdict['colorstrip'+str(colornum)],anchor=NW)
         widget.pack()
         havecolorstrip=True
 
