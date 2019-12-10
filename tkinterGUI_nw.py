@@ -100,7 +100,7 @@ mappath=''
 elesize=[]
 labellist=[]
 figdotlist={}
-
+havecolorstrip=True
 
 maxx=0
 minx=0
@@ -318,6 +318,7 @@ def Open_Multifile():
     global changefiledrop,filedropvar,originbandarray,displaybandarray,clusterdisplay,currentfilename,resviewframe
     global refsubframe,outputbutton,reseglabels,refbutton,figcanvas,loccanvas,originlabels,changekmeans,refarea
     global originlabeldict,convband,panelA
+    global havecolorstrip
 
     MULTIFILES=filedialog.askopenfilenames()
     if len(MULTIFILES)>0:
@@ -340,6 +341,7 @@ def Open_Multifile():
         panelA.delete(ALL)
         panelA.unbind('<Button-1>')
         refarea=None
+        havecolorstrip=False
         if 'NDI' in bandchoice:
             bandchoice['NDI'].set('1')
         if 'NDVI' in bandchoice:
@@ -671,7 +673,7 @@ def generatecheckbox(frame,classnum):
     #        ch.invoke()
 
 def generateimgplant(displaylabels):
-    global currentlabels,changekmeans
+    global currentlabels,changekmeans,havecolorstrip
     keys=checkboxdict.keys()
     plantchoice=[]
     for key in keys:
@@ -742,8 +744,21 @@ def kmeansclassify(choicelist,reshapedtif):
         clusterdisplay.update({''.join(choicelist):tempdict})
     return displaylabels
 
+def addcolorstrip():
+    global kmeanscanvasframe,havecolorstrip
+    if havecolorstrip is False:
+        colornum=int(kmeans.get())
+        for widget in kmeanscanvasframe.winfo_children():
+            widget.pack_forget()
+        widget.delete(ALL)
+        widget.config(width=350,height=10)
+        widget.create_image(0,0,image=colorstripdict['colorstrip'+str(colornum)],anchor=NW)
+        widget.pack()
+        havecolorstrip=True
+
+
 def changecluster(event):
-    global kmeanscanvasframe
+    global havecolorstrip
     keys=bandchoice.keys()
     choicelist=[]
     imageband=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
@@ -752,13 +767,7 @@ def changecluster(event):
         if '1' in tup:
             choicelist.append(key)
             imageband=imageband+displaybandarray[currentfilename][key]
-    colornum=int(kmeans.get())
-    for widget in kmeanscanvasframe.winfo_children():
-        widget.pack_forget()
-    widget.delete(ALL)
-    widget.config(width=350,height=10)
-    widget.create_image(0,0,image=colorstripdict['colorstrip'+str(colornum)],anchor=NW)
-    widget.pack()
+
     #colorimg=cv2.imread('colorstrip.png')
     #colorimg=ImageTk.PhotoImage(Image.fromarray(colorimg))
     #kmeanscanvas.create_image(0,0,image=colorimg,anchor=NW)
@@ -797,17 +806,21 @@ def changecluster(event):
             if kmeans.get() in tempdict:
                 displaylabels=tempdict[kmeans.get()]
             else:
+                havecolorstrip=False
                 reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
                 displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
             generateimgplant(displaylabels)
             pyplt.imsave('allcolorindex.png',displaylabels)
             #kmeanscanvas.update()
+            addcolorstrip()
             return
         else:
             reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
             displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
             generateimgplant(displaylabels)
             pyplt.imsave('allcolorindex.png',displaylabels)
+            havecolorstrip=False
+            addcolorstrip()
         #changedisplayimg(imageframe,'Color Deviation')
 
 
