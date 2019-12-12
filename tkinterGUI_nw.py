@@ -28,6 +28,7 @@ import cal_kernelsize
 import histograms
 import createBins
 import axistest
+from multiprocessing import Pool
 
 class img():
     def __init__(self,size,bands):
@@ -55,6 +56,7 @@ kernersizes={}
 multi_results={}
 outputimgdict={}
 outputimgbands={}
+outputsegbands={}
 
 root=Tk()
 root.title('GridFree')
@@ -110,6 +112,8 @@ linelocs=[0,0,0,0]
 maxy=0
 miny=0
 
+zoombox=[]
+
 def distance(p1,p2):
     return np.sum((p1-p2)**2)
 
@@ -122,6 +126,40 @@ def findratio(originsize,objectsize):
     else:
         ratio=round(min(objectsize[0]/originsize[0],objectsize[1]/originsize[1]))
     return ratio
+
+def updateloop(widget):
+    widget.update_idle()
+
+def zoom(event,widget):
+    global zoombox
+    x=event.x
+    y=event.y
+    #print(x,y)
+    try:
+        image=outputsegbands[currentfilename]['iter0']
+    except:
+        return
+    if len(zoombox)>1:
+        widget.delete(zoombox.pop(0))
+        #print('delete')
+    crop=image.crop((x-15,y-15,x+15,y+15))
+    w,h=crop.size
+    #print(w,h)
+    crop=crop.resize([w*3,h*3],resample=Image.BILINEAR)
+    w,h=crop.size
+    #crop=PhotoImage(width=20,height=20)
+    #crop.blank()
+    crop=ImageTk.PhotoImage(crop)
+    #boxlist.append(crop)
+    #crop.put("{red green} {blue yellow}", (x,y))
+    zoombox.append(widget.create_image(x+5,y-5,image=crop))
+    root.update_idletasks()
+    time.sleep(0.1)
+    #time.sleep(0.1)
+    #while len(zoombox)>1:
+
+    #updateloop(widget)
+    #widget.update()
 
 
 def changedisplayimg(frame,text):
@@ -137,6 +175,11 @@ def changedisplayimg(frame,text):
     widget.config(width=w,height=l)
     widget.create_image(0,0,image=displayimg[text]['Image'],anchor=NW)
     widget.pack()
+    if text=='Output':
+        widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg))
+    else:
+        widget.unbind('<Motion>')
+
     #print('change to '+text)
     #time.sleep(1)
 
@@ -304,13 +347,16 @@ def Open_Map():
         corlortable=tkintercorestat.get_colortable(reseglabels)
         tup=(reseglabels,[],corlortable,{},currentfilename)
         print(elesize)
-        mapdict,mapimage=showcounting(tup)
+        mapdict,mapimage,smallset=showcounting(tup)
         tempimgbands={}
         tempimgdict={}
+        tempsmall={}
         tempimgbands.update({'iter0':mapimage})
         tempimgdict.update({'iter0':mapdict})
+        tempsmall.update({'iter0':smallset})
         outputimgdict.update({currentfilename:tempimgdict})
         outputimgbands.update({currentfilename:tempimgbands})
+        outputsegbands.update({currentfilename:tempsmall})
         changeoutputimg(currentfilename,'1')
 
 def Open_Multifile():
@@ -941,7 +987,8 @@ def showcounting(tup,number=True):
     else:
         disimage=image.resize([int(width/ratio),int(height/ratio)],resample=Image.BILINEAR)
     displayoutput=ImageTk.PhotoImage(disimage)
-    return displayoutput,image
+    disimage.save('output.gif',append_images=[disimage])
+    return displayoutput,image,disimage
     #displayimg['Output']=displayoutput
     #changedisplayimg(imageframe,'Output')
     #time.sleep(5)
@@ -1101,10 +1148,10 @@ def export_result(iterver):
             image=imageband.resize([originwidth,originheight],resample=Image.BILINEAR)
             image.save(path+'/'+originfile+'-sizeresult'+'.png',"PNG")
             tup=(labels,counts,colortable,[],currentfilename)
-            _band,segimg=showcounting(tup,False)
+            _band,segimg,small_segimg=showcounting(tup,False)
             segimage=segimg.resize([originwidth,originheight],resample=Image.BILINEAR)
             segimage.save(path+'/'+originfile+'-segmentresult'+'.png',"PNG")
-            _band,segimg=showcounting(tup,True)
+            _band,segimg,small_segimg=showcounting(tup,True)
             segimage=segimg.resize([originwidth,originheight],resample=Image.BILINEAR)
             segimage.save(path+'/'+originfile+'-labelresult'+'.png',"PNG")
             originrestoredband=np.copy(labels)
@@ -1286,13 +1333,16 @@ def batchextraction():
             multi_results.update({file:(labeldict,coinparts)})
             tempimgdict={}
             tempimgbands={}
+            tempsegbands={}
             for key in labeldict:
                 tup=(labeldict[key]['labels'],labeldict[key]['counts'],labeldict[key]['colortable'],coinparts,file)
-                outputdisplay,outputimg=showcounting(tup)
+                outputdisplay,outputimg,small_segimg=showcounting(tup)
                 tempimgdict.update({key:outputdisplay})
                 tempimgbands.update({key:outputimg})
+                tempsegbands.update({key:small_segimg})
             outputimgdict.update({file:tempimgdict})
             outputimgbands.update({file:tempimgbands})
+            outputsegbands.update({file:tempsegbands})
     pass
 
 
@@ -1330,13 +1380,16 @@ def resegment():
     #iternum=3
     tempimgdict={}
     tempimgbands={}
+    tempsmall={}
     for key in labeldict:
         tup=(labeldict[key]['labels'],labeldict[key]['counts'],labeldict[key]['colortable'],{},currentfilename)
-        outputdisplay,outputimg=showcounting(tup)
+        outputdisplay,outputimg,small_seg=showcounting(tup)
         tempimgdict.update({key:outputdisplay})
         tempimgbands.update({key:outputimg})
+        tempsmall.update({key:small_seg})
     outputimgdict.update({currentfilename:tempimgdict})
     outputimgbands.update({currentfilename:tempimgbands})
+    outputsegbands.update({currentfilename:tempsmall})
     changeoutputimg(currentfilename,'1')
     '''
     data=np.asarray(border[1:])
@@ -1746,13 +1799,16 @@ def extraction():
     itervar.set(len(iterkeys))
     tempimgdict={}
     tempimgbands={}
+    tempsmall={}
     for key in labeldict:
         tup=(labeldict[key]['labels'],labeldict[key]['counts'],labeldict[key]['colortable'],{},currentfilename)
-        outputdisplay,outputimg=showcounting(tup)
+        outputdisplay,outputimg,smallset=showcounting(tup)
         tempimgdict.update({key:outputdisplay})
         tempimgbands.update({key:outputimg})
+        tempsmall.update({key:smallset})
     outputimgdict.update({currentfilename:tempimgdict})
     outputimgbands.update({currentfilename:tempimgbands})
+    outputsegbands.update({currentfilename:tempsmall})
     #time.sleep(5)
     #tup=(labeldict,coinparts,currentfilename)
     #resscaler=Scale(frame,from_=1,to=iternum,tickinterval=1,length=220,orient=HORIZONTAL,variable=itervar,command=partial(changeoutputimg,currentfilename))
@@ -2186,13 +2242,16 @@ def del_reflabel():
     newcolortables=tkintercorestat.get_colortable(reseglabels)
     newunique,newcounts=np.unique(reseglabels,return_counts=True)
     tup=(reseglabels,newcounts,newcolortables,{},currentfilename)
-    outputdisplay,outputimg=showcounting(tup)
+    outputdisplay,outputimg,smallset=showcounting(tup)
     tempimgdict={}
     tempimgbands={}
+    tempsmall={}
     tempimgdict.update({'iter0':outputdisplay})
     tempimgbands.update({'iter0':outputimg})
+    tempsmall.update({'iter0':smallset})
     outputimgdict.update({currentfilename:tempimgdict})
     outputimgbands.update({currentfilename:tempimgbands})
+    outputsegbands.update({currentfilename:tempsmall})
     changeoutputimg(currentfilename,'1')
     #update plot
     print('done image')

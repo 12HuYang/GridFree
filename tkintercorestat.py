@@ -364,7 +364,7 @@ def boundarywatershedcoin(area,segbondtimes,boundarytype):
     else:
         return area
 
-def boundarywatershed(area,segbondtimes,boundarytype):   #area = 1's
+def boundarywatershed(area,segbondtimes,boundarytype,itertime=20):   #area = 1's
     if avgarea is not None and numpy.count_nonzero(area)<avgarea/2:
         return area
     x=[0,-1,-1,-1,0,1,1,1]
@@ -381,7 +381,7 @@ def boundarywatershed(area,segbondtimes,boundarytype):   #area = 1's
     temparea=area-areaboundary
     arealabels=labelgapnp(temparea)
     unique, counts = numpy.unique(arealabels, return_counts=True)
-    if segbondtimes>=20:
+    if segbondtimes>=itertime:
         return area
     if(len(unique)>2):
         res=arealabels+areaboundary
@@ -483,7 +483,8 @@ def manualboundarywatershed(area,avgarea):
             area=numpy.where(area==unique[i],unique[i-1],area)
     '''
     maskpara=0.5
-    possiblecount=int(numpy.count_nonzero(area)/avgarea)
+    possiblecount=round(numpy.count_nonzero(area)/avgarea)
+    print('possiblecount',possiblecount)
     distance=ndi.distance_transform_edt(area)
     masklength=int((avgarea*maskpara)**0.5)-1
     local_maxi=peak_local_max(distance,indices=False,footprint=numpy.ones((masklength,masklength)),labels=area)
@@ -555,6 +556,9 @@ def manualdivide(area,greatareas):
     unique, counts = numpy.unique(area, return_counts=True)
     hist=dict(zip(unique,counts))
     del hist[0]
+    for i in range(len(unique)):
+        if unique[i] in greatareas:
+            counts.pop(i)
     meanpixel=sum(counts[1:])/len(counts[1:])
     bincounts=numpy.bincount(counts[1:])
     #meanpixel=numpy.argmax(bincounts)
@@ -626,17 +630,19 @@ def manualdivide(area,greatareas):
 
                 area[uly:rly+1,ulx:rlx+1]=newsubarea
                 #labels=relabel(labels)
-                unique, counts = numpy.unique(area, return_counts=True)
-                hist=dict(zip(unique,counts))
-                del hist[0]
-                print('hist length='+str(len(counts)-1))
-                print('max label='+str(area.max()))
-                sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
-                meanpixel=sum(counts[1:])/len(counts[1:])
+                #unique, counts = numpy.unique(area, return_counts=True)
+                #for i in range(len(unique)):
+                #    if unique[i] in greatareas:
+                #        counts.pop(i)
+                #hist=dict(zip(unique,counts))
+                #del hist[0]
+                #print('hist length='+str(len(counts)-1))
+                #print('max label='+str(area.max()))
+                #sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
+                #meanpixel=sum(counts[1:])/len(counts[1:])
                 #meanpixel=numpy.argmax(bincounts)
-                countseed=numpy.asarray(counts[1:])
-                countseed=numpy.asarray(counts[1:])
-                stdpixel=numpy.std(countseed)
+                #countseed=numpy.asarray(counts[1:])
+                #stdpixel=numpy.std(countseed)
 
                 #uprange=meanpixel+minisigma*stdpixel
                 #lowrange=meanpixel-minisigma*stdpixel
@@ -1523,6 +1529,34 @@ def findcoin(area):
 
             #intersect with coin boundingbox
 
+def resegdivideloop_watershed(area,maxthres,maxlw):
+    global greatareas
+    unique,counts=numpy.unique(area,return_counts=True)
+    unique=unique[1:]
+    counts=counts[1:]
+    hist=dict(zip(unique,counts))
+    sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
+    topkey=sortedkeys.pop(0)
+    while len(sortedkeys)>=0:
+        print('topkey=',topkey,hist[topkey])
+        topkeylocs=numpy.where(area==topkey)
+        ulx,uly=min(topkeylocs[1]),min(topkeylocs[0])
+        rlx,rly=max(topkeylocs[1]),max(topkeylocs[0])
+        topkeylen=rly-uly
+        topkeywid=rlx-ulx
+        topkeylw=topkeylen+topkeywid
+        if topkey not in exceptions:
+            if hist[topkey]>maxthres or topkeylw>maxlw:
+                if topkey not in greatareas:
+                    greatareas.append(topkey)
+                topkey=sortedkeys.pop(0)
+            else:
+                if len(sortedkeys)>0:
+                    topkey=sortedkeys.pop(0)
+                else:
+                    return area
+    return area
+
 def resegdivideloop(area,maxthres,maxlw):
     global greatareas
     greatareas=[]
@@ -1532,6 +1566,15 @@ def resegdivideloop(area,maxthres,maxlw):
     hist=dict(zip(unique,counts))
     sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
     topkey=sortedkeys.pop(0)
+    for i in range(len(sortedkeys)):
+        keysize=hist[sortedkeys[i]]
+        if keysize<maxthres:
+            minikey=sortedkeys[int(i/2)]
+            break
+    minikeysize=numpy.where(area==minikey)
+    mulx,muly=min(minikeysize[1]),min(minikeysize[0])
+    mrlx,mrly=max(minikeysize[1]),max(minikeysize[0])
+    itertime=int(min(abs(mrlx-mulx),abs(mrly-muly))/4)
     while len(sortedkeys)>=0:
         print('topkey=',topkey,hist[topkey])
         topkeylocs=numpy.where(area==topkey)
@@ -1549,7 +1592,7 @@ def resegdivideloop(area,maxthres,maxlw):
                 tempsubarea=subarea/topkey
                 newtempsubarea=numpy.where(tempsubarea!=1.,0,1)
                 antitempsubarea=numpy.where((tempsubarea!=1.) & (tempsubarea!=0),subarea,0)
-                newsubarea=boundarywatershed(newtempsubarea,1,'inner')
+                newsubarea=boundarywatershed(newtempsubarea,1,'inner',itertime=itertime)
                 labelunique,labcounts=numpy.unique(newsubarea,return_counts=True)
                 labelunique=labelunique.tolist()
                 if len(labelunique)>2:
