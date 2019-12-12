@@ -147,19 +147,10 @@ def zoom(event,widget):
     #print(w,h)
     crop=crop.resize([w*3,h*3],resample=Image.BILINEAR)
     w,h=crop.size
-    #crop=PhotoImage(width=20,height=20)
-    #crop.blank()
     crop=ImageTk.PhotoImage(crop)
-    #boxlist.append(crop)
-    #crop.put("{red green} {blue yellow}", (x,y))
     zoombox.append(widget.create_image(x+5,y-5,image=crop))
     root.update_idletasks()
     time.sleep(0.1)
-    #time.sleep(0.1)
-    #while len(zoombox)>1:
-
-    #updateloop(widget)
-    #widget.update()
 
 
 def changedisplayimg(frame,text):

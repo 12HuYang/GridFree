@@ -509,6 +509,7 @@ def manualboundarywatershed(area,avgarea):
             break
         markers=ndi.label(local_maxi)[0]
         unique=numpy.unique(markers)
+        print('manual unique',unique)
     localarea=watershed(-distance,markers,mask=area)
 
     return localarea
@@ -1592,7 +1593,7 @@ def resegdivideloop(area,maxthres,maxlw):
                 tempsubarea=subarea/topkey
                 newtempsubarea=numpy.where(tempsubarea!=1.,0,1)
                 antitempsubarea=numpy.where((tempsubarea!=1.) & (tempsubarea!=0),subarea,0)
-                newsubarea=boundarywatershed(newtempsubarea,1,'inner',itertime=itertime)
+                newsubarea=boundarywatershed(newtempsubarea,1,'inner',itertime=2)
                 labelunique,labcounts=numpy.unique(newsubarea,return_counts=True)
                 labelunique=labelunique.tolist()
                 if len(labelunique)>2:
