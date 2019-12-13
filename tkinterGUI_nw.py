@@ -128,7 +128,7 @@ def findratio(originsize,objectsize):
     return ratio
 
 def updateloop(widget):
-    widget.update_idle()
+    a=x+y
 
 def zoom(event,widget):
     global zoombox
@@ -150,7 +150,8 @@ def zoom(event,widget):
     crop=ImageTk.PhotoImage(crop)
     zoombox.append(widget.create_image(x+5,y-5,image=crop))
     root.update_idletasks()
-    time.sleep(0.1)
+    updateloop(widget)
+    #time.sleep(0.1)
 
 
 def changedisplayimg(frame,text):
@@ -433,7 +434,7 @@ def singleband(file):
         channel=0
     if channel>1:
         bands=bands[0,:,:]
-    bands=cv2.GaussianBlur(bands,(3,3),cv2.BORDER_DEFAULT)
+    #bands=cv2.GaussianBlur(bands,(3,3),cv2.BORDER_DEFAULT)
     ostu=filters.threshold_otsu(bands)
     bands=bands.astype('float32')
     bands=bands/ostu
@@ -479,8 +480,8 @@ def singleband(file):
         displays.update({'LabOstu':displaybands})
         #displaybandarray.update({'LabOstu':cv2.filter2D(displaybands,-1,kernel)})
     bands=Multiimagebands[file].bands
-    for i in range(3):
-        bands[i,:,:]=cv2.GaussianBlur(bands[i,:,:],(3,3),cv2.BORDER_DEFAULT)
+    #for i in range(3):
+    #    bands[i,:,:]=cv2.GaussianBlur(bands[i,:,:],(3,3),cv2.BORDER_DEFAULT)
     NDI=128*((bands[1,:,:]-bands[0,:,:])/(bands[1,:,:]+bands[0,:,:])+1)
     tempdict={'NDI':NDI}
     if 'NDI' not in originbands:
@@ -1319,7 +1320,7 @@ def batchextraction():
                     #        ratio=findratio([displayband.shape[0],displayband.shape[1]],[1503,1503])
                     #        workingimg=cv2.resize(displayband,(int(displayband.shape[1]*ratio),int(displayband.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
 
-
+            pyplt.imsave('workingimg.png',workingimg)
             labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
             multi_results.update({file:(labeldict,coinparts)})
             tempimgdict={}
@@ -1771,6 +1772,7 @@ def extraction():
     coin=False
     print('ratio:',ratio)
     print('workingimgsize:',workingimg.shape)
+    pyplt.imsave('workingimg.png',workingimg)
     if originlabels is None:
         originlabels,border,colortable,originlabeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
         changekmeans=False
@@ -2505,7 +2507,7 @@ checkboxframe.pack()
 for i in range(10):
     dictkey=str(i+1)
     tempdict={dictkey:Variable()}
-    if i==1:
+    if i==0:
         tempdict[dictkey].set('1')
     else:
         tempdict[dictkey].set('0')

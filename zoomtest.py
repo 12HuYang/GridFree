@@ -8,6 +8,12 @@ import time
 box=None
 boxlist=[]
 
+def hangover(crop):
+    global box
+    print(box)
+    print(canvas.find_all())
+    box=canvas.create_image(x+5,y-5,image=crop)
+    root.update_idletasks()
 def zoom(event):
     global box
     x=event.x
@@ -15,7 +21,7 @@ def zoom(event):
     print(x,y)
     if box is not None:
         canvas.delete(box)
-        time.sleep(0.1)
+        #time.sleep(0.1)
         print('delete')
     crop=oriimg.crop((x-10,y-10,x+10,y+10))
     w,h=crop.size
@@ -28,9 +34,10 @@ def zoom(event):
     #boxlist.append(crop)
     #crop.put("{red green} {blue yellow}", (x,y))
     box=canvas.create_image(x+5,y-5,image=crop)
-    canvas.update()
+    #canvas.update()
     #time.sleep(0.1)
-
+    root.update_idletasks()
+    hangover(crop)
 
 
 root=Tk()
