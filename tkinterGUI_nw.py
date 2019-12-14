@@ -127,9 +127,6 @@ def findratio(originsize,objectsize):
         ratio=round(min(objectsize[0]/originsize[0],objectsize[1]/originsize[1]))
     return ratio
 
-def updateloop(widget):
-    a=x+y
-
 def zoom(event,widget):
     global zoombox
     x=event.x
@@ -150,7 +147,7 @@ def zoom(event,widget):
     crop=ImageTk.PhotoImage(crop)
     zoombox.append(widget.create_image(x+5,y-5,image=crop))
     root.update_idletasks()
-    updateloop(widget)
+    raise NameError
     #time.sleep(0.1)
 
 
