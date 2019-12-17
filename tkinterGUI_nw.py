@@ -127,6 +127,14 @@ def findratio(originsize,objectsize):
         ratio=round(min(objectsize[0]/originsize[0],objectsize[1]/originsize[1]))
     return ratio
 
+def deletezoom(event,widget):
+    print('leave widget')
+    if len(zoombox)>0:
+        for i in range(len(zoombox)):
+            #print('delete')
+            widget.delete(zoombox.pop(0))
+    widget.update()
+
 def zoom(event,widget):
     global zoombox
     x=event.x
@@ -166,6 +174,7 @@ def changedisplayimg(frame,text):
     widget.pack()
     if text=='Output':
         widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg))
+        widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
     else:
         widget.unbind('<Motion>')
 
@@ -1687,6 +1696,7 @@ def gen_convband():
     print(ratio)
     if int(ratio)>1:
         if processlabel.shape[0]*processlabel.shape[1]>850*850:
+            print('pool_forward')
             convband,cache=tkintercorestat.pool_forward(processlabel,{"f":int(ratio),"stride":int(ratio)})
         else:
             cache=(np.zeros((processlabel.shape[0]*ratio,processlabel.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
@@ -1741,19 +1751,25 @@ def extraction():
     nonzeroratio=float(nonzeros)/((rlx-ulx)*(rly-uly))
     print(nonzeroratio)
     #nonzeroratio=float(nonzeros)/(currentlabels.shape[0]*currentlabels.shape[1])
+    dealpixel=nonzeroratio*currentlabels.shape[0]*currentlabels.shape[1]
     if nonzeroratio<=0.2:# and nonzeroratio>=0.1:
         ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1600,1600])
         if currentlabels.shape[0]*currentlabels.shape[1]>1600*1600:
             workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         else:
-            ratio=1
-            print('ratio',ratio)
-            workingimg=np.copy(currentlabels)
+            if dealpixel<512000/4:
+                ratio=2
+                #workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
+                cache=(np.zeros((currentlabels.shape[0]*ratio,currentlabels.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
+                workingimg=tkintercorestat.pool_backward(currentlabels,cache)
+            else:
+                ratio=1
+                print('ratio',ratio)
+                workingimg=np.copy(currentlabels)
     else:
         #if nonzeroratio>0.16:
         #if imgtypevar.get()=='0':
         #print('imgtype',imgtypevar.get())
-        dealpixel=nonzeroratio*currentlabels.shape[0]*currentlabels.shape[1]
         print('deal pixel',dealpixel)
         if dealpixel>512000:
             if currentlabels.shape[0]*currentlabels.shape[1]>1000*1000:
@@ -1763,7 +1779,7 @@ def extraction():
                 workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         else:
             ratio=1
-            print('ratio',ratio)
+            #print('ratio',ratio)
             workingimg=np.copy(currentlabels)
     pixelmmratio=1.0
     coin=False

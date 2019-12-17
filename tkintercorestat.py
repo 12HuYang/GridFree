@@ -364,6 +364,7 @@ def boundarywatershedcoin(area,segbondtimes,boundarytype):
     else:
         return area
 
+
 def boundarywatershed(area,segbondtimes,boundarytype,itertime=20):   #area = 1's
     if avgarea is not None and numpy.count_nonzero(area)<avgarea/2:
         return area
