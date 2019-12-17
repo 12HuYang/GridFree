@@ -57,6 +57,7 @@ multi_results={}
 outputimgdict={}
 outputimgbands={}
 outputsegbands={}
+originsegbands={}
 
 root=Tk()
 root.title('GridFree')
@@ -135,19 +136,15 @@ def deletezoom(event,widget):
             widget.delete(zoombox.pop(0))
     widget.update()
 
-def zoom(event,widget):
+def zoom(event,widget,img):
     global zoombox
     x=event.x
     y=event.y
     #print(x,y)
-    try:
-        image=outputsegbands[currentfilename]['iter0']
-    except:
-        return
     if len(zoombox)>1:
         widget.delete(zoombox.pop(0))
         #print('delete')
-    crop=image.crop((x-15,y-15,x+15,y+15))
+    crop=img.crop((x-15,y-15,x+15,y+15))
     w,h=crop.size
     #print(w,h)
     crop=crop.resize([w*3,h*3],resample=Image.BILINEAR)
@@ -173,10 +170,22 @@ def changedisplayimg(frame,text):
     widget.create_image(0,0,image=displayimg[text]['Image'],anchor=NW)
     widget.pack()
     if text=='Output':
-        widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg))
+        try:
+            image=outputsegbands[currentfilename]['iter0']
+        except:
+            return
+        widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,image))
         widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
     else:
-        widget.unbind('<Motion>')
+        if text=='Origin':
+            try:
+                image=originsegbands['Origin']
+            except:
+                return
+            widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,image))
+            widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
+        else:
+            widget.unbind('<Motion>')
 
     #print('change to '+text)
     #time.sleep(1)
@@ -196,6 +205,8 @@ def generatedisplayimg(filename):
         resizeshape.append(width/ratio)
         resizeshape.append(height/ratio)
     resize=cv2.resize(Multiimage[filename],(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
+    originimg=Image.fromarray(resize.astype('uint8'))
+    originsegbands.update({'Origin':originimg})
     rgbimg=ImageTk.PhotoImage(Image.fromarray(resize.astype('uint8')))
     tempdict={}
     tempdict.update({'Size':resize.shape})
