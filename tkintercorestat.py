@@ -460,7 +460,6 @@ def boundarywatershed(area,segbondtimes,boundarytype,itertime=20):   #area = 1's
         return res
 
 def manualboundarywatershed(area,avgarea):
-
     '''
     if numpy.count_nonzero(area)<avgarea/2:
         return area

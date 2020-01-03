@@ -1,42 +1,20 @@
-import tkinter
-from PIL import ImageGrab,ImageTk
-import time
-import ctypes
-root=tkinter.Tk()
-screenWidth=root.winfo_screenwidth()
-screenHeight=root.winfo_screenheight()
-root.geometry(str(screenWidth)+'x'+str(screenHeight)+'+0+0')
-root.overrideredirect(True)
+from scipy import ndimage as ndi
+from skimage.morphology import watershed
+from skimage.feature import peak_local_max
+import numpy as np
 
-root.resizable(False,False)
+x,y=np.indices((80,80))
+print('x,y',x,y)
+x1,y1,x2,y2=28,28,30,30
+r1,r2=5,5
+mask_circle1=(x-x1)**2+(y-y1)**2 < r1**2
+mask_circle2=(x-x2)**2+(y-y2)**2 < r2**2
+mask_circle3=(x-26)**2+(y-26)**2 < 5**2
+image=np.logical_or(mask_circle1,mask_circle2)
+image=np.logical_or(image,mask_circle3)
 
-canvas=tkinter.Canvas(root,bg='white',width=screenWidth,height=screenHeight)
-image=ImageTk.PhotoImage(ImageGrab.grab())
-canvas.create_image(screenWidth//2,screenHeight//2,image=image)
-
-def onMouseRightClick(event):
-    global root
-    root.destroy()
-#canvas.bind('<Button-3>',onMouseRightClick)
-
-radius=20
-def onMouseMove(event):
-    global canvas
-    ctypes
-    x=event.x
-    y=event.y
-    print(x,y)
-    subIm=ImageGrab.grab((x-radius,y-radius,x+radius,y+radius))
-    subIm=subIm.resize((radius*3,radius*3))
-    subIm=ImageTk.PhotoImage(subIm)
-    #mag=tkinter.Canvas(root,bg='white',width=radius*3,height=radius*3)
-    #mag.pack()
-    canvas.create_image(x-70,y-70,image=subIm)
-    canvas.update()
-    time.sleep(0.5)
-
-canvas.bind('<Motion>',onMouseMove)
-
-canvas.pack(fill=tkinter.BOTH,expand=tkinter.YES)
-
-root.mainloop()
+distance=ndi.distance_transform_edt(image)
+local_max=peak_local_max(distance,labels=image,footprint=np.ones((3,3)),indices=False)
+markers=ndi.label(local_max)[0]
+labels=watershed(-distance,markers,mask=image)
+print('labels',labels)

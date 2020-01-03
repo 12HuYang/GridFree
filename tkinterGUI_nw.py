@@ -15,7 +15,7 @@ import numpy as np
 import os
 import time
 import csv
-
+import scipy.linalg as la
 from functools import partial
 import sys
 
@@ -41,6 +41,8 @@ displayimg={'Origin':None,
             'Output':None}
 #cluster=['LabOstu','NDI'] #,'Greenness','VEG','CIVE','MExG','NDVI','NGRDI','HEIGHT']
 cluster=['LabOstu','NDI','Greenness','VEG','CIVE','MExG','NDVI','NGRDI','HEIGHT','Band1','Band2','Band3']
+colortable=np.array([[255,0,0],[255,127,0],[255,255,0],[127,255,0],[0,255,255],[0,127,255],[0,0,255],[127,0,255],[75,0,130],[255,0,255]],'uint8')
+#print('colortableshape',colortable.shape)
 filenames=[]
 
 Multiimage={}
@@ -58,6 +60,7 @@ outputimgdict={}
 outputimgbands={}
 outputsegbands={}
 originsegbands={}
+
 
 root=Tk()
 root.title('GridFree')
@@ -193,7 +196,7 @@ def changedisplayimg(frame,text):
 def generatedisplayimg(filename):
     firstimg=Multiimagebands[filename]
     #height,width=firstimg.size
-    height,width=displaybandarray[filename]['LabOstu'].shape
+    height,width,c=displaybandarray[filename]['LabOstu'].shape
     ratio=findratio([height,width],[850,850])
     resizeshape=[]
     if height*width<850*850:
@@ -233,11 +236,11 @@ def generatedisplayimg(filename):
     #    tempband=cv2.resize(ratio,(int(tempband.shape[1]/ratio),int(tempband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
     tempband=cv2.resize(tempband,(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
     print('resizeshape',resizeshape)
-    pyplt.imsave('displayimg.png',tempband)
+    pyplt.imsave('displayimg.png',tempband[:,:,0])
     indimg=cv2.imread('displayimg.png')
     tempdict={}
     tempdict.update({'Size':tempband.shape})
-    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(indimg))})
+    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(tempband[:,:,0].astype('uint8')))})
     displayimg['ColorIndices']=tempdict
 
     #resize=cv2.resize(Multigray[filename],(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
@@ -245,7 +248,15 @@ def generatedisplayimg(filename):
     #tempdict={}
     #tempdict.update({'Size':resize.shape})
     #tempdict.update({'Image':grayimg})
-    displayimg['Color Deviation']=tempdict
+    colordeviate=np.zeros((tempband[:,:,0].shape[0],tempband[:,:,0].shape[1],3),'uint8')
+    kvar=int(kmeans.get())
+    for i in range(kvar):
+        locs=np.where(tempband[:,:,0]==i)
+        colordeviate[locs]=colortable[i,:]
+    colortempdict={}
+    colortempdict.update({'Size':colordeviate.shape})
+    colortempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colordeviate.astype('uint8')))})
+    displayimg['Color Deviation']=colortempdict
 
 
 
@@ -422,21 +433,19 @@ def Open_Multifile():
         #singleband(filenames[0])
         generatedisplayimg(filenames[0])
         currentfilename=filenames[0]
-        for i in range(len(cluster)):
-            bandchoice[cluster[i]].set('')
+        if len(bandchoice)>0:
+            for i in range(len(cluster)):
+                bandchoice[cluster[i]].set('')
         #changedisplayimg(imageframe,'Origin')
         kmeans.set(2)
-        reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],1))
-        colordicesband=kmeansclassify(['LabOstu'],reshapemodified_tif)
+        #reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],3))
+        #colordicesband=kmeansclassify(['LabOstu'],reshapemodified_tif)
+        colordicesband=kmeansclassify()
         generateimgplant(colordicesband)
         changedisplayimg(imageframe,'Origin')
-        bandchoice['LabOstu'].set('1')
+        if len(bandchoice)>0:
+            bandchoice['LabOstu'].set('1')
 
-
-
-
-def workbandsize(item):
-    pass
 
 def singleband(file):
     global displaybandarray,originbandarray
@@ -488,9 +497,17 @@ def singleband(file):
     #    ratio=1
     originbands={}
     displays={}
+    fea_l,fea_w=bands.shape
+    fea_vector=np.zeros((fea_l*fea_w,10))
+    displaybands=cv2.resize(bands,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+    displayfea_l,displayfea_w=displaybands.shape
+    displayfea_vector=np.zeros((displayfea_l*displayfea_w,10))
     if 'LabOstu' not in originbands:
         originbands.update({'LabOstu':bands})
-        displaybands=cv2.resize(bands,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        fea_bands=bands.reshape(fea_l*fea_w,1)[:,0]
+        displayfea_bands=displaybands.reshape((displayfea_l*displayfea_w),1)[:,0]
+        fea_vector[:,0]=fea_vector[:,0]+fea_bands
+        displayfea_vector[:,9]=displayfea_vector[:,0]+displayfea_bands
         #displaybands=displaybands.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         #kernel=np.ones((2,2),np.float32)/4
         #displaybands=np.copy(bands)
@@ -504,6 +521,10 @@ def singleband(file):
     if 'NDI' not in originbands:
         originbands.update(tempdict)
         displaybands=cv2.resize(NDI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        fea_bands=NDI.reshape(fea_l*fea_w,1)[:,0]
+        displayfea_bands=displaybands.reshape((displayfea_l*displayfea_w),1)[:,0]
+        fea_vector[:,1]=fea_vector[:,1]+fea_bands
+        displayfea_vector[:,1]=displayfea_vector[:,1]+displayfea_bands
         #displaybands=np.copy(NDI)
         #kernel=np.ones((2,2),np.float32)/4
         #displaydict={'NDI':cv2.filter2D(displaybands,-1,kernel)}
@@ -520,18 +541,30 @@ def singleband(file):
         image=cv2.resize(Red,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         displaydict={'Band1':image}
         displays.update(displaydict)
+        fea_bands=Red.reshape(fea_l*fea_w,1)[:,0]
+        displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
+        fea_vector[:,2]=fea_vector[:,2]+fea_bands
+        displayfea_vector[:,2]=displayfea_vector[:,2]+displayfea_bands
     tempdict={'Band2':Green}
     if 'Band2' not in originbands:
         originbands.update(tempdict)
-        image=cv2.resize(Red,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        image=cv2.resize(Green,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         displaydict={'Band2':image}
         displays.update(displaydict)
+        fea_bands=Green.reshape(fea_l*fea_w,1)[:,0]
+        displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
+        fea_vector[:,3]=fea_vector[:,3]+fea_bands
+        displayfea_vector[:,3]=displayfea_vector[:,3]+displayfea_bands
     tempdict={'Band3':Blue}
     if 'Band3' not in originbands:
         originbands.update(tempdict)
-        image=cv2.resize(Red,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        image=cv2.resize(Blue,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         displaydict={'Band3':image}
         displays.update(displaydict)
+        fea_bands=Blue.reshape(fea_l*fea_w,1)[:,0]
+        displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
+        fea_vector[:,4]=fea_vector[:,4]+fea_bands
+        displayfea_vector[:,4]=displayfea_vector[:,4]+displayfea_bands
     Greenness = bands[1, :, :] / (bands[0, :, :] + bands[1, :, :] + bands[2, :, :])
     tempdict = {'Greenness': Greenness}
     if 'Greenness' not in originbandarray:
@@ -541,6 +574,10 @@ def singleband(file):
         displaydict={'Greenness':image}
         #displaybandarray.update(worktempdict)
         displays.update(displaydict)
+        fea_bands=Greenness.reshape(fea_l*fea_w,1)[:,0]
+        displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
+        fea_vector[:,5]=fea_vector[:,5]+fea_bands
+        displayfea_vector[:,5]=displayfea_vector[:,5]+displayfea_bands
     VEG=bands[1,:,:]/(np.power(bands[0,:,:],0.667)*np.power(bands[2,:,:],(1-0.667)))
     tempdict={'VEG':VEG}
     if 'VEG' not in originbandarray:
@@ -551,6 +588,10 @@ def singleband(file):
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'VEG':cv2.filter2D(image,-1,kernel)}
         displays.update(worktempdict)
+        fea_bands=VEG.reshape(fea_l*fea_w,1)[:,0]
+        displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
+        fea_vector[:,6]=fea_vector[:,6]+fea_bands
+        displayfea_vector[:,6]=displayfea_vector[:,6]+displayfea_bands
     CIVE=0.441*bands[0,:,:]-0.811*bands[1,:,:]+0.385*bands[2,:,:]+18.78745
     tempdict={'CIVE':CIVE}
     if 'CIVE' not in originbandarray:
@@ -559,6 +600,10 @@ def singleband(file):
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'CIVE':image}
         displays.update(worktempdict)
+        fea_bands=CIVE.reshape(fea_l*fea_w,1)[:,0]
+        displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
+        fea_vector[:,7]=fea_vector[:,7]+fea_bands
+        displayfea_vector[:,7]=displayfea_vector[:,7]+displayfea_bands
     MExG=1.262*bands[1,:,:]-0.884*bands[0,:,:]-0.311*bands[2,:,:]
     tempdict={'MExG':MExG}
     if 'MExG' not in originbandarray:
@@ -567,6 +612,10 @@ def singleband(file):
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'MExG':image}
         displays.update(worktempdict)
+        fea_bands=MExG.reshape(fea_l*fea_w,1)[:,0]
+        displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
+        fea_vector[:,8]=fea_vector[:,8]+fea_bands
+        displayfea_vector[:,8]=displayfea_vector[:,8]+displayfea_bands
     NDVI=(bands[0,:,:]-bands[2,:,:])/(bands[0,:,:]+bands[2,:,:])
     tempdict={'NDVI':NDVI}
     if 'NDVI' not in originbandarray:
@@ -575,6 +624,10 @@ def singleband(file):
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'NDVI':image}
         displays.update(worktempdict)
+        fea_bands=NDVI.reshape(fea_l*fea_w,1)[:,0]
+        displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
+        fea_vector[:,9]=fea_vector[:,9]+fea_bands
+        displayfea_vector[:,0]=displayfea_vector[:,9]+displayfea_bands
     NGRDI=(bands[1,:,:]-bands[0,:,:])/(bands[1,:,:]+bands[0,:,:])
     tempdict={'NGRDI':NGRDI}
     if 'NGRDI' not in originbandarray:
@@ -593,6 +646,7 @@ def singleband(file):
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'NDVI':image}
         displays.update(worktempdict)
+    '''
     if channel==3:
         bands=Multigraybands[file].bands
         Height=bands[2,:,:]
@@ -607,26 +661,46 @@ def singleband(file):
         image=np.zeros((int(bandsize[0]/ratio),int(bandsize[0]/ratio)))
         worktempdict.update({'HEIGHT':image})
         displays.update(worktempdict)
+    '''
 
+    M=np.mean(displayfea_vector.T,axis=1)
+    C=displayfea_vector-M
+    V=np.cov(C.T)
 
-    displaybandarray.update({file:displays})
+    #eigvalues,eigvectors=np.linalg.eig(V)
+    #n,m=displayfea_vector.shape
+    #C=np.dot(displayfea_vector.T,displayfea_vector)/(n-1)
+    eigvalues=la.eigvals(V)
+    #eigvalues=np.linalg.eigvals(C)
+    print('eigvalue',eigvalues)
+    idx=np.argsort(eigvalues)
+    print('idx',idx)
+    eigvalues,eigvectors=np.linalg.eig(V)
+    print('eigvalue',eigvalues)
+    print('eigvectors',eigvectors)
+    eigvalueperc={}
+    featurechannel=0
+    for i in range(len(eigvalues)):
+        print('percentage',i,eigvalues[i]/sum(eigvalues))
+        eigvalueperc.update({i:eigvalues[i]/sum(eigvalues)})
+        if eigvalues[i]>0:
+            featurechannel+=1
+
+    #P=eigvectors.T.dot(C.T)
+    #print('P.T',P.T)
+    #if eigvalueperc[0]>0.75:
+    pcabands=np.zeros((displayfea_vector.shape[0],featurechannel))
+    for i in range(featurechannel):
+        pcn=eigvectors[:,i]
+        pcnbands=np.dot(displayfea_vector,pcn)
+        pcabands[:,i]=pcabands[:,i]+pcnbands
+        #pcabands=P.T[:,0]
+    pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
+    #originbands={'LabOstu':pcabandsdisplay}
+    tempdictdisplay={'LabOstu':pcabandsdisplay}
+    #displaybandarray.update({file:displays})
+    displaybandarray.update({file:tempdictdisplay})
     originbandarray.update({file:originbands})
-
-
-
-
-
-
-
-def Band_calculation():
-    global originbandarray,workbandarray
-    originbandarray={}
-    workbandarray={}
-    for file in filenames:
-        singleband(file)
-
-
-
 
 def changeimage(frame,filename):
     global clusterdisplay,currentfilename,resviewframe
@@ -687,14 +761,16 @@ def generateplant(checkbox,bandchoice):
             if kmeans.get() in tempdict:
                 displaylabels=tempdict[kmeans.get()]
             else:
-                reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
-                displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+                #reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
+                #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+                displaylabels=kmeansclassify()
             generateimgplant(displaylabels)
             pyplt.imsave('allcolorindex.png',displaylabels)
             return
         else:
-            reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
-            displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+            #reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
+            #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+            displaylabels=kmeansclassify()
             generateimgplant(displaylabels)
             pyplt.imsave('allcolorindex.png',displaylabels)
 
@@ -702,10 +778,12 @@ def generateplant(checkbox,bandchoice):
 
 
 def generatecheckbox(frame,classnum):
-    global checkboxdict
+    global checkboxdict,havecolorstrip
     for widget in frame.winfo_children():
         widget.pack_forget()
     checkboxdict={}
+    havecolorstrip=False
+    addcolorstrip()
     for i in range(10):
         dictkey=str(i+1)
         tempdict={dictkey:Variable()}
@@ -728,13 +806,15 @@ def generatecheckbox(frame,classnum):
     #        ch.invoke()
 
 def generateimgplant(displaylabels):
-    global currentlabels,changekmeans,havecolorstrip
+    global currentlabels,changekmeans
     keys=checkboxdict.keys()
     plantchoice=[]
     for key in keys:
         plantchoice.append(checkboxdict[key].get())
-    tempdisplayimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
-    colordivimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
+    tempdisplayimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0],
+                             displaybandarray[currentfilename]['LabOstu'].shape[1]))
+    colordivimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0],
+                          displaybandarray[currentfilename]['LabOstu'].shape[1]))
     for i in range(len(plantchoice)):
         tup=plantchoice[i]
         if '1' in tup:
@@ -751,6 +831,14 @@ def generateimgplant(displaylabels):
     else:
         tempdisplayimg=cv2.resize(tempdisplayimg,(int(tempdisplayimg.shape[1]/ratio),int(tempdisplayimg.shape[0]/ratio)))
         colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]/ratio),int(colordivimg.shape[0]/ratio)))
+    binaryimg=np.zeros((tempdisplayimg.shape[0],tempdisplayimg.shape[1],3))
+    kvar=int(kmeans.get())
+    locs=np.where(tempdisplayimg==1)
+    binaryimg[locs]=[240,228,66]
+    colordeimg=np.zeros((colordivimg.shape[0],colordivimg.shape[1],3))
+    for i in range(kvar):
+        locs=np.where(colordivimg==i)
+        colordeimg[locs]=colortable[i]
     pyplt.imsave('displayimg.png',tempdisplayimg)
     pyplt.imsave('allcolorindex.png',colordivimg)
     #bands=Image.fromarray(tempdisplayimg)
@@ -759,7 +847,7 @@ def generateimgplant(displaylabels):
     indimg=cv2.imread('displayimg.png')
     tempdict={}
     tempdict.update({'Size':tempdisplayimg.shape})
-    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(indimg))})
+    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(binaryimg.astype('uint8')))})
     displayimg['ColorIndices']=tempdict
 
     #indimg=cv2.imread('allcolorindex.png')
@@ -768,24 +856,32 @@ def generateimgplant(displaylabels):
     colorimg=cv2.imread('allcolorindex.png')
     colordivdict={}
     colordivdict.update({'Size':tempdisplayimg.shape})
-    colordivdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colorimg))})
+    colordivdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colordeimg.astype('uint8')))})
     displayimg['Color Deviation']=colordivdict
 
     changedisplayimg(imageframe,'ColorIndices')
     changekmeans=True
 
 
-def kmeansclassify(choicelist,reshapedtif):
+#def kmeansclassify(choicelist,reshapedtif):
+def kmeansclassify():
     global clusterdisplay,minipixelareaclass
     if int(kmeans.get())==0:
         return
-    for i in range(len(choicelist)):
-            tempband=displaybandarray[currentfilename][choicelist[i]]
-            #tempband=cv2.resize(tempband,(450,450),interpolation=cv2.INTER_LINEAR)
-            reshapedtif[:,i]=tempband.reshape(tempband.shape[0]*tempband.shape[1],1)[:,0]
+    #for i in range(len(choicelist)):
+    #    tempband=displaybandarray[currentfilename][choicelist[i]]
+        #tempband=cv2.resize(tempband,(450,450),interpolation=cv2.INTER_LINEAR)
+    #    reshapedtif[:,i]=tempband.reshape(tempband.shape[0]*tempband.shape[1],2)[:,0]
+    #if len(choicelist)==0:
+    tempband=displaybandarray[currentfilename]['LabOstu']
+    h,w,c=tempband.shape
+    print('shape',tempband.shape)
+    reshapedtif=tempband.reshape(tempband.shape[0]*tempband.shape[1],c)
+    print('reshape',reshapedtif.shape)
     clf=KMeans(n_clusters=int(kmeans.get()),init='k-means++',n_init=10,random_state=0)
-    tempdisplayimg=clf.fit_predict(reshapedtif)
-    displaylabels=tempdisplayimg.reshape(displaybandarray[currentfilename]['LabOstu'].shape)
+    tempdisplayimg=clf.fit(reshapedtif)
+    displaylabels=tempdisplayimg.labels_.reshape((displaybandarray[currentfilename]['LabOstu'].shape[0],
+                                          displaybandarray[currentfilename]['LabOstu'].shape[1]))
     pixelarea=1.0
     for i in range(int(kmeans.get())):
         pixelloc=np.where(displaylabels==i)
@@ -796,7 +892,8 @@ def kmeansclassify(choicelist,reshapedtif):
             pixelarea=temparea
     if kmeans.get() not in displaylabels:
         tempdict={kmeans.get():displaylabels}
-        clusterdisplay.update({''.join(choicelist):tempdict})
+        #clusterdisplay.update({''.join(choicelist):tempdict})
+        clusterdisplay.update(tempdict)
     return displaylabels
 
 def addcolorstrip():
@@ -813,6 +910,39 @@ def addcolorstrip():
 
 
 def changecluster(event):
+    global havecolorstrip
+    imageband=np.copy(displaybandarray[currentfilename]['LabOstu'])
+    if int(kmeans.get())==1:
+        tempband=np.copy(imageband)
+        ratio=findratio([tempband.shape[0],tempband.shape[1]],[850,850])
+        tempband=cv2.resize(tempband,(int(tempband.shape[1]/ratio),int(tempband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+        pyplt.imsave('displayimg.png',tempband)
+        indimg=cv2.imread('displayimg.png')
+        #indimg=Image.open('displayimg.png')
+        tempdict={}
+        tempdict.update({'Size':tempband.shape})
+        tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(indimg))})
+        displayimg['ColorIndices']=tempdict
+        changedisplayimg(imageframe,'ColorIndices')
+        return
+    else:
+        if kmeans.get() in clusterdisplay:
+            displaylabels=clusterdisplay[kmeans.get()]
+        else:
+            havecolorstrip=False
+            choicelist=[]
+            reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
+            #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+            displaylabels=kmeansclassify()
+        generateimgplant(displaylabels)
+        pyplt.imsave('allcolorindex.png',displaylabels)
+        #kmeanscanvas.update()
+        addcolorstrip()
+        return
+
+
+
+def changecluster_kmeans(event):
     global havecolorstrip
     keys=bandchoice.keys()
     choicelist=[]
@@ -863,7 +993,8 @@ def changecluster(event):
             else:
                 havecolorstrip=False
                 reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
-                displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+                #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+                displaylabels=kmeansclassify()
             generateimgplant(displaylabels)
             pyplt.imsave('allcolorindex.png',displaylabels)
             #kmeanscanvas.update()
@@ -871,7 +1002,8 @@ def changecluster(event):
             return
         else:
             reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
-            displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+            #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+            displaylabels=kmeansclassify()
             generateimgplant(displaylabels)
             pyplt.imsave('allcolorindex.png',displaylabels)
             havecolorstrip=False
@@ -985,7 +1117,7 @@ def showcounting(tup,number=True):
     #image.save(originfile+'-countresult'+extension,"JPEG")
     #firstimg=Multigraybands[currentfilename]
     #height,width=firstimg.size
-    height,width=displaybandarray[filename]['LabOstu'].shape
+    height,width,channel=displaybandarray[filename]['LabOstu'].shape
     ratio=findratio([height,width],[850,850])
     #if labels.shape[0]*labels.shape[1]<850*850:
     #    disimage=image.resize([int(labels.shape[1]*ratio),int(labels.shape[0]*ratio)],resample=Image.BILINEAR)
@@ -1283,7 +1415,7 @@ def single_kmenas(singlebandarray):
     return tempdisplayimg
 
 
-
+'''
 def batchextraction():
     global multi_results
     for file in filenames:
@@ -1353,6 +1485,7 @@ def batchextraction():
             outputimgbands.update({file:tempimgbands})
             outputsegbands.update({file:tempsegbands})
     pass
+'''
 
 
 def resegment():
@@ -1768,12 +1901,12 @@ def extraction():
         if currentlabels.shape[0]*currentlabels.shape[1]>1600*1600:
             workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         else:
-            if dealpixel<512000/4:
-                ratio=2
+            #if dealpixel<512000/4:
+            #    ratio=2
                 #workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
-                cache=(np.zeros((currentlabels.shape[0]*ratio,currentlabels.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
-                workingimg=tkintercorestat.pool_backward(currentlabels,cache)
-            else:
+            #    cache=(np.zeros((currentlabels.shape[0]*ratio,currentlabels.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
+            #    workingimg=tkintercorestat.pool_backward(currentlabels,cache)
+            #else:
                 ratio=1
                 print('ratio',ratio)
                 workingimg=np.copy(currentlabels)
@@ -2492,6 +2625,7 @@ filedropvar.set(filenames[0])
 changefiledrop=OptionMenu(changefileframe,filedropvar,*filenames,command=partial(changeimage,imageframe))
 changefiledrop.pack()
 ### ---choose color indices---
+'''
 chframe=LabelFrame(filter_fr,text='Select indicies below',cursor='hand2',bd=0)
 chframe.pack()
 chcanvas=Canvas(chframe,width=200,height=110,scrollregion=(0,0,400,400))
@@ -2512,6 +2646,7 @@ for key in cluster:
         if key=='LabOstu':
             ch.invoke()
     ch.pack(fill=X)
+'''
 
 ### ----Class NUM----
 kmeansgenframe=LabelFrame(filter_fr,text='Select # of class',cursor='hand2',bd=0)
@@ -2520,7 +2655,7 @@ kmeanslabel=LabelFrame(kmeansgenframe,bd=0)
 checkboxframe=LabelFrame(kmeansgenframe,cursor='hand2',bd=0)#,text='Select classes',cursor='hand2')
 kmeanslabel.pack()
 
-kmeans.set(2)
+kmeans.set(3)
 #kmeansbar=Scale(kmeanslabel,from_=1,to=10,tickinterval=1,length=270,showvalue=0,orient=HORIZONTAL,variable=kmeans,command=partial(generatecheckbox,checkboxframe))
 kmeansbar=ttk.Scale(kmeanslabel,from_=1,to=10,length=350,orient=HORIZONTAL,variable=kmeans,cursor='hand2',command=partial(generatecheckbox,checkboxframe))
 kmeansbar.pack()
@@ -2546,19 +2681,22 @@ kmeanscanvasframe.pack()
 kmeanscanvas=Canvas(kmeanscanvasframe,width=350,height=10,bg='Black')
 
 
-reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],1))
-colordicesband=kmeansclassify(['LabOstu'],reshapemodified_tif)
+#reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],3))
+#colordicesband=kmeansclassify(['LabOstu'],reshapemodified_tif)
+#colordicesband=kmeansclassify([],reshapemodified_tif)
+colordicesband=kmeansclassify()
 generateimgplant(colordicesband)
 changedisplayimg(imageframe,'Origin')
 
-colorstrip=np.zeros((15,35*2),'float32')
-for i in range(2):
+colorstrip=np.zeros((15,35*3,3),'uint8')
+for i in range(3):
     for j in range(0,35):
-        colorstrip[:,i*35+j]=i+1
-pyplt.imsave('colorstrip.png',colorstrip)
+        colorstrip[:,i*35+j]=colortable[i,:]
+pyplt.imsave('colorstrip.jpeg',colorstrip)
 kmeanscanvas.delete(ALL)
-colorimg=cv2.imread('colorstrip.png')
-colorimg=ImageTk.PhotoImage(Image.fromarray(colorimg))
+#colorimg=cv2.imread('colorstrip.jpeg',flags=cv2.IMREAD_ANYCOLOR)
+colorimg=np.copy(colorstrip)
+colorimg=ImageTk.PhotoImage(Image.fromarray(colorimg.astype('uint8')))
 kmeanscanvas.create_image(0,0,image=colorimg,anchor=NW)
 kmeanscanvas.pack()
 #generatecheckbox(checkboxframe,2)
@@ -2633,8 +2771,12 @@ outputbutton.config(state=DISABLED)
 changekmeans=False
 colorstripdict={}
 for i in range(1,11):
-    loadimg=cv2.imread('colorstrip'+str(i)+'.png')
-    photoimg=ImageTk.PhotoImage(Image.fromarray(loadimg))
+    colorstrip=np.zeros((15,35*i,3),'uint8')
+    for j in range(i):
+        for k in range(35):
+            colorstrip[:,j*35+k]=colortable[j,:]
+    #loadimg=cv2.imread('colorstrip'+str(i)+'.png')
+    photoimg=ImageTk.PhotoImage(Image.fromarray(colorstrip.astype('uint8')))
     colorstripdict.update({'colorstrip'+str(i):photoimg})
 root.mainloop()
 
