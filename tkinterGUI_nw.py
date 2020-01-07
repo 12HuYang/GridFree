@@ -839,12 +839,12 @@ def generateimgplant(displaylabels):
     for i in range(kvar):
         locs=np.where(colordivimg==i)
         colordeimg[locs]=colortable[i]
-    pyplt.imsave('displayimg.png',tempdisplayimg)
-    pyplt.imsave('allcolorindex.png',colordivimg)
+    #pyplt.imsave('displayimg.png',tempdisplayimg)
+    #pyplt.imsave('allcolorindex.png',colordivimg)
     #bands=Image.fromarray(tempdisplayimg)
     #bands=bands.convert('L')
     #bands.save('displayimg.png')
-    indimg=cv2.imread('displayimg.png')
+    #indimg=cv2.imread('displayimg.png')
     tempdict={}
     tempdict.update({'Size':tempdisplayimg.shape})
     tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(binaryimg.astype('uint8')))})
@@ -1174,6 +1174,7 @@ def export_result(iterver):
             draw=ImageDraw.Draw(imageband)
             uniquelabels=list(colortable.keys())
             tempdict={}
+            '''
             if coinsize.get()=='1':
                 if refarea is not None:
                     #realref=np.where(labels==65535.0)
@@ -1192,7 +1193,14 @@ def export_result(iterver):
                         pixelmmratio=1.0
                 else:
                     pixelmmratio=1.0
-            print('coinsize',coinsize.get(),'pixelmmratio',pixelmmratio)
+            '''
+            if refarea is not None:
+                specarea=float(sizeentry.get())
+                pixelmmratio=(specarea/len(refarea[0]))**0.5
+            else:
+                pixelmmratio=1.0
+            #print('coinsize',coinsize.get(),'pixelmmratio',pixelmmratio)
+            print('pixelmmratio',pixelmmratio)
             for uni in uniquelabels:
                 if uni !=0:
                     pixelloc = np.where(labels == float(uni))
@@ -1257,13 +1265,15 @@ def export_result(iterver):
                                     pointmatch[:]=[]
                                     pointmatch.append(point)
                                     pointmatch.append(subpoint)
+                                    #print('tempwidth',width)
                                     width=tempwidth
                         if len(pointmatch)>0:
-                            print('pointmatch',pointmatch)
+                            #print('pointmatch',pointmatch)
                             pointmatchdict.update({(pointmatch[0],pointmatch[1]):width})
                     widthsort=sorted(pointmatchdict,key=pointmatchdict.get,reverse=True)
                     try:
                         pointmatch=widthsort[0]
+                        print('final pointmatch',pointmatch)
                     except:
                         continue
                     if len(pointmatch)>0:
@@ -1273,6 +1283,8 @@ def export_result(iterver):
                         y1=int(pointmatch[1][1])
                         if imgtypevar.get()=='0':
                             draw.line([(x0,y0),(x1,y1)],fill='yellow')
+                        width=float(((x0-x1)**2+(y0-y1)**2)**0.5)
+                        print('width',width,'length',kernellength)
                         print('kernelwidth='+str(width*pixelmmratio))
                         print('kernellength='+str(kernellength*pixelmmratio))
                         #print('kernelwidth='+str(kernelwidth*pixelmmratio))
@@ -2493,7 +2505,8 @@ def del_reflabel():
 
 #def refchoice(refsubframe):
 def refchoice():
-    global coinsize,sizeentry,coinbox,panelA,boundaryarea,coindict,convband
+    #global coinsize,sizeentry,coinbox,panelA,boundaryarea,coindict,convband
+    global sizeentry,coinbox,panelA,boundaryarea,coindict,convband
     global refarea
     #refsubframe.grid_forget()
     #for widget in refsubframe.winfo_children():
@@ -2692,7 +2705,7 @@ colorstrip=np.zeros((15,35*3,3),'uint8')
 for i in range(3):
     for j in range(0,35):
         colorstrip[:,i*35+j]=colortable[i,:]
-pyplt.imsave('colorstrip.jpeg',colorstrip)
+#pyplt.imsave('colorstrip.jpeg',colorstrip)
 kmeanscanvas.delete(ALL)
 #colorimg=cv2.imread('colorstrip.jpeg',flags=cv2.IMREAD_ANYCOLOR)
 colorimg=np.copy(colorstrip)
