@@ -56,6 +56,8 @@ Modify matplotlibrc file ADD: ```backend: TkAgg```
 #### Chickpea segment demo
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/480demo.gif)
 ##### YouTube: https://youtu.be/be12xOfF614
+#### Wheat segment demo
+##### YouTube: https://youtu.be/VAho0w2_9Wo
 #### Corns segment demo
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/corns_demo.gif)
 ##### YouTube: https://youtu.be/1ngHQsUFWH4
