@@ -683,8 +683,8 @@ def singleband(file):
     for i in range(len(eigvalues)):
         print('percentage',i,eigvalues[i]/sum(eigvalues))
         eigvalueperc.update({i:eigvalues[i]/sum(eigvalues)})
-        if eigvalues[i]>0:
-            featurechannel+=1
+        #if eigvalues[i]>0:
+        featurechannel+=1
 
     #P=eigvectors.T.dot(C.T)
     #print('P.T',P.T)
@@ -873,7 +873,21 @@ def kmeansclassify():
         #tempband=cv2.resize(tempband,(450,450),interpolation=cv2.INTER_LINEAR)
     #    reshapedtif[:,i]=tempband.reshape(tempband.shape[0]*tempband.shape[1],2)[:,0]
     #if len(choicelist)==0:
-    tempband=displaybandarray[currentfilename]['LabOstu']
+    originpcabands=displaybandarray[currentfilename]['LabOstu']
+    pcah,pcaw,pcac=originpcabands.shape
+    pcacount={}
+    keys=list(pcaboxdict.keys())
+    for item in keys:
+        if pcaboxdict[item].get()=='1':
+            pcacount.update({item:pcaboxdict[item]})
+    pcakeys=list(pcacount.keys())
+    tempband=np.zeros((pcah,pcaw,len(pcakeys)))
+    for i in range(len(pcakeys)):
+        channel=int(pcakeys[i])-1
+        tempband[:,:,i]=tempband[:,:,i]+originpcabands[:,:,channel]
+
+
+    #tempband=displaybandarray[currentfilename]['LabOstu']
     h,w,c=tempband.shape
     print('shape',tempband.shape)
     reshapedtif=tempband.reshape(tempband.shape[0]*tempband.shape[1],c)
@@ -908,6 +922,11 @@ def addcolorstrip():
         widget.pack()
         havecolorstrip=True
 
+def changepca():
+    displaylabels=kmeansclassify()
+    generateimgplant(displaylabels)
+    return
+
 
 def changecluster(event):
     global havecolorstrip
@@ -931,7 +950,7 @@ def changecluster(event):
         else:
             havecolorstrip=False
             choicelist=[]
-            reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
+            #reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
             #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
             displaylabels=kmeansclassify()
         generateimgplant(displaylabels)
@@ -1027,7 +1046,7 @@ def showinitcounting(tup):
     coinparts=tup[3]
     filename=tup[4]
 
-def showcounting(tup,number=True):
+def showcounting(tup,number=True,frame=True):
     global multi_results,kernersizes#,pixelmmratio,kernersizes
     global font
     labels=tup[0]
@@ -1060,6 +1079,8 @@ def showcounting(tup,number=True):
         suggsize=22
     if suggsize<14:
         suggsize=14
+    #suggsize=8
+    #print('fontsize',suggsize)
     font=ImageFont.truetype('cmb10.ttf',size=suggsize)
     #if labels.shape[1]<850:
     #    font=ImageFont.truetype('cmb10.ttf',size=16)
@@ -1086,7 +1107,8 @@ def showcounting(tup,number=True):
             midx = ulx + int((rlx - ulx) / 2)
             midy = uly + int((rly - uly) / 2)
             print(ulx, uly, rlx, rly)
-            draw.polygon([(ulx,uly),(rlx,uly),(rlx,rly),(ulx,rly)],outline='red')
+            if frame==True:
+                draw.polygon([(ulx,uly),(rlx,uly),(rlx,rly),(ulx,rly)],outline='red')
             if number==True:
                 if uni in colortable:
                     canvastext = str(colortable[uni])
@@ -1146,6 +1168,9 @@ def changeoutputimg(file,intnum):
     changedisplayimg(imageframe,'Output')
 
 def export_result(iterver):
+    suggsize=8
+    print('fontsize',suggsize)
+    smallfont=ImageFont.truetype('cmb10.ttf',size=suggsize)
     files=multi_results.keys()
     path=filedialog.askdirectory()
     for file in files:
@@ -1170,7 +1195,10 @@ def export_result(iterver):
         head_tail=os.path.split(file)
         originfile,extension=os.path.splitext(head_tail[1])
         if len(path)>0:
-            imageband=outputimgbands[file][itervalue]
+            tup=(labels,counts,colortable,[],currentfilename)
+            _band,segimg,small_segimg=showcounting(tup,False)
+            #imageband=outputimgbands[file][itervalue]
+            imageband=segimg
             draw=ImageDraw.Draw(imageband)
             uniquelabels=list(colortable.keys())
             tempdict={}
@@ -1289,7 +1317,17 @@ def export_result(iterver):
                         print('kernellength='+str(kernellength*pixelmmratio))
                         #print('kernelwidth='+str(kernelwidth*pixelmmratio))
                         tempdict.update({uni:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
-
+                    if uni in colortable:
+                        canvastext = str(colortable[uni])
+                    else:
+                        canvastext = 'No label'
+                    if imgtypevar.get()=='0':
+                        draw.text((midx-1, midy+1), text=canvastext, font=smallfont, fill='white')
+                        draw.text((midx+1, midy+1), text=canvastext, font=smallfont, fill='white')
+                        draw.text((midx-1, midy-1), text=canvastext, font=smallfont, fill='white')
+                        draw.text((midx+1, midy-1), text=canvastext, font=smallfont, fill='white')
+                        #draw.text((midx,midy),text=canvastext,font=font,fill=(141,2,31,0))
+                        draw.text((midx,midy),text=canvastext,font=smallfont,fill='black')
 
                     #print(event.x, event.y, labels[event.x, event.y], ulx, uly, rlx, rly)
 
@@ -2662,13 +2700,26 @@ for key in cluster:
 '''
 
 ### ----Class NUM----
-kmeansgenframe=LabelFrame(filter_fr,text='Select # of class',cursor='hand2',bd=0)
+kmeansgenframe=LabelFrame(filter_fr,cursor='hand2',bd=0)
 kmeansgenframe.pack()
-kmeanslabel=LabelFrame(kmeansgenframe,bd=0)
+pcaframe=LabelFrame(kmeansgenframe,text='Select PC#',cursor='hand2',bd=0)
+pcaframe.pack()
+kmeanslabel=LabelFrame(kmeansgenframe,text='Pick K value and cluster',bd=0)
 checkboxframe=LabelFrame(kmeansgenframe,cursor='hand2',bd=0)#,text='Select classes',cursor='hand2')
 kmeanslabel.pack()
+pcaboxdict={}
+for i in range(10):
+    dictkey=str(i+1)
+    tempdict={dictkey:Variable()}
+    if i==0:
+        tempdict[dictkey].set('1')
+    else:
+        tempdict[dictkey].set('0')
+    pcaboxdict.update(tempdict)
+    ch=Checkbutton(pcaframe,text=dictkey,variable=pcaboxdict[dictkey],command=changepca)
+    ch.pack(side=LEFT)
 
-kmeans.set(3)
+kmeans.set(2)
 #kmeansbar=Scale(kmeanslabel,from_=1,to=10,tickinterval=1,length=270,showvalue=0,orient=HORIZONTAL,variable=kmeans,command=partial(generatecheckbox,checkboxframe))
 kmeansbar=ttk.Scale(kmeanslabel,from_=1,to=10,length=350,orient=HORIZONTAL,variable=kmeans,cursor='hand2',command=partial(generatecheckbox,checkboxframe))
 kmeansbar.pack()
@@ -2701,8 +2752,8 @@ colordicesband=kmeansclassify()
 generateimgplant(colordicesband)
 changedisplayimg(imageframe,'Origin')
 
-colorstrip=np.zeros((15,35*3,3),'uint8')
-for i in range(3):
+colorstrip=np.zeros((15,35*2,3),'uint8')
+for i in range(2):
     for j in range(0,35):
         colorstrip[:,i*35+j]=colortable[i,:]
 #pyplt.imsave('colorstrip.jpeg',colorstrip)
