@@ -60,7 +60,8 @@ outputimgdict={}
 outputimgbands={}
 outputsegbands={}
 originsegbands={}
-
+multiselectitems=[]
+coinbox_list=[]
 
 root=Tk()
 root.title('GridFree')
@@ -406,6 +407,7 @@ def Open_Multifile():
         kmeans.set('2')
         panelA.delete(ALL)
         panelA.unbind('<Button-1>')
+        panelA.unbind('<Shift-Button-1>')
         refarea=None
         havecolorstrip=False
         if 'NDI' in bandchoice:
@@ -1545,6 +1547,7 @@ def resegment():
     figcanvas.unbind('<Any-Leave>')
     figcanvas.unbind('<Button-1>')
     figcanvas.unbind('<B1-Motion>')
+    #figcanvas.unbind('<Shift-Button-1>')
     figcanvas.delete(ALL)
     #panelA.unbind('<Button-1>')
     #refvar.set('0')
@@ -1670,6 +1673,7 @@ def resegment():
     figcanvas.bind('<Any-Leave>',item_leave)
     figcanvas.bind('<Button-1>',item_start_drag)
     figcanvas.bind('<B1-Motion>',item_drag)
+    #figcanvas.bind('<Shift-Button-1>',item_multiselect)
     if refarea is not None:
         reseglabels[refarea]=65535
 
@@ -1713,10 +1717,38 @@ def item_leave(event):
     global figcanvas
     pass
 
+def item_multiselect(event):
+    print(event.type,'event')
+    currx=event.x
+    curry=event.y
+    print('mul_x',currx,'mul_y',curry)
+    if (currx,curry) in labelplotmap: #or (currx-1,curry) in labelplotmap or (currx+1,curry) in labelplotmap\
+            #or (currx,curry-1) in labelplotmap or (currx,curry+1) in labelplotmap:
+        labelkey=labelplotmap[(currx,curry)]
+    else:
+        plotlist=list(labelplotmap.keys())
+        distlist=[]
+        for i in range(len(plotlist)):
+            dist=(abs(currx-plotlist[i][0])+abs(curry-plotlist[i][1]))**0.5
+            distlist.append(dist)
+        shortestdist=min(distlist)
+        shortestdistindex=distlist.index(shortestdist)
+        labelkey=labelplotmap[plotlist[shortestdistindex]]
+        #if len(dotflash)>0:
+        #    for i in range(len(dotflash)):
+        #        figcanvas.delete(dotflash.pop(0))
+        dotx=plotlist[shortestdistindex][0]
+        doty=plotlist[shortestdistindex][1]
+        a=figcanvas.create_oval(dotx-1,doty-1,dotx+1,doty+1,width=1,outline='Orange',fill='Orange')
+        dotflash.append(a)
+    print(labelkey)
+    seedfigflash(labelkey,True)
+
 def item_start_drag(event):
     global figcanvas,linelocs,dotflash
     itemType=figcanvas.type(CURRENT)
     print(itemType)
+    print(event.type,'event')
     if itemType=='line':
         fill=figcanvas.itemconfigure(CURRENT,'fill')[4]
         dash=figcanvas.itemconfigure(CURRENT,'dash')[4]
@@ -1743,9 +1775,6 @@ def item_start_drag(event):
         #    figcanvas._lastY=None
         print('linelocs',linelocs)
     else:
-        if itemType=='oval':
-            outline=figcanvas.itemconfigure(CURRENT,'outline')[4]
-            print('outline',outline)
         currx=event.x
         curry=event.y
         print('x',currx,'y',curry)
@@ -1769,7 +1798,8 @@ def item_start_drag(event):
             a=figcanvas.create_oval(dotx-1,doty-1,dotx+1,doty+1,width=1,outline='Orange',fill='Orange')
             dotflash.append(a)
         print(labelkey)
-        seedfigflash(labelkey)
+        if labelkey in reseglabels:
+            seedfigflash(labelkey)
 
         '''
         if (currx-1,curry) in labelplotmap:
@@ -2017,6 +2047,7 @@ def extraction():
     processlabel=np.copy(reseglabels)
     tempband=np.copy(convband)
     panelA.bind('<Button-1>',lambda event,arg=processlabel:customcoin(event,processlabel,tempband))
+    panelA.bind('<Shift-Button-1>',customcoin_multi)
     panelA.config(cursor='hand2')
     '''
     data=np.asarray(border[1:])
@@ -2108,7 +2139,7 @@ def extraction():
     figcanvas.bind('<Any-Leave>',item_leave)
     figcanvas.bind('<Button-1>',item_start_drag)
     figcanvas.bind('<B1-Motion>',item_drag)
-
+    #figcanvas.bind('<Shift-Button-1>',item_multiselect)
     #reseg=Button(frame,text='Re-process',command=partial(resegment,labels,figcanvas),padx=5,pady=5)
     #reseg.pack()
 
@@ -2193,20 +2224,68 @@ def findtempbandgap(locs):
         last=i
     print('ygaps',gaps,'len',len(sortedy))
 
-
-
-def customcoin(event,processlabels,tempband):
-    global panelA#refarea,
-    global coinbox,reflabel,minflash
+def customcoin_multi(event):
+    global panelA,multiselectitems
+    global coinbox_list,minflash
     global dotflash,figcanvas
     x=event.x
     y=event.y
+    tempband=np.copy(convband)
+    print(tempband.shape)
+    coinlabel=tempband[y,x]
+    print('coinlabel',coinlabel,'x',x,'y',y)
+    if coinlabel==0:
+        return
+    else:
+        multiselectitems.append(coinlabel)
+        coinarea=np.where(tempband==coinlabel)
+        unix=np.unique(coinarea[1]).tolist()
+        uniy=np.unique(coinarea[0]).tolist()
+        if len(unix)==1:
+            ulx,rlx=unix[0],unix[0]
+        else:
+            ulx,rlx=min(coinarea[1]),max(coinarea[1])
+        if len(uniy)==1:
+            uly,rly=uniy[0],uniy[0]
+        else:
+            uly,rly=min(coinarea[0]),max(coinarea[0])
+        a=panelA.create_rectangle(ulx,uly,rlx+1,rly+1,outline='yellow')
+        coinbox_list.append(a)
+        plotcoinarea=np.where(reseglabels==coinlabel)
+        ulx,uly=min(plotcoinarea[1]),min(plotcoinarea[0])
+        rlx,rly=max(plotcoinarea[1]),max(plotcoinarea[0])
+        unix=np.unique(plotcoinarea[1]).tolist()
+        uniy=np.unique(plotcoinarea[0]).tolist()
+        if len(unix)==1:
+            ulx,rlx=unix[0],unix[0]
+        else:
+            ulx,rlx=min(plotcoinarea[1]),max(plotcoinarea[1])
+        if len(uniy)==1:
+            uly,rly=uniy[0],uniy[0]
+        else:
+            uly,rly=min(plotcoinarea[0]),max(plotcoinarea[0])
+        lw=rlx-ulx+rly-uly
+        area=len(plotcoinarea[0])
+        print('lw',lw,'area',area)
+        plotflash(lw,area,'Orange','Orange')
+
+def customcoin(event,processlabels,tempband):
+    global panelA#refarea,
+    global coinbox,reflabel,minflash,coinbox_list
+    global dotflash,figcanvas
+    global multiselectitems
+    x=event.x
+    y=event.y
+    multiselectitems=[]
     if len(minflash)>0:
         for i in range(len(minflash)):
             panelA.delete(minflash.pop(0))
     if len(dotflash)>0:
         for i in range(len(dotflash)):
             figcanvas.delete(dotflash.pop(0))
+    if len(coinbox_list)>0:
+        for i in range(len(coinbox_list)):
+            panelA.delete(coinbox_list.pop(0))
     panelA.delete(coinbox)
     tempband=np.copy(convband)
     #ratio=findratio([processlabels.shape[0],processlabels.shape[1]],[850,850])
@@ -2296,14 +2375,18 @@ def plotflash(lw,area,outlinecolor,fillcolor):
     a=figcanvas.create_oval(xval-1,yval-1,xval+1,yval+1,width=1,outline=outlinecolor,fill=fillcolor)
     dotflash.append(a)
 
-def seedfigflash(topkey):
+def seedfigflash(topkey,multi=False):
     global panelA,coinbox
-    global reflabel,minflash
+    global reflabel,minflash,multiselectitems
     tempband=np.copy(convband)
     if len(minflash)>0:
         for i in range(len(minflash)):
             panelA.delete(minflash.pop(0))
     panelA.delete(coinbox)
+    if multi==False:
+        multiselectitems=[]
+    else:
+        multiselectitems.append(topkey)
     reflabel=topkey
     coinarea=np.where(tempband==topkey)
     print(coinarea)
@@ -2326,6 +2409,8 @@ def seedfigflash(topkey):
     panelA.after(1200,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
     panelA.after(1500,lambda :runflash(ulx,uly,rlx,rly,'red'))
     panelA.after(1800,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
+
+
 
 
 
@@ -2432,10 +2517,24 @@ def highlightcoin():
 
 def del_reflabel():
     global reseglabels,panelA,loccanvas,linelocs,bins,ybins,figcanvas,maxx,minx,maxy,miny,refvar,refsubframe
-    global labelplotmap
+    global labelplotmap,multiselectitems,dotflash,minflash,coinbox_list
     processlabel=np.copy(reseglabels)
     refarea=np.where(processlabel==reflabel)
     reseglabels[refarea]=0
+    if len(minflash)>0:
+        for i in range(len(minflash)):
+            panelA.delete(minflash.pop(0))
+    if len(dotflash)>0:
+        for i in range(len(dotflash)):
+            figcanvas.delete(dotflash.pop(0))
+    if len(coinbox_list)>0:
+        for i in range(len(coinbox_list)):
+            panelA.delete(coinbox_list.pop(0))
+    if len(multiselectitems)>0:
+        for i in range(len(multiselectitems)):
+            refarea=np.where(processlabel==multiselectitems[i])
+            reseglabels[refarea]=0
+
     gen_convband()
     panelA.delete(coinbox)
     reseglabels=tkintercorestat.renamelabels(reseglabels)
@@ -2460,8 +2559,17 @@ def del_reflabel():
         if v==reflabel:
             figindex=figdotlist[k]
             figcanvas.delete(figindex)
-    tup=list(figcanvas.find_all())
-    figcanvas.delete(tup[-1])
+    if len(multiselectitems)>0:
+        for k,v in copyplotmap.items():
+            if v in multiselectitems and v!=reflabel:
+                figindex=figdotlist[k]
+                figcanvas.delete(figindex)
+        if len(dotflash)>0:
+            for i in range(len(dotflash)):
+                figcanvas.delete(dotflash.pop(0))
+    #tup=list(figcanvas.find_all())
+    #figcanvas.delete(tup[-1])
+    multiselectitems=[]
     '''
     data=[]
     uniquelabels=list(newcolortables.keys())
