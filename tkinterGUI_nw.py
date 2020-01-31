@@ -666,8 +666,14 @@ def singleband(file):
     '''
 
     M=np.mean(displayfea_vector.T,axis=1)
+    print('M',M,'M shape',M.shape)
     C=displayfea_vector-M
-    V=np.cov(C.T)
+    #max=np.max(C.T,axis=1)
+    #print('MAX',max)
+    #C=C/max
+    print('C',C)
+    #V=np.cov(C.T)
+    V=np.corrcoef(C.T)
 
     #eigvalues,eigvectors=np.linalg.eig(V)
     #n,m=displayfea_vector.shape
@@ -688,15 +694,12 @@ def singleband(file):
         #if eigvalues[i]>0:
         featurechannel+=1
 
-    #P=eigvectors.T.dot(C.T)
-    #print('P.T',P.T)
-    #if eigvalueperc[0]>0.75:
     pcabands=np.zeros((displayfea_vector.shape[0],featurechannel))
     for i in range(featurechannel):
         pcn=eigvectors[:,i]
-        pcnbands=np.dot(displayfea_vector,pcn)
+        #pcnbands=np.dot(displayfea_vector,pcn)
+        pcnbands=np.dot(C,pcn)
         pcabands[:,i]=pcabands[:,i]+pcnbands
-        #pcabands=P.T[:,0]
     pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
     #originbands={'LabOstu':pcabandsdisplay}
     tempdictdisplay={'LabOstu':pcabandsdisplay}
