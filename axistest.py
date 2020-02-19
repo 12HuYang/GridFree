@@ -16,83 +16,83 @@ maxx=0
 totalbins=0
 linelocs=[0,0]
 bins=None
-'''
-def cal_xvalue(x):
-    print(maxx,minx,max(bins),min(bins))
-    binwidth=int(maxx-minx)/(max(bins)-min(bins))
-    print(x,minx,binwidth)
-    xloc=int((x-minx)/binwidth)
-    print(xloc)
-    #value=min(bins)+xloc*binwidth
-    return xloc
 
+# def cal_xvalue(x):
+#     print(maxx,minx,max(bins),min(bins))
+#     binwidth=int(maxx-minx)/(max(bins)-min(bins))
+#     print(x,minx,binwidth)
+#     xloc=int((x-minx)/binwidth)
+#     print(xloc)
+#     #value=min(bins)+xloc*binwidth
+#     return xloc
+#
+#
+#
+# def item_enter(event):
+#     global loccanvas
+#     loccanvas.config(cursor='hand2')
+#     loccanvas._restorItem=None
+#     loccanvas._restoreOpts=None
+#     itemType=loccanvas.type(CURRENT)
+#     #print(itemType)
+#
+#     pass
+#
+# def item_leave(event):
+#     global loccanvas
+#     pass
+#
+# def item_start_drag(event):
+#     global loccanvas,linelocs
+#     itemType=loccanvas.type(CURRENT)
+#     print(itemType)
+#     if itemType=='line':
+#         fill=loccanvas.itemconfigure(CURRENT,'fill')[4]
+#         if fill=='red':
+#             loccanvas._lastX=event.x
+#             #loccanvas._lastY=event.y
+#             linelocs[0]=event.x
+#         else:
+#             if fill=='orange':
+#                 loccanvas._lastX=event.x
+#                 #loccanvas._lastY=event.y
+#                 linelocs[1]=event.x
+#             else:
+#                 loccanvas._lastX=None
+#     else:
+#         loccanvas._lastX=None
+#     pass
+#
+# def item_drag(event):
+#     global loccanvas,linelocs
+#     x=event.x
+#     y=event.y
+#     if x<minx:
+#         x=minx
+#     if x>maxx:
+#         x=maxx
+#     try:
+#         fill=loccanvas.itemconfigure(CURRENT,'fill')[4]
+#     except:
+#         return
+#     #itemType=loccanvas.type(CURRENT)
+#     try:
+#         test=0-loccanvas._lastX
+#     except:
+#         return
+#     loccanvas.move(CURRENT,x-loccanvas._lastX,0)
+#     loccanvas._lastX=x
+#     if fill=='red':
+#         linelocs[0]=x
+#     if fill=='orange':
+#         linelocs[1]=x
+#             #print(line_a)
+#     #print(minline)
+#     #print(maxline)
+#     print(cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1]))
+#
+#     pass
 
-
-def item_enter(event):
-    global loccanvas
-    loccanvas.config(cursor='hand2')
-    loccanvas._restorItem=None
-    loccanvas._restoreOpts=None
-    itemType=loccanvas.type(CURRENT)
-    #print(itemType)
-
-    pass
-
-def item_leave(event):
-    global loccanvas
-    pass
-
-def item_start_drag(event):
-    global loccanvas,linelocs
-    itemType=loccanvas.type(CURRENT)
-    print(itemType)
-    if itemType=='line':
-        fill=loccanvas.itemconfigure(CURRENT,'fill')[4]
-        if fill=='red':
-            loccanvas._lastX=event.x
-            #loccanvas._lastY=event.y
-            linelocs[0]=event.x
-        else:
-            if fill=='orange':
-                loccanvas._lastX=event.x
-                #loccanvas._lastY=event.y
-                linelocs[1]=event.x
-            else:
-                loccanvas._lastX=None
-    else:
-        loccanvas._lastX=None
-    pass
-
-def item_drag(event):
-    global loccanvas,linelocs
-    x=event.x
-    y=event.y
-    if x<minx:
-        x=minx
-    if x>maxx:
-        x=maxx
-    try:
-        fill=loccanvas.itemconfigure(CURRENT,'fill')[4]
-    except:
-        return
-    #itemType=loccanvas.type(CURRENT)
-    try:
-        test=0-loccanvas._lastX
-    except:
-        return
-    loccanvas.move(CURRENT,x-loccanvas._lastX,0)
-    loccanvas._lastX=x
-    if fill=='red':
-        linelocs[0]=x
-    if fill=='orange':
-        linelocs[1]=x
-            #print(line_a)
-    #print(minline)
-    #print(maxline)
-    print(cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1]))
-
-    pass
-'''
 
 def drawdots(ulx,uly,rlx,rly,x_bins,y_bins,datalist,canvas,inputfigdotlist):
     global loccanvas,minx,maxx,totalbins,bins,linelocs

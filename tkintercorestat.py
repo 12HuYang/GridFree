@@ -364,6 +364,43 @@ def boundarywatershedcoin(area,segbondtimes,boundarytype):
     else:
         return area
 
+def label_boundary(res,areaboundary,arealabels):
+    area=res.copy()
+    x=[0,-1,-1,-1,0,1,1,1]
+    y=[1,1,0,-1,-1,-1,0,1]
+    boundaryspots=numpy.where(areaboundary==1)
+    leftboundaryspots=[]
+    for i in range(len(boundaryspots[0])):
+        leftboundaryspots.append((boundaryspots[0][i],boundaryspots[1][i]))
+    unique, counts = numpy.unique(arealabels, return_counts=True)
+    # leftboundary_y=leftboundaryspots[0].tolist()
+    # leftboundary_x=leftboundaryspots[1].tolist()
+    for uni in unique[1:]:
+        labelboundaryloc=get_boundaryloc(arealabels,uni)
+        for m in range(len(labelboundaryloc[0])):
+            for k in range(len(y)):
+                li=labelboundaryloc[0][m]+y[k]
+                lj=labelboundaryloc[1][m]+x[k]
+                if li>=0 and li<area.shape[0] and lj>=0 and lj<area.shape[1]:
+                    if area[li,lj]==1:
+                        area[li,lj]=uni
+                        bindex=leftboundaryspots.index((li,lj))
+                        leftboundaryspots.pop(bindex)
+    for loc in leftboundaryspots:
+        bi=loc[0]
+        bj=loc[1]
+        maxlabel=1
+        for k in range(len(y)):
+            ni=bi+y[k]
+            nj=bj+x[k]
+            if ni>=0 and ni<area.shape[0] and nj>=0 and nj<area.shape[1]:
+                if area[ni,nj]>maxlabel:
+                    maxlabel=area[ni,nj]
+        area[bi,bj]=maxlabel
+        #locindex=leftboundaryspots.index(loc)
+        leftboundaryspots.pop(0)
+    return area
+
 
 def boundarywatershed(area,segbondtimes,boundarytype,itertime=20):   #area = 1's
     if avgarea is not None and numpy.count_nonzero(area)<avgarea/2:
@@ -386,75 +423,16 @@ def boundarywatershed(area,segbondtimes,boundarytype,itertime=20):   #area = 1's
         return area
     if(len(unique)>2):
         res=arealabels+areaboundary
-        leftboundaryspots=numpy.where(areaboundary==1)
-
-        leftboundary_y=leftboundaryspots[0].tolist()
-        leftboundary_x=leftboundaryspots[1].tolist()
-        for uni in unique[1:]:
-            labelboundaryloc=get_boundaryloc(arealabels,uni)
-            for m in range(len(labelboundaryloc[0])):
-                for k in range(len(y)):
-                    i = labelboundaryloc[0][m] + y[k]
-                    j = labelboundaryloc[1][m] + x[k]
-                    if i >= 0 and i < res.shape[0] and j >= 0 and j < res.shape[1]:
-                        if res[i, j] == 1:
-                            res[i,j]=uni
-                            for n in range(len(leftboundary_y)):
-                                if leftboundary_y[n]==i and leftboundary_x[n]==j:
-                                    leftboundary_y.pop(n)
-                                    leftboundary_x.pop(n)
-                                    break
-        '''
-        res=res.tolist()
-        for k in range(len(leftboundaryspots[0])):
-            i=leftboundaryspots[0][k]
-            j=leftboundaryspots[1][k]
-            for m in range(len(y)):
-                if i+y[m]>=0 and i+y[m]<len(res) and j+x[m]>=0 and j+x[m]<len(res[0]):
-                    if areaboundary[i][j]>0:
-                        diff=areaboundary[i][j]-res[i+y[m]][j+x[m]]
-                        if diff<0:
-                            res[i][j]=res[i+y[m]][j+x[m]]
-                            break
-        '''
+        # leftboundaryspots=numpy.where(areaboundary==1)
+        res=label_boundary(res,areaboundary,arealabels)
         res=numpy.asarray(res)-1
         res=numpy.where(res<0,0,res)
         return res
     else:
         newarea=boundarywatershed(temparea,segbondtimes+1,boundarytype)*2
         res=newarea+areaboundary
-        leftboundaryspots=numpy.where(res==1)
-
-        leftboundary_y = leftboundaryspots[0].tolist()
-        leftboundary_x = leftboundaryspots[1].tolist()
-        unique=numpy.unique(newarea)
-        for uni in unique[1:]:
-            labelboundaryloc = get_boundaryloc(newarea, uni)
-            for m in range(len(labelboundaryloc[0])):
-                for k in range(len(y)):
-                    i = labelboundaryloc[0][m] + y[k]
-                    j = labelboundaryloc[1][m] + x[k]
-                    if i >= 0 and i < res.shape[0] and j >= 0 and j < res.shape[1]:
-                        if res[i, j] == 1:
-                            res[i, j] = uni
-                            for n in range(len(leftboundary_y)):
-                                if leftboundary_y[n] == i and leftboundary_x[n] == j:
-                                    leftboundary_y.pop(n)
-                                    leftboundary_x.pop(n)
-                                    break
-        '''
-        res=res.tolist()
-        for k in range(len(leftboundaryspots[0])):
-            i=leftboundaryspots[0][k]
-            j=leftboundaryspots[1][k]
-            for m in range(len(y)):
-                if i+y[m]>=0 and i+y[m]<len(res) and j+x[m]>=0 and j+x[m]<len(res[0]):
-                    if res[i][j]==1:
-                        diff=res[i][j]-res[i+y[m]][j+x[m]]
-                        if diff<0:
-                            res[i][j]=res[i+y[m]][j+x[m]]
-                            break
-        '''
+        # leftboundaryspots=numpy.where(res==1)
+        res=label_boundary(res,areaboundary,newarea)
         res=numpy.asarray(res)/2
         res=numpy.where(res<1,0,res)
         return res
@@ -487,12 +465,14 @@ def manualboundarywatershed(area,avgarea):
     print('possiblecount',possiblecount)
     distance=ndi.distance_transform_edt(area)
     masklength=int((avgarea*maskpara)**0.5)-1
+    #masklength=int(((avgarea*maskpara)**0.5)/2)
     local_maxi=peak_local_max(distance,indices=False,footprint=numpy.ones((masklength,masklength)),labels=area)
     markers=ndi.label(local_maxi)[0]
     unique=numpy.unique(markers)
     while(len(unique)-1>possiblecount):
         maskpara+=0.1
         masklength=int((avgarea*maskpara)**0.5)-1
+        #masklength=int(((avgarea*maskpara)**0.5)/2)
         local_maxi=peak_local_max(distance,indices=False,footprint=numpy.ones((masklength,masklength)),labels=area)
         markers=ndi.label(local_maxi)[0]
         unique=numpy.unique(markers)
@@ -501,6 +481,7 @@ def manualboundarywatershed(area,avgarea):
         maskpara-=0.1
         try:
             masklength=int((avgarea*maskpara)**0.5)-1
+            #masklength=int(((avgarea*maskpara)**0.5)/2)
         except:
             masklength=lastlength
             local_maxi=peak_local_max(distance,indices=False,footprint=numpy.ones((masklength,masklength)),labels=area)
@@ -509,14 +490,15 @@ def manualboundarywatershed(area,avgarea):
             break
         if masklength<0:
             masklength=2
+            #masklength=1
         lastlength=masklength
-        #try:
-        print(masklength)
-        local_maxi=peak_local_max(distance,indices=False,footprint=numpy.ones((masklength,masklength)),labels=area)
-        #except:
-        #    maskpara+=0.1
-        #    masklength=int((avgarea*maskpara)**0.5)-1
-        #    local_maxi=peak_local_max(distance,indices=False,footprint=numpy.ones((masklength,masklength)),labels=area)
+        try:
+            print(masklength)
+            local_maxi=peak_local_max(distance,indices=False,footprint=numpy.ones((masklength,masklength)),labels=area)
+        except:
+            maskpara+=0.1
+            masklength=int((avgarea*maskpara)**0.5)-1
+            local_maxi=peak_local_max(distance,indices=False,footprint=numpy.ones((masklength,masklength)),labels=area)
         #    markers=ndi.label(local_maxi)[0]
         #    break
         markers=ndi.label(local_maxi)[0]
@@ -918,302 +900,6 @@ def combineloop(area,misslabel,par):
     return localarea
 
 
-
-
-'''
-def combineloop(area,misslabel):
-    localarea=numpy.asarray(area)
-    unique, counts = numpy.unique(localarea, return_counts=True)
-    hist=dict(zip(unique,counts))
-    del hist[0]
-    #print('hist length='+str(len(counts)-1))
-    #print('max label='+str(labels.max()))
-    meanpixel=sum(counts[1:])/len(counts)
-    countseed=numpy.asarray(counts[1:])
-    stdpixel=numpy.std(countseed)
-    uprange=meanpixel+stdpixel
-    lowrange=meanpixel-stdpixel
-    sortedkeys=list(sorted(hist,key=hist.get))
-    topkey=sortedkeys.pop(0)
-    halflength=0.5*len(sortedkeys)
-    lowpercentile=numpy.percentile(countseed,25)
-    highpercentile=numpy.percentile(countseed,75)
-    #if len(sortedkeys)>0 and hist[topkey]<meanpixel:
-    #while len(sortedkeys)>0 and hist[topkey]<lowrange and topkey in exceptions:
-    zscore=(hist[topkey]-meanpixel)/stdpixel
-    #while len(sortedkeys)>halflength and hist[topkey]<=lowrange:
-    #while len(sortedkeys)>halflength and zscore<=-2.5:
-    while misslabel<=0:
-        #topkey=sortedkeys.pop(0)
-        print('uprange='+str(uprange))
-        print('lowrange='+str(lowrange))
-        print('combine part')
-        i=topkey
-        print(i,hist[i])
-        if i not in exceptions:
-        #if hist[i]<meanpixel:
-            locs=numpy.where(localarea==i)
-            ulx,uly=min(locs[1]),min(locs[0])
-            rlx,rly=max(locs[1]),max(locs[0])
-            width=rlx-ulx
-            height=rly-uly
-            #windowsize=min(width,height)
-            #dividen=2
-            subarea=localarea[uly:rly+1,ulx:rlx+1]
-            tempsubarea=subarea/i
-            #four direction searches
-            j=1
-            stop=False
-            while(stop==False and j<=10):
-                up_unique=[]
-                down_unique=[]
-                left_unique=[]
-                right_unique=[]
-                maxlabel={}
-                if uly-j>=0 and stop==False and len(up_unique)<2:
-                    uparray=localarea[uly-j:uly,ulx:rlx+1]
-                    up_unique=numpy.unique(uparray)
-                    for x in range(len(up_unique)):
-                        if up_unique[x]>0:
-                            tempdict={up_unique[x]:hist[up_unique[x]]}
-                            maxlabel.update(tempdict)
-                if rly+j<localarea.shape[0] and stop==False and len(down_unique)<2:
-                    downarray=localarea[rly+1:rly+j+1,ulx:rlx+1]
-                    down_unique=numpy.unique(downarray)
-                    for x in range(len(down_unique)):
-                        if down_unique[x]>0:
-                            tempdict={down_unique[x]:hist[down_unique[x]]}
-                            maxlabel.update(tempdict)
-                if ulx-j>=0 and stop==False and len(left_unique)<2:
-                    leftarray=localarea[uly:rly+1,ulx-j:ulx]
-                    left_unique=numpy.unique(leftarray)
-                    for x in range(len(left_unique)):
-                        if left_unique[x]>0:
-                            tempdict={left_unique[x]:hist[left_unique[x]]}
-                            maxlabel.update(tempdict)
-                if ulx+j<localarea.shape[1] and stop==False and len(right_unique)<2:
-                    rightarray=localarea[uly:rly+1,rlx+1:rlx+j+1]
-                    right_unique=numpy.unique(rightarray)
-                    for x in range(len(right_unique)):
-                        if right_unique[x]>0:
-                            tempdict={right_unique[x]:hist[right_unique[x]]}
-                            maxlabel.update(tempdict)
-                print(up_unique,down_unique,left_unique,right_unique)
-                labelpos={}
-                for ele in maxlabel:
-                    tempdict={ele:0}
-                    try:
-                        if ele in up_unique:
-                            tempdict[ele]+=1
-                    except TypeError:
-                        pass
-                    try:
-                        if ele in down_unique:
-                            tempdict[ele]+=1
-                    except TypeError:
-                        pass
-                    try:
-                        if ele in left_unique:
-                            tempdict[ele]+=1
-                    except TypeError:
-                        pass
-                    try:
-                        if ele in right_unique:
-                            tempdict[ele]+=1
-                    except TypeError:
-                        pass
-                    labelpos.update(tempdict)
-                if j==1:
-                    combine=False
-                    surhist={}
-                    for ele in maxlabel:
-                        surround=[]
-                        if ele in subarea:
-                            eleloc=numpy.where(subarea==ele)
-                            for k in range(len(eleloc[0])):
-                                try:
-                                    surround.append(subarea[eleloc[0][k]-1][eleloc[1][k]])
-                                except IndexError:
-                                    pass
-                                try:
-                                    surround.append(subarea[eleloc[0][k]+1][eleloc[1][k]])
-                                except IndexError:
-                                    pass
-                                try:
-                                    surround.append(subarea[eleloc[0][k]][eleloc[1][k]-1])
-                                except IndexError:
-                                    pass
-                                try:
-                                    surround.append(subarea[eleloc[0][k]][eleloc[1][k]+1])
-                                except IndexError:
-                                    pass
-                                if i in surround:
-                                    combine=True
-                        tempdict={ele:len(surround)}
-                        surhist.update(tempdict)
-                    if combine==True:
-                        #uniq_label,count_label=numpy.unique(surround,return_counts=True)
-                        #surhist=dict(zip(uniq_label,count_label))
-                        for ele in sorted(surhist,key=surhist.get,reverse=True):
-                            localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                            if maxlabel[ele]+hist[i]>=meanpixel and maxlabel[ele]+hist[i]<uprange:
-                                if i<ele:
-                                    if i not in exceptions:
-                                        exceptions.append(i)
-                                        print('add exceptions '+str(i))
-                                else:
-                                    if ele not in exceptions:
-                                        exceptions.append(ele)
-                                        print('add exceptions '+str(ele))
-                            stop=True
-                            break
-                    for ele in sorted(labelpos,key=labelpos.get,reverse=True):
-                        #if labelpos[ele]>1 and stop==False:
-                        if stop==False:
-                            if labelpos[ele]>1:
-                                localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                                if maxlabel[ele]+hist[i]>=meanpixel and maxlabel[ele]+hist[i]<uprange:
-                                    if i<ele:
-                                        if i not in exceptions:
-                                            exceptions.append(i)
-                                            print('add exceptions '+str(i))
-                                    else:
-                                        if ele not in exceptions:
-                                            exceptions.append(ele)
-                                            print('add exceptions '+str(ele))
-                                stop=True
-                                break
-                    if stop==False:
-                        for ele in sorted(maxlabel,key=maxlabel.get):
-                            freq=maxlabel[ele]
-                            if ele in up_unique or ele in down_unique:
-                                if freq+hist[i]<meanpixel:
-                                    localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                                    stop=True
-                                    break
-                                else:
-                                    if freq+hist[i]>=meanpixel and freq+hist[i]<=uprange:
-                                        localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                                        if i<ele:
-                                            if i not in exceptions:
-                                                exceptions.append(i)
-                                                print('add exceptions '+str(i))
-                                        else:
-                                            if ele not in exceptions:
-                                                exceptions.append(ele)
-                                                print('add exceptions '+str(ele))
-                                        stop=True
-                                        break
-                else:
-                    if stop==False:
-                        for ele in sorted(maxlabel,key=maxlabel.get):
-                            freq=maxlabel[ele]
-                            if len(up_unique)>0 and ele in up_unique:
-                                if freq+hist[i]<meanpixel:
-                                    localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                                    stop=True
-                                    break
-                            if len(down_unique)>0 and ele in down_unique:
-                                if freq+hist[i]<meanpixel:
-                                    localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                                    stop=True
-                                    break
-
-                            else:
-                                if freq+hist[i]>=meanpixel and freq+hist[i]<=uprange:
-                                    localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                                    if i<ele:
-                                        if i not in exceptions:
-                                            exceptions.append(i)
-                                            print('add exceptions '+str(i))
-                                    else:
-                                        if ele not in exceptions:
-                                            exceptions.append(ele)
-                                            print('add exceptions '+str(ele))
-                                    stop=True
-                                    break
-
-
-                j+=1
-            if j>=10 and stop==False:
-                if topkey not in exceptions and hist[topkey]<math.floor(lowrange-minisigma*stdpixel):
-                    for ele in sorted(maxlabel,key=maxlabel.get):
-                        if len(up_unique)>1 and ele in up_unique:
-                            if hist[topkey]+maxlabel[ele]<uprange+stdpixel:
-                                localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                                if i<ele:
-                                    if i not in exceptions:
-                                        exceptions.append(i)
-                                        print('add exceptions '+str(i))
-                                else:
-                                    if ele not in exceptions:
-                                        exceptions.append(ele)
-                                        print('add exceptions '+str(ele))
-                                break
-                        if len(down_unique)>1 and ele in down_unique:
-                            if hist[topkey]+maxlabel[ele]<uprange+stdpixel:
-                                localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                                if i<ele:
-                                    if i not in exceptions:
-                                        exceptions.append(i)
-                                        print('add exceptions '+str(i))
-                                else:
-                                    if ele not in exceptions:
-                                        exceptions.append(ele)
-                                        print('add exceptions '+str(ele))
-                                break
-
-                        if len(up_unique)>1 and len(down_unique)<=1 and ele in up_unique and hist[topkey]+maxlabel[ele]<uprange+minisigma*stdpixel:
-                            localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                            if i<ele:
-                                if i not in exceptions:
-                                    exceptions.append(i)
-                                    print('add exceptions '+str(i))
-                            else:
-                                if ele not in exceptions:
-                                    exceptions.append(ele)
-                                    print('add exceptions '+str(ele))
-                            break
-                        if len(down_unique)>1 and len(up_unique)<=1 and ele in down_unique and hist[topkey]+maxlabel[ele]<uprange+minisigma*stdpixel:
-                            localarea=combinecrops(localarea,subarea,i,ele,ulx,uly,rlx,rly)
-                            if i<ele:
-                                if i not in exceptions:
-                                    exceptions.append(i)
-                                    print('add exceptions '+str(i))
-                            else:
-                                if ele not in exceptions:
-                                    exceptions.append(ele)
-                                    print('add exceptions '+str(ele))
-                            break
-
-                if topkey in localarea and topkey not in exceptions:
-                    exceptions.append(topkey)
-                    print('add exceptions '+str(topkey))
-            unique, counts = numpy.unique(localarea, return_counts=True)
-            hist=dict(zip(unique,counts))
-            sortedkeys=list(sorted(hist,key=hist.get))
-            meanpixel=sum(counts[1:])/len(counts)
-            countseed=numpy.asarray(counts[1:])
-            stdpixel=numpy.std(countseed)
-            uprange=meanpixel+stdpixel
-            lowrange=meanpixel-stdpixel
-            topkey=sortedkeys.pop(0)
-            #i=topkey
-            print('hist leng='+str(len(unique[1:])))
-            misslabel+=1
-        else:
-            topkey=sortedkeys.pop(0)
-            misslabel+=1
-    #topkey=sortedkeys.pop(0)
-    #meanpixel=sum(counts[1:])/len(counts)
-    #countseed=numpy.asarray(counts[1:])
-    #stdpixel=numpy.std(countseed)
-    #uprange=meanpixel+stdpixel
-    #lowrange=meanpixel-stdpixel
-    #if len(unique)-1==len(labellist):
-    #    break
-    return localarea
-'''
 
 #def checkvalid(mislabel,hist,sortedkeys,uprange,lowrange,avgarea):
 def checkvalid(pvalue,leftsigma,rightsigma):
@@ -2149,18 +1835,18 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
             band1=numpy.where(outputlabel<0,0,outputlabel)
             band2=255-band1
             band3=255-band1
-            '''
-            out_fn='labeled_divide'+str(divide)+'.tif'
-            gtiffdriver=gdal.GetDriverByName('GTiff')
-            out_ds=gtiffdriver.Create(out_fn,col,row,3,3)
-            out_band=out_ds.GetRasterBand(1)
-            out_band.WriteArray(band1)
-            out_band=out_ds.GetRasterBand(2)
-            out_band.WriteArray(band2)
-            out_band=out_ds.GetRasterBand(3)
-            out_band.WriteArray(band3)
-            out_ds.FlushCache()
-            '''
+            # '''
+            # out_fn='labeled_divide'+str(divide)+'.tif'
+            # gtiffdriver=gdal.GetDriverByName('GTiff')
+            # out_ds=gtiffdriver.Create(out_fn,col,row,3,3)
+            # out_band=out_ds.GetRasterBand(1)
+            # out_band.WriteArray(band1)
+            # out_band=out_ds.GetRasterBand(2)
+            # out_band.WriteArray(band2)
+            # out_band=out_ds.GetRasterBand(3)
+            # out_band.WriteArray(band3)
+            # out_ds.FlushCache()
+            # '''
             if lastgreatarea==greatareas and len(lastgreatarea)!=0:
                 manualdivide(labels,greatareas)
                 #cornerdivide(labels,greatareas)
@@ -2190,18 +1876,18 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
             band1=numpy.where(outputlabel<0,0,outputlabel)
             band2=255-band1
             band3=255-band1
-            '''
-            out_fn='labeled_combine'+str(docombine)+'.tif'
-            gtiffdriver=gdal.GetDriverByName('GTiff')
-            out_ds=gtiffdriver.Create(out_fn,col,row,3,3)
-            out_band=out_ds.GetRasterBand(1)
-            out_band.WriteArray(band1)
-            out_band=out_ds.GetRasterBand(2)
-            out_band.WriteArray(band2)
-            out_band=out_ds.GetRasterBand(3)
-            out_band.WriteArray(band3)
-            out_ds.FlushCache()
-            '''
+            # '''
+            # out_fn='labeled_combine'+str(docombine)+'.tif'
+            # gtiffdriver=gdal.GetDriverByName('GTiff')
+            # out_ds=gtiffdriver.Create(out_fn,col,row,3,3)
+            # out_band=out_ds.GetRasterBand(1)
+            # out_band.WriteArray(band1)
+            # out_band=out_ds.GetRasterBand(2)
+            # out_band.WriteArray(band2)
+            # out_band=out_ds.GetRasterBand(3)
+            # out_band.WriteArray(band3)
+            # out_ds.FlushCache()
+            # '''
         par+=0.05
         unique, counts = numpy.unique(labels, return_counts=True)
         meanpixel=sum(counts[1:])/len(counts[1:])
@@ -2267,18 +1953,18 @@ def processinput(input,validmap,avgarea,layers,ittimes=30,coin=True,shrink=0):
     #NDVIbounary=NDVIbounary*1
     NDVIbounary=get_boundary(labels)
     NDVIbounary=NDVIbounary*255
-    '''
-    out_fn='modifiedsegmethod.tif'
-    gtiffdriver=gdal.GetDriverByName('GTiff')
-    out_ds=gtiffdriver.Create(out_fn,col,row,3,3)
-    out_band=out_ds.GetRasterBand(1)
-    out_band.WriteArray(band1)
-    out_band=out_ds.GetRasterBand(2)
-    out_band.WriteArray(band2)
-    out_band=out_ds.GetRasterBand(3)
-    out_band.WriteArray(band3)
-    out_ds.FlushCache()
-    '''
+    # '''
+    # out_fn='modifiedsegmethod.tif'
+    # gtiffdriver=gdal.GetDriverByName('GTiff')
+    # out_ds=gtiffdriver.Create(out_fn,col,row,3,3)
+    # out_band=out_ds.GetRasterBand(1)
+    # out_band.WriteArray(band1)
+    # out_band=out_ds.GetRasterBand(2)
+    # out_band.WriteArray(band2)
+    # out_band=out_ds.GetRasterBand(3)
+    # out_band.WriteArray(band3)
+    # out_ds.FlushCache()
+    # '''
     copylabels=numpy.zeros(labels.shape)
     copylabels[:,:]=labels[:,:]
     subtempdict={'labels':copylabels}
@@ -2315,18 +2001,18 @@ def kmeansprocess(pixellocs,input,counts):
     #NDVIbounary=NDVIbounary*1
     NDVIboundary=get_boundary(labels)
     NDVIbounary=NDVIboundary*255
-    '''
-    out_fn='modifiedsegmethod.tif'
-    gtiffdriver=gdal.GetDriverByName('GTiff')
-    out_ds=gtiffdriver.Create(out_fn,450,450,3,3)
-    out_band=out_ds.GetRasterBand(1)
-    out_band.WriteArray(band1)
-    out_band=out_ds.GetRasterBand(2)
-    out_band.WriteArray(band2)
-    out_band=out_ds.GetRasterBand(3)
-    out_band.WriteArray(band3)
-    out_ds.FlushCache()
-    '''
+    # '''
+    # out_fn='modifiedsegmethod.tif'
+    # gtiffdriver=gdal.GetDriverByName('GTiff')
+    # out_ds=gtiffdriver.Create(out_fn,450,450,3,3)
+    # out_band=out_ds.GetRasterBand(1)
+    # out_band.WriteArray(band1)
+    # out_band=out_ds.GetRasterBand(2)
+    # out_band.WriteArray(band2)
+    # out_band=out_ds.GetRasterBand(3)
+    # out_band.WriteArray(band3)
+    # out_ds.FlushCache()
+    # '''
     restoredband=numpy.multiply(input,labels)
     res=NDVIbounary
 
@@ -2390,35 +2076,35 @@ def init(input,validmap,map,layers,ittimes,coin):
     occupiedratio=len(pixellocs[0])/squarearea
     print(avgarea,occupiedratio)
     shrink=0
-    '''
-    if coin==True:
-        inputboundary=get_boundary(input)
-        input=numpy.where(inputboundary==1,0,input)
-        pixellocs=numpy.where(input!=0)
-        ulx,uly=min(pixellocs[1]),min(pixellocs[0])
-        rlx,rly=max(pixellocs[1]),max(pixellocs[0])
-        squarearea=(rlx-ulx)*(rly-uly)
-        occupiedratio=len(pixellocs[0])/squarearea
-        print(avgarea,occupiedratio)
-        shrink+=1
-
-    if occupiedratio>0.1:
-        while(occupiedratio>0.15):
-            #distance=ndi.distance_transform_edt(input)
-            inputboundary=get_boundary(input)
-            input=numpy.where(inputboundary==1,0,input)
-            #input=numpy.where(distance==1.0,0,input)
-            pixellocs=numpy.where(input!=0)
-            ulx,uly=min(pixellocs[1]),min(pixellocs[0])
-            rlx,rly=max(pixellocs[1]),max(pixellocs[0])
-            squarearea=(rlx-ulx)*(rly-uly)
-            occupiedratio=len(pixellocs[0])/squarearea
-            print(avgarea,occupiedratio)
-            shrink+=1
-        #for i in range(int(round(occupiedratio/0.1))):
-        #    distance=ndi.distance_transform_edt(input)
-        #    input=numpy.where(distance==1.0,0,input)
-    '''
+    # '''
+    # if coin==True:
+    #     inputboundary=get_boundary(input)
+    #     input=numpy.where(inputboundary==1,0,input)
+    #     pixellocs=numpy.where(input!=0)
+    #     ulx,uly=min(pixellocs[1]),min(pixellocs[0])
+    #     rlx,rly=max(pixellocs[1]),max(pixellocs[0])
+    #     squarearea=(rlx-ulx)*(rly-uly)
+    #     occupiedratio=len(pixellocs[0])/squarearea
+    #     print(avgarea,occupiedratio)
+    #     shrink+=1
+    #
+    # if occupiedratio>0.1:
+    #     while(occupiedratio>0.15):
+    #         #distance=ndi.distance_transform_edt(input)
+    #         inputboundary=get_boundary(input)
+    #         input=numpy.where(inputboundary==1,0,input)
+    #         #input=numpy.where(distance==1.0,0,input)
+    #         pixellocs=numpy.where(input!=0)
+    #         ulx,uly=min(pixellocs[1]),min(pixellocs[0])
+    #         rlx,rly=max(pixellocs[1]),max(pixellocs[0])
+    #         squarearea=(rlx-ulx)*(rly-uly)
+    #         occupiedratio=len(pixellocs[0])/squarearea
+    #         print(avgarea,occupiedratio)
+    #         shrink+=1
+    #     #for i in range(int(round(occupiedratio/0.1))):
+    #     #    distance=ndi.distance_transform_edt(input)
+    #     #    input=numpy.where(distance==1.0,0,input)
+    # '''
     #uniquelabel,labelcounts=numpy.unique(labellist,return_counts=True)
     #distance=ndi.distance_transform_edt(input)
     #localmax=peak_local_max(distance,labels=input,footprint=numpy.ones((3,3)),indices=False)
