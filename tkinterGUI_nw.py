@@ -254,7 +254,7 @@ def generatedisplayimg(filename):
     kvar=int(kmeans.get())
     for i in range(kvar):
         locs=np.where(tempband[:,:,0]==i)
-        colordeviate[locs]=colortable[i,:]
+        colordeviate[locs]=colorbandtable[i,:]
     colortempdict={}
     colortempdict.update({'Size':colordeviate.shape})
     colortempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colordeviate.astype('uint8')))})
