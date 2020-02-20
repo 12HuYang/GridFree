@@ -118,6 +118,8 @@ linelocs=[0,0,0,0]
 maxy=0
 miny=0
 
+segmentratio=0
+
 zoombox=[]
 
 def distance(p1,p2):
@@ -127,10 +129,17 @@ def distance(p1,p2):
 
 
 def findratio(originsize,objectsize):
-    if originsize[0]>objectsize[0] or originsize[1]>objectsize[1]:
-        ratio=round(max(originsize[0]/objectsize[0],originsize[1]/objectsize[1]))
+    oria=originsize[0]
+    orib=originsize[1]
+    obja=objectsize[0]
+    objb=objectsize[1]
+    if oria>obja or orib>objb:
+        ratio=round(max((oria/obja),(orib/objb)))
     else:
-        ratio=round(min(objectsize[0]/originsize[0],objectsize[1]/originsize[1]))
+        ratio=round(min((obja/oria),(objb/orib)))
+    if oria*orib>850 * 850:
+        if ratio<2:
+            ratio=2
     return ratio
 
 def deletezoom(event,widget):
@@ -200,6 +209,7 @@ def generatedisplayimg(filename):
     #height,width=firstimg.size
     height,width,c=displaybandarray[filename]['LabOstu'].shape
     ratio=findratio([height,width],[850,850])
+    print('displayimg ratio',ratio)
     resizeshape=[]
     if height*width<850*850:
         #resize=cv2.resize(Multiimage[filename],(int(width*ratio),int(height*ratio)),interpolation=cv2.INTER_LINEAR)
@@ -488,6 +498,7 @@ def singleband(file):
         ratio=findratio([bandsize[0],bandsize[1]],[2000,2000])
     else:
         ratio=1
+    print('ratio',ratio)
     #if bandsize[0]*bandsize[1]>850*850:
     #    ratio=findratio([bandsize[0],bandsize[1]],[850,850])
     #else:
@@ -1660,7 +1671,17 @@ def resegment():
 
     if refarea is not None:
         labels[refarea]=0
+    # if segmentratio>1:
+    #     workingimg=cv2.resize(labels,(int(labels.shape[1]/segmentratio),int(labels.shape[0]/segmentratio)),interpolation=cv2.INTER_LINEAR)
+    # else:
+    #     workingimg=np.copy(labels)
+
     reseglabels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres,minlw,maxlw)
+
+    # if segmentratio>1:
+    #     cache=(np.zeros(labels.shape),{"f":int(segmentratio),"stride":int(segmentratio)})
+    #     reseglabels=tkintercorestat.pool_backward(reseglabels,cache)
+    #     #labeldict['iter0']['labels']=reseglabels
     multi_results.update({currentfilename:(labeldict,{})})
     iterkeys=list(labeldict.keys())
     iternum=len(iterkeys)
@@ -2041,7 +2062,7 @@ def extraction():
     global kernersizes,multi_results,workingimg,outputimgdict,outputimgbands,pixelmmratio
     global currentlabels,panelA,outputbutton,reseglabels,refbutton,figcanvas,resegbutton,refvar
     global refsubframe,loccanvas,originlabels,changekmeans,originlabeldict,refarea
-    global figdotlist
+    global figdotlist,segmentratio
     if int(kmeans.get())==1:
         messagebox.showerror('Invalid Class #',message='#Class = 1, try change it to 2 or more, and refresh Color-Index.')
         return
@@ -2069,38 +2090,31 @@ def extraction():
     print(nonzeroratio)
     #nonzeroratio=float(nonzeros)/(currentlabels.shape[0]*currentlabels.shape[1])
     dealpixel=nonzeroratio*currentlabels.shape[0]*currentlabels.shape[1]
+    ratio=1
     if nonzeroratio<=0.2:# and nonzeroratio>=0.1:
         ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1600,1600])
         if currentlabels.shape[0]*currentlabels.shape[1]>1600*1600:
             workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         else:
-            #if dealpixel<512000/4:
-            #    ratio=2
-                #workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]*ratio),int(currentlabels.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
-            #    cache=(np.zeros((currentlabels.shape[0]*ratio,currentlabels.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
-            #    workingimg=tkintercorestat.pool_backward(currentlabels,cache)
-            #else:
-                ratio=1
-                print('ratio',ratio)
-                workingimg=np.copy(currentlabels)
+            #ratio=1
+            #print('nonzeroratio',ratio)
+            workingimg=np.copy(currentlabels)
+        segmentratio=0
     else:
-        #if nonzeroratio>0.16:
-        #if imgtypevar.get()=='0':
-        #print('imgtype',imgtypevar.get())
         print('deal pixel',dealpixel)
         if dealpixel>512000:
-            if currentlabels.shape[0]*currentlabels.shape[1]>1000*1000:
-                ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
-                if ratio<2:
-                    ratio=2
-                workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            if currentlabels.shape[0]*currentlabels.shape[1]>850*850:
+                segmentratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[850,850])
+                if segmentratio<2:
+                    segmentratio=2
+                workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/segmentratio),int(currentlabels.shape[0]/segmentratio)),interpolation=cv2.INTER_LINEAR)
         else:
-            ratio=1
+            segmentratio=1
             #print('ratio',ratio)
             workingimg=np.copy(currentlabels)
     pixelmmratio=1.0
     coin=False
-    print('ratio:',ratio)
+    print('nonzeroratio:',ratio,'segmentation ratio',segmentratio)
     print('workingimgsize:',workingimg.shape)
     pyplt.imsave('workingimg.png',workingimg)
     if originlabels is None:
@@ -2110,6 +2124,11 @@ def extraction():
         if changekmeans==True:
             originlabels,border,colortable,originlabeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
             changekmeans=False
+    # if segmentratio>1:
+    #     cache=(np.zeros((currentlabels.shape[0],currentlabels.shape[1])),{"f":int(segmentratio),"stride":int(segmentratio)})
+    #     orisize_originlabels=tkintercorestat.pool_backward(originlabels,cache)
+    #     #originlabels=orisize_originlabels
+    #     originlabeldict['iter0']['labels']=orisize_originlabels
     multi_results.update({currentfilename:(originlabeldict,{})})
 
     reseglabels=originlabels
