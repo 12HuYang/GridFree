@@ -704,11 +704,17 @@ def singleband(file):
     print('C',C)
     #V=np.cov(C.T)
     V=np.corrcoef(C.T)
-
+    std=np.std(displayfea_vector.T,axis=1)
+    print(std)
+    std_displayfea=C/std
+    print(std_displayfea)
     #eigvalues,eigvectors=np.linalg.eig(V)
     #n,m=displayfea_vector.shape
     #C=np.dot(displayfea_vector.T,displayfea_vector)/(n-1)
-    eigvalues=la.eigvals(V)
+    V_var=np.cov(std_displayfea.T)
+    print('COV',V_var)
+    print('COR',V)
+    eigvalues=la.eigvals(V_var)
     #eigvalues=np.linalg.eigvals(C)
     print('eigvalue',eigvalues)
     idx=np.argsort(eigvalues)
@@ -728,19 +734,20 @@ def singleband(file):
     pcavar={}
     for i in range(featurechannel):
         pcn=eigvectors[:,i]
-        pcnbands=np.dot(displayfea_vector,pcn)
+        #pcnbands=np.dot(displayfea_vector,pcn)
+        pcnbands=np.dot(std_displayfea,pcn)
         pcvar=np.var(pcnbands)
         print('pc',i+1,' var=',pcvar)
         temppcavar={i:pcvar}
         pcavar.update(temppcavar)
-        #pcnbands=np.dot(C,pcn)
-        #pcabands[:,i]=pcabands[:,i]+pcnbands
-    sortvar=sorted(pcavar,key=pcavar.get)
-    print(sortvar)
-    for i in range(len(sortvar)):
-        pcn=eigvectors[:,sortvar[i]]
-        pcnbands=np.dot(displayfea_vector,pcn)
+        pcnbands=np.dot(C,pcn)
         pcabands[:,i]=pcabands[:,i]+pcnbands
+    # sortvar=sorted(pcavar,key=pcavar.get)
+    # print(sortvar)
+    # for i in range(len(sortvar)):
+    #     pcn=eigvectors[:,sortvar[i]]
+    #     pcnbands=np.dot(displayfea_vector,pcn)
+    #     pcabands[:,i]=pcabands[:,i]+pcnbands
     #np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%s')
     #threedplot(pcabands)
     pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
