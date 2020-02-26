@@ -839,7 +839,7 @@ def generateplant(checkbox,bandchoice):
         pyplt.imsave('displayimg.png',imageband)
         indimg=cv2.imread('displayimg.png')
         displayimg['ColorIndices']['Image']=ImageTk.PhotoImage(Image.fromarray(indimg))
-        changedisplayimg(imageframe,'ColorIndices')
+        changedisplayimg(imageframe,'Color Deviation')
 
     else:
         if ''.join(choicelist) in clusterdisplay:
@@ -942,7 +942,7 @@ def generateimgplant(displaylabels):
         tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(binaryimg.astype('uint8')))})
         displayimg['ColorIndices']=tempdict
 
-        changedisplayimg(imageframe,'ColorIndices')
+        changedisplayimg(imageframe,'Color Deviation')
     else:
         for i in range(kvar):
             locs=np.where(colordivimg==i)
