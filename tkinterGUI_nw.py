@@ -1519,10 +1519,13 @@ def export_result(iterver):
                 tempdict={key:data}
                 origindata.update(tempdict)
                 print(key)
-            for uni in colortable:
+            # for uni in colortable:
+            for uni in uniquelabels:
                 print(uni,colortable[uni])
-                uniloc=np.where(restoredband==float(uni))
+                uniloc=np.where(labels==float(uni))
                 if len(uniloc)==0 or len(uniloc[1])==0:
+                    print('no uniloc\n')
+                    print(uniloc[0],uniloc[1])
                     continue
                 smalluniloc=np.where(originrestoredband==uni)
                 ulx,uly=min(smalluniloc[1]),min(smalluniloc[0])
@@ -1537,6 +1540,7 @@ def export_result(iterver):
                 try:
                     sizes=currentsizes[uni]
                 except:
+                    print('no sizes\n')
                     continue
                 #templist=[amount,length,width]
                 templist=[amount,sizes[0],sizes[1],sizes[2],sizes[3],sizes[4]]
@@ -1578,6 +1582,7 @@ def export_result(iterver):
                     i+=1
                     print(row)
                     csvwriter.writerow(row)
+            print('total data length=',len(datatable))
     messagebox.showinfo('Saved',message='Results are saved to '+path)
 
 # def single_kmenas(singlebandarray):
