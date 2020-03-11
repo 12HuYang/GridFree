@@ -817,48 +817,48 @@ def changeimage(frame,filename):
         outputbutton.pack()
 
 
-def generateplant(checkbox,bandchoice):
-    keys=bandchoice.keys()
-    choicelist=[]
-    imageband=np.zeros((displaybandarray['LabOstu'].shape))
-    for key in keys:
-        tup=bandchoice[key].get()
-        if '1' in tup:
-            choicelist.append(key)
-            imageband=imageband+displaybandarray[key]
-    if len(choicelist)==0:
-        messagebox.showerror('No Indices is selected',message='Please select indicies to do KMeans Classification.')
-
-        return
-
-    if int(kmeans.get())==1:
-        ratio=findratio([imageband.shape[0],imageband.shape[1]],[850,850])
-        imageband=cv2.resize(imageband,(int(imageband.shape[1]/ratio),int(imageband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-        imageband=np.where(imageband==1,2,imageband)
-        temprgb=np.zeros((imageband.shape[0],imageband.shape[1],3))
-        pyplt.imsave('displayimg.png',imageband)
-        indimg=cv2.imread('displayimg.png')
-        displayimg['ColorIndices']['Image']=ImageTk.PhotoImage(Image.fromarray(indimg))
-        changedisplayimg(imageframe,'Color Deviation')
-
-    else:
-        if ''.join(choicelist) in clusterdisplay:
-            tempdict=clusterdisplay[''.join(choicelist)]
-            if kmeans.get() in tempdict:
-                displaylabels=tempdict[kmeans.get()]
-            else:
-                #reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
-                #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
-                displaylabels=kmeansclassify()
-            generateimgplant(displaylabels)
-            pyplt.imsave('allcolorindex.png',displaylabels)
-            return
-        else:
-            #reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
-            #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
-            displaylabels=kmeansclassify()
-            generateimgplant(displaylabels)
-            pyplt.imsave('allcolorindex.png',displaylabels)
+# def generateplant(checkbox,bandchoice):
+#     keys=bandchoice.keys()
+#     choicelist=[]
+#     imageband=np.zeros((displaybandarray['LabOstu'].shape))
+#     for key in keys:
+#         tup=bandchoice[key].get()
+#         if '1' in tup:
+#             choicelist.append(key)
+#             imageband=imageband+displaybandarray[key]
+#     if len(choicelist)==0:
+#         messagebox.showerror('No Indices is selected',message='Please select indicies to do KMeans Classification.')
+#
+#         return
+#
+#     if int(kmeans.get())==1:
+#         ratio=findratio([imageband.shape[0],imageband.shape[1]],[850,850])
+#         imageband=cv2.resize(imageband,(int(imageband.shape[1]/ratio),int(imageband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+#         imageband=np.where(imageband==1,2,imageband)
+#         temprgb=np.zeros((imageband.shape[0],imageband.shape[1],3))
+#         pyplt.imsave('displayimg.png',imageband)
+#         indimg=cv2.imread('displayimg.png')
+#         displayimg['ColorIndices']['Image']=ImageTk.PhotoImage(Image.fromarray(indimg))
+#         changedisplayimg(imageframe,'Color Deviation')
+#
+#     else:
+#         if ''.join(choicelist) in clusterdisplay:
+#             tempdict=clusterdisplay[''.join(choicelist)]
+#             if kmeans.get() in tempdict:
+#                 displaylabels=tempdict[kmeans.get()]
+#             else:
+#                 #reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
+#                 #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+#                 displaylabels=kmeansclassify()
+#             generateimgplant(displaylabels)
+#             pyplt.imsave('allcolorindex.png',displaylabels)
+#             return
+#         else:
+#             #reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
+#             #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
+#             displaylabels=kmeansclassify()
+#             generateimgplant(displaylabels)
+#             pyplt.imsave('allcolorindex.png',displaylabels)
 
 
 
@@ -875,7 +875,7 @@ def generatecheckbox(frame,classnum):
         tempdict={dictkey:Variable()}
         tempdict[dictkey].set('0')
         checkboxdict.update(tempdict)
-        ch=Checkbutton(checkboxframe,text=dictkey,variable=checkboxdict[dictkey],command=partial(changecluster,''))
+        ch=Checkbutton(checkboxframe,text=dictkey,variable=checkboxdict[dictkey])#,command=partial(changecluster,''))
         if i+1>int(kmeans.get()):
             ch.config(state=DISABLED)
         ch.pack(side=LEFT)
@@ -3004,6 +3004,7 @@ kmeansbar.pack()
 kmeansbar.bind('<ButtonRelease-1>',changecluster)
 
 checkboxframe.pack()
+checkboxframe.bind('<Leave>',changecluster)
 for i in range(10):
     dictkey=str(i+1)
     tempdict={dictkey:Variable()}
