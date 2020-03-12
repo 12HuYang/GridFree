@@ -942,7 +942,7 @@ def generateimgplant(displaylabels):
         tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(binaryimg.astype('uint8')))})
         displayimg['ColorIndices']=tempdict
 
-        changedisplayimg(imageframe,'Color Deviation')
+        # changedisplayimg(imageframe,'Color Deviation')
     else:
         for i in range(kvar):
             locs=np.where(colordivimg==i)
@@ -967,6 +967,11 @@ def generateimgplant(displaylabels):
         colordivdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colordeimg.astype('uint8')))})
         displayimg['Color Deviation']=colordivdict
 
+        # changedisplayimg(imageframe,'ColorIndices')
+    # print('sel count',sel_count)
+    if sel_count==0:
+        changedisplayimg(imageframe,'Color Deviation')
+    else:
         changedisplayimg(imageframe,'ColorIndices')
     changekmeans=True
 
