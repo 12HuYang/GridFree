@@ -109,6 +109,7 @@ elesize=[]
 labellist=[]
 figdotlist={}
 havecolorstrip=True
+binaryimg=None
 
 maxx=0
 minx=0
@@ -805,7 +806,7 @@ def generatecheckbox(frame,classnum):
     #        ch.invoke()
 
 def generateimgplant(displaylabels):
-    global currentlabels,changekmeans,colordicesband
+    global currentlabels,changekmeans,colordicesband,binaryimg
     colordicesband=np.copy(displaylabels)
     keys=checkboxdict.keys()
     plantchoice=[]
@@ -1173,26 +1174,6 @@ def export_result(iterver):
             draw=ImageDraw.Draw(imageband)
             uniquelabels=list(colortable.keys())
             tempdict={}
-            '''
-            if coinsize.get()=='1':
-                if refarea is not None:
-                    #realref=np.where(labels==65535.0)
-                    pixelmmratio=((19.05/2)**2*3.14/len(refarea[0]))**0.5
-                    #pixelmmratio=((19.05/2)**2*3.14/len(realref[0]))**0.5
-                else:
-                    pixelmmratio=1.0
-            else:
-                if coinsize.get()=='3':
-                    specarea=float(sizeentry.get())
-                    if refarea is not None:
-                        #realref=np.where(labels==65535.0)
-                        pixelmmratio=(specarea/len(refarea[0]))**0.5
-                        #pixelmmratio=(specarea/len(realref[0]))**0.5
-                    else:
-                        pixelmmratio=1.0
-                else:
-                    pixelmmratio=1.0
-            '''
             if refarea is not None:
                 specarea=float(sizeentry.get())
                 pixelmmratio=(specarea/len(refarea[0]))**0.5
@@ -1325,6 +1306,7 @@ def export_result(iterver):
                 locs=np.where(colordicesband==i)
                 colordiv[locs]=colorbandtable[i]
             pyplt.imsave(path+'/'+originfile+'-colordevice'+'.png',colordiv.astype('uint8'))
+            pyplt.imsave(path+'/'+originfile+'-binaryimg'+'.png',binaryimg.astype('uint8'))
 
             #restoredband=cv2.resize(src=restoredband,dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
             print(restoredband.shape)
