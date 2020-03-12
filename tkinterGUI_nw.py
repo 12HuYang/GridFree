@@ -310,47 +310,6 @@ def Open_File(filename):   #add to multi-image,multi-gray  #call band calculatio
     filenames.append(filename)
     return True
 
-# def commentoutrasterio():
-#     '''
-#     except:
-#         try:
-#             Filersc=rasterio.open(filename)
-#             height=Filersc.height
-#             width=Filersc.width
-#             channel=Filersc.count
-#             print(Filersc)
-#             Filebands=np.zeros((3,height,width))
-#             imagebands=np.zeros((height,width,3))
-#             grayimg=np.zeros((height,width,3))
-#             graybands=np.zeros((3,height,width))
-#             Filesize=(height,width)
-#             for j in range(channel):
-#                 band=Filersc.read(j+1)
-#                 if j<3:
-#                     imagebands[:,:,j]=band
-#                     band = np.where((band == 0)|(band==-10000) | (band==-9999), 1e-6, band)
-#                     Filebands[j,:,:]=band
-#                 else:
-#                     grayimg[:,:,j-3]=band
-#                     band = np.where((band == 0)|(band==-10000) | (band==-9999), 1e-6, band)
-#                     graybands[j-3,:,:]=band
-#
-#             Fileimg=img(Filesize,Filebands)
-#             tempdict={filename:imagebands}
-#             Multiimage.update(tempdict)
-#             tempdict={filename:Fileimg}
-#             Multiimagebands.update(tempdict)
-#             tempdict={filename:2}
-#             Multitype.update(tempdict)
-#             Grayim=img(Filesize,graybands)
-#             tempdict={filename:grayimg}
-#             Multigray.update(tempdict)
-#             tempdict={filename:Grayim}
-#             Multigraybands.update(tempdict)
-#             print(Filebands)
-#     '''
-#     pass
-
 def Open_Map():
     global mappath,elesize,labellist
     filepath=filedialog.askopenfilename()
@@ -817,52 +776,6 @@ def changeimage(frame,filename):
         outputbutton.pack()
 
 
-# def generateplant(checkbox,bandchoice):
-#     keys=bandchoice.keys()
-#     choicelist=[]
-#     imageband=np.zeros((displaybandarray['LabOstu'].shape))
-#     for key in keys:
-#         tup=bandchoice[key].get()
-#         if '1' in tup:
-#             choicelist.append(key)
-#             imageband=imageband+displaybandarray[key]
-#     if len(choicelist)==0:
-#         messagebox.showerror('No Indices is selected',message='Please select indicies to do KMeans Classification.')
-#
-#         return
-#
-#     if int(kmeans.get())==1:
-#         ratio=findratio([imageband.shape[0],imageband.shape[1]],[850,850])
-#         imageband=cv2.resize(imageband,(int(imageband.shape[1]/ratio),int(imageband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-#         imageband=np.where(imageband==1,2,imageband)
-#         temprgb=np.zeros((imageband.shape[0],imageband.shape[1],3))
-#         pyplt.imsave('displayimg.png',imageband)
-#         indimg=cv2.imread('displayimg.png')
-#         displayimg['ColorIndices']['Image']=ImageTk.PhotoImage(Image.fromarray(indimg))
-#         changedisplayimg(imageframe,'Color Deviation')
-#
-#     else:
-#         if ''.join(choicelist) in clusterdisplay:
-#             tempdict=clusterdisplay[''.join(choicelist)]
-#             if kmeans.get() in tempdict:
-#                 displaylabels=tempdict[kmeans.get()]
-#             else:
-#                 #reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
-#                 #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
-#                 displaylabels=kmeansclassify()
-#             generateimgplant(displaylabels)
-#             pyplt.imsave('allcolorindex.png',displaylabels)
-#             return
-#         else:
-#             #reshapemodified_tif=np.zeros((displaybandarray['LabOstu'].shape[0]*displaybandarray['LabOstu'].shape[1],len(choicelist)))
-#             #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
-#             displaylabels=kmeansclassify()
-#             generateimgplant(displaylabels)
-#             pyplt.imsave('allcolorindex.png',displaylabels)
-
-
-
-
 def generatecheckbox(frame,classnum):
     global checkboxdict,havecolorstrip
     for widget in frame.winfo_children():
@@ -1072,17 +985,6 @@ def changecluster(event):
     global havecolorstrip
     imageband=np.copy(displaybandarray[currentfilename]['LabOstu'])
     if int(kmeans.get())==1:
-        # tempband=np.copy(imageband)
-        # ratio=findratio([tempband.shape[0],tempband.shape[1]],[850,850])
-        # tempband=cv2.resize(tempband,(int(tempband.shape[1]/ratio),int(tempband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-        # pyplt.imsave('displayimg.png',tempband)
-        # indimg=cv2.imread('displayimg.png')
-        # #indimg=Image.open('displayimg.png')
-        # tempdict={}
-        # tempdict.update({'Size':tempband.shape})
-        # tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(indimg))})
-        # displayimg['ColorIndices']=tempdict
-        # changedisplayimg(imageframe,'ColorIndices')
         originpcabands=displaybandarray[currentfilename]['LabOstu']
         pcah,pcaw,pcac=originpcabands.shape
         pcacount={}
@@ -1114,93 +1016,6 @@ def changecluster(event):
         #kmeanscanvas.update()
         addcolorstrip()
         return
-
-
-
-# def changecluster_kmeans(event):
-#     global havecolorstrip
-#     keys=bandchoice.keys()
-#     choicelist=[]
-#     imageband=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape))
-#     for key in keys:
-#         tup=bandchoice[key].get()
-#         if '1' in tup:
-#             choicelist.append(key)
-#             imageband=imageband+displaybandarray[currentfilename][key]
-#
-#     #colorimg=cv2.imread('colorstrip.png')
-#     #colorimg=ImageTk.PhotoImage(Image.fromarray(colorimg))
-#     #kmeanscanvas.create_image(0,0,image=colorimg,anchor=NW)
-#     #kmeanscanvas.pack()
-#     if len(choicelist)==0:
-#         messagebox.showerror('No Indices is selected',message='Please select indicies to do KMeans Classification.')
-#         tempband=np.copy(displaybandarray[currentfilename]['LabOstu'])
-#         ratio=findratio([tempband.shape[0],tempband.shape[1]],[850,850])
-#         tempband=cv2.resize(tempband,(int(tempband.shape[1]/ratio),int(tempband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-#         pyplt.imsave('displayimg.png',tempband)
-#         indimg=cv2.imread('displayimg.png')
-#         #indimg=Image.open('displayimg.png')
-#         tempdict={}
-#         tempdict.update({'Size':tempband.shape})
-#         tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(indimg))})
-#         displayimg['ColorIndices']=tempdict
-#         changedisplayimg(imageframe,'ColorIndices')
-#         return
-#     if int(kmeans.get())==1:
-#         tempband=np.copy(imageband)
-#         ratio=findratio([tempband.shape[0],tempband.shape[1]],[850,850])
-#         tempband=cv2.resize(tempband,(int(tempband.shape[1]/ratio),int(tempband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-#         pyplt.imsave('displayimg.png',tempband)
-#         #bands=Image.fromarray(tempband)
-#         #bands=bands.convert('RGB')
-#         #bands.save('displayimg.png')
-#         indimg=cv2.imread('displayimg.png')
-#         tempdict={}
-#         tempdict.update({'Size':tempband.shape})
-#         tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(indimg))})
-#         displayimg['ColorIndices']=tempdict
-#         changedisplayimg(imageframe,'ColorIndices')
-#     else:
-#         if ''.join(choicelist) in clusterdisplay:
-#             tempdict=clusterdisplay[''.join(choicelist)]
-#             if kmeans.get() in tempdict:
-#                 displaylabels=tempdict[kmeans.get()]
-#             else:
-#                 havecolorstrip=False
-#                 reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
-#                 #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
-#                 displaylabels=kmeansclassify()
-#             generateimgplant(displaylabels)
-#             pyplt.imsave('allcolorindex.png',displaylabels)
-#             #kmeanscanvas.update()
-#             addcolorstrip()
-#             return
-#         else:
-#             reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],len(choicelist)))
-#             #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
-#             displaylabels=kmeansclassify()
-#             generateimgplant(displaylabels)
-#             pyplt.imsave('allcolorindex.png',displaylabels)
-#             havecolorstrip=False
-#             addcolorstrip()
-#         #changedisplayimg(imageframe,'Color Deviation')
-#
-#
-#
-#
-#     print(kmeans.get())
-#     print(refvar.get())
-#     print(edge.get())
-#     print(bandchoice)
-#     print(checkboxdict)
-
-# def showinitcounting(tup):
-#     global multi_results,kernersizes
-#     labels=tup[0]
-#     counts=tup[1]
-#     colortable=tup[2]
-#     coinparts=tup[3]
-#     filename=tup[4]
 
 def showcounting(tup,number=True,frame=True):
     global multi_results,kernersizes#,pixelmmratio,kernersizes
@@ -1590,121 +1405,6 @@ def export_result(iterver):
             print('total data length=',len(datatable))
     messagebox.showinfo('Saved',message='Results are saved to '+path)
 
-# def single_kmenas(singlebandarray):
-#     numindec=0
-#     keys=bandchoice.keys()
-#     for key in keys:
-#         tup=bandchoice[key].get()
-#         if '1' in tup:
-#             numindec+=1
-#     reshapeworkimg=np.zeros((singlebandarray[cluster[0]].shape[0]*singlebandarray[cluster[0]].shape[1],numindec))
-#     j=0
-#     for i in range(len(cluster)):
-#         tup=bandchoice[cluster[i]].get()
-#         if '1' in tup:
-#             tempband=singlebandarray[cluster[i]]
-#             reshapeworkimg[:,j]=tempband.reshape(tempband.shape[0]*tempband.shape[1],1)[:,0]
-#             j+=1
-#     clusternumber=int(kmeans.get())
-#     clf=KMeans(n_clusters=clusternumber,init='k-means++',n_init=10,random_state=0)
-#     labels=clf.fit_predict(reshapeworkimg)
-#     temptif=labels.reshape(singlebandarray[cluster[0]].shape[0],singlebandarray[cluster[0]].shape[1])
-#     keys=checkboxdict.keys()
-#     plantchoice=[]
-#     for key in keys:
-#         plantchoice.append(checkboxdict[key].get())
-#     tempdisplayimg=np.zeros((singlebandarray[cluster[0]].shape))
-#     #for i in range(len(plantchoice)):
-#     #    tup=plantchoice[i]
-#     #    if '1' in tup:
-#     #        tempdisplayimg=np.where(temptif==i,1,tempdisplayimg)
-#
-#     pixelarea=1.0
-#     minipixelareaclass=0
-#     for i in range(int(kmeans.get())):
-#         pixelloc=np.where(temptif==i)
-#         pixelnum=len(pixelloc[0])
-#         temparea=float(pixelnum/(temptif.shape[0]*temptif.shape[1]))
-#         if temparea<pixelarea:
-#             minipixelareaclass=i
-#             pixelarea=temparea
-#     tempdisplayimg=np.where(temptif==minipixelareaclass,1,tempdisplayimg)
-#         #clusterdisplay.update({''.join(choicelist):tempdict})
-#     #return displaylabels
-#     return tempdisplayimg
-
-
-'''
-def batchextraction():
-    global multi_results
-    for file in filenames:
-        if file!=currentfilename:
-            tempdisplaybands=displaybandarray[file]
-            displayband=single_kmenas(tempdisplaybands)
-            coin=refvar.get()=='1'
-            edgevar=edge.get()=='1'
-            if edgevar:
-                displayband=removeedge(displayband)
-            nonzeros=np.count_nonzero(displayband)
-            nonzeroloc=np.where(displayband!=0)
-            ulx,uly=min(nonzeroloc[1]),min(nonzeroloc[0])
-            rlx,rly=max(nonzeroloc[1]),max(nonzeroloc[0])
-            nonzeroratio=float(nonzeros)/((rlx-ulx)*(rly-uly))
-            print(nonzeroratio)
-            if coin:
-                boundaryarea=tkintercorestat.boundarywatershed(displayband,1,'inner')
-                boundaryarea=np.where(boundaryarea<1,0,boundaryarea)
-                coindict,miniarea=tkintercorestat.findcoin(boundaryarea)
-                coinarea=0
-                topkey=list(coindict.keys())[0]
-                coinarea=len(coindict[topkey][0])
-                displayband[coindict[topkey]]=0
-                nocoinarea=float(np.count_nonzero(displayband))/(displayband.shape[0]*displayband.shape[1])
-                #ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1000,1000])
-                print('nocoinarea',nocoinarea)
-                coinratio=coinarea/(displayband.shape[0]*displayband.shape[1])
-                print('coinratio:',coinratio)
-                time.sleep(3)
-                ratio=float(nocoinarea/coinratio)
-                print('ratio:',ratio)
-                if nonzeroratio<0.20:
-                    #if coinratio**0.5<=0.2:# and nonzeroratio>=0.1:
-                    ratio=findratio([displayband.shape[0],displayband.shape[1]],[1600,1600])
-                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                else:
-                    ratio=findratio([displayband.shape[0],displayband.shape[1]],[1000,1000])
-                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            else:
-                if nonzeroratio<0.20:# and nonzeroratio>=0.1:
-                    ratio=findratio([displayband.shape[0],displayband.shape[1]],[1600,1600])
-                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                else:
-                    #workingimg=np.copy(displayband)
-                    #if nonzeroratio>0.15:
-                    ratio=findratio([displayband.shape[0],displayband.shape[1]],[1000,1000])
-                    workingimg=cv2.resize(displayband,(int(displayband.shape[1]/ratio),int(displayband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                    #else:
-                    #    if nonzeroratio<0.1:
-                    #        ratio=findratio([displayband.shape[0],displayband.shape[1]],[1503,1503])
-                    #        workingimg=cv2.resize(displayband,(int(displayband.shape[1]*ratio),int(displayband.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
-
-            pyplt.imsave('workingimg.png',workingimg)
-            labels,border,colortable,greatareas,tinyareas,coinparts,labeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
-            multi_results.update({file:(labeldict,coinparts)})
-            tempimgdict={}
-            tempimgbands={}
-            tempsegbands={}
-            for key in labeldict:
-                tup=(labeldict[key]['labels'],labeldict[key]['counts'],labeldict[key]['colortable'],coinparts,file)
-                outputdisplay,outputimg,small_segimg=showcounting(tup)
-                tempimgdict.update({key:outputdisplay})
-                tempimgbands.update({key:outputimg})
-                tempsegbands.update({key:small_segimg})
-            outputimgdict.update({file:tempimgdict})
-            outputimgbands.update({file:tempimgbands})
-            outputsegbands.update({file:tempsegbands})
-    pass
-'''
 
 
 def resegment():
@@ -1977,68 +1677,6 @@ def item_start_drag(event):
         print(labelkey)
         if labelkey in reseglabels:
             seedfigflash(labelkey)
-
-        '''
-        if (currx-1,curry) in labelplotmap:
-            labelkey=labelplotmap[(currx-1,curry)]
-        if (currx+1,curry) in labelplotmap:
-            labelkey=labelplotmap[(currx+1,curry)]
-        if (currx,curry-1) in labelplotmap:
-            labelkey=labelplotmap[(currx,curry-1)]
-        if (currx,curry+1) in labelplotmap:
-            labelkey=labelplotmap[(currx,curry+1)]
-        if type(labelkey)!=type(None):
-            if len(dotflash)>0:
-                for i in range(len(dotflash)):
-                    figcanvas.delete(dotflash.pop(0))
-            a=figcanvas.create_oval(currx-1,curry-1,currx+1,curry+1,width=1,outline='Orange',fill='Orange')
-            dotflash.append(a)
-            #labelkey=labelplotmap[(currx,curry)]
-            print(labelkey)
-            seedfigflash(labelkey)
-        '''
-    ''''
-        else:
-            tup=figcanvas.find_all()
-            print(tup)
-            tup=list(tup)
-            redarrow=tup[-4]
-            orangearrow=tup[-3]
-            bluearrow=tup[-2]
-            purplearrow=tup[-1]
-            currx=event.x
-            curry=event.y
-            if currx<75:
-                currx=75
-            if currx>425:
-                currx=425
-            if curry<50:
-                curry=50
-            if curry>350:
-                curry=350
-            dist=[abs(linelocs[0]-currx),abs(linelocs[1]-currx),abs(linelocs[2]-curry),abs(linelocs[3]-curry)]
-            print(dist)
-            #print(loccanvas.bbox(redarrow),loccanvas.bbox(orangearrow),loccanvas.bbox(bluearrow),loccanvas.bbox(purplearrow))
-            mindist=min(dist)
-            mindistind=dist.index(mindist)
-            if mindistind==0:
-                figcanvas.move(redarrow,currx-linelocs[0],0)
-                figcanvas._lastX=currx
-                linelocs[0]=currx
-            if mindistind==1:
-                figcanvas.move(orangearrow,currx-linelocs[1],0)
-                figcanvas._lastX=currx
-                linelocs[1]=currx
-            if mindistind==2:
-                figcanvas.move(bluearrow,0,curry-linelocs[2])
-                linelocs[2]=curry
-                figcanvas._lastY=curry
-            if mindistind==3:
-                figcanvas.move(purplearrow,0,curry-linelocs[3])
-                linelocs[3]=curry
-                figcanvas._lastY=curry
-    pass
-    '''''
 
 def item_drag(event):
     global figcanvas,linelocs,xvalue
@@ -2745,83 +2383,7 @@ def del_reflabel():
     #tup=list(figcanvas.find_all())
     #figcanvas.delete(tup[-1])
     multiselectitems=[]
-    '''
-    data=[]
-    uniquelabels=list(newcolortables.keys())
-    lenwid=[]
-    labelplotmap={}
-    templabelplotmap={}
-    for uni in uniquelabels:
-        if uni!=0:
-            pixelloc = np.where(reseglabels == uni)
-            try:
-                ulx = min(pixelloc[1])
-            except:
-                continue
-            uly = min(pixelloc[0])
-            rlx = max(pixelloc[1])
-            rly = max(pixelloc[0])
-            length=rly-uly
-            width=rlx-ulx
-            lenwid.append((length+width))
-            data.append(len(pixelloc[0]))
-            templabelplotmap.update({(len(pixelloc[0]),length+width):uni})
-    miny=min(lenwid)
-    maxy=max(lenwid)
-    minx=min(data)
-    maxx=max(data)
-    binwidth=(maxx-minx)/10
-    ybinwidth=(maxy-miny)/10
-    bin_edges=[]
-    y_bins=[]
-    for i in range(0,11):
-        bin_edges.append(minx+i*binwidth)
-    for i in range(0,11):
-        y_bins.append(miny+i*ybinwidth)
-    #bin_edges.append(maxx)
-    #bin_edges.append(maxx+binwidth)
-    #y_bins.append(maxy)
-    #y_bins.append(maxy+ybinwidth)
-    plotdata=[]
-    for i in range(len(data)):
-        plotdata.append((data[i],lenwid[i]))
-    scaledDatalist=[]
-    try:
-        x_scalefactor=300/(maxx-minx)
-    except:
-        return
-    y_scalefactor=250/(maxy-miny)
-    for (x,y) in plotdata:
-        xval=50+(x-minx)*x_scalefactor+50
-        yval=300-(y-miny)*y_scalefactor+25
-        scaledDatalist.append((int(xval),int(yval)))
-    for key in templabelplotmap:
-        x=key[0]
-        y=key[1]
-        xval=50+(x-minx)*x_scalefactor+50
-        yval=300-(y-miny)*y_scalefactor+25
-        unilabel=templabelplotmap[key]
-        labelplotmap.update({(int(xval),int(yval)):unilabel})
-    figcanvas.delete(ALL)
-    axistest.drawdots(25+50,325+25,375+50,25+25,bin_edges,y_bins,scaledDatalist,figcanvas)
 
-
-    #loccanvas=figcanvas
-    #minx=25
-    #maxx=375
-    #maxy=325
-    #miny=25
-    #linelocs=[25+12,375-12,325-12,25+12]
-    #linelocs=[25+12,375-12,25+12,325-12]
-    linelocs=[75+12,425-12,350-12,50+12]
-    bins=bin_edges
-    ybins=y_bins
-
-    figcanvas.bind('<Any-Enter>',item_enter)
-    figcanvas.bind('<Any-Leave>',item_leave)
-    figcanvas.bind('<Button-1>',item_start_drag)
-    figcanvas.bind('<B1-Motion>',item_drag)
-    '''
 
 
 #def refchoice(refsubframe):
@@ -2841,40 +2403,6 @@ def refchoice():
         refarea=np.where(processlabel==reflabel)
         print('refarea',len(refarea[0]))
         print('reflabel',reflabel)
-        #refsubframe.pack(side=BOTTOM)
-        #refsubframe.grid(row=1,column=0,columnspan=4)
-        #refoption=[('Use Maximum','1'),('Use Minimum','2'),('User Specify','3')]
-        #for widget in refsubframe.winfo_children():
-        #    widget.config(state=NORMAL)
-        '''
-        if reseglabels is None:
-            return
-        processlabel=np.copy(reseglabels)
-        ratio=findratio([processlabel.shape[0],processlabel.shape[1]],[850,850])
-        #tempband=cv2.resize(processlabel.astype('float32'),(int(processlabel.shape[1]/ratio),int(processlabel.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-        print(ratio)
-        if int(ratio)>1:
-            if processlabel.shape[0]*processlabel.shape[1]>850*850:
-                convband,cache=tkintercorestat.pool_forward(processlabel,{"f":int(ratio),"stride":int(ratio)})
-            else:
-                cache=(np.zeros((processlabel.shape[0]*ratio,processlabel.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
-                convband=tkintercorestat.pool_backward(processlabel,cache)
-        else:
-            convband=processlabel
-        '''
-        #highlightcoin()
-        #if reseglabels is None:
-        #    boundaryarea=tkintercorestat.boundarywatershed(currentlabels,1,'inner')
-        #    boundaryarea=np.where(boundaryarea<1,0,boundaryarea)
-        #    coindict,miniarea=tkintercorestat.findcoin(boundaryarea)
-        #    processlabels=np.copy(boundaryarea)
-        #else:
-        #coindict,miniarea=tkintercorestat.findcoin(reseglabels)
-        #processlabels=np.copy(reseglabels)
-    #if refvar.get()=='0':
-    #    for widget in refsubframe.winfo_children():
-    #        widget.config(state=DISABLED)
-        #panelA.unbind('<Button-1>')
     else:
         refarea=None
 
