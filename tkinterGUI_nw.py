@@ -109,7 +109,7 @@ elesize=[]
 labellist=[]
 figdotlist={}
 havecolorstrip=True
-binaryimg=None
+originbinaryimg=None
 
 maxx=0
 minx=0
@@ -806,7 +806,7 @@ def generatecheckbox(frame,classnum):
     #        ch.invoke()
 
 def generateimgplant(displaylabels):
-    global currentlabels,changekmeans,colordicesband,binaryimg
+    global currentlabels,changekmeans,colordicesband,originbinaryimg
     colordicesband=np.copy(displaylabels)
     keys=checkboxdict.keys()
     plantchoice=[]
@@ -828,6 +828,8 @@ def generateimgplant(displaylabels):
     # if len(uniquecolor)==1 and uniquecolor[0]==1:
     #     tempdisplayimg=np.copy(displaylabels).astype('float32')
     currentlabels=np.copy(tempdisplayimg)
+    originbinaryimg=np.copy(tempdisplayimg)
+
     tempcolorimg=np.copy(displaylabels).astype('float32')
     ratio=findratio([tempdisplayimg.shape[0],tempdisplayimg.shape[1]],[850,850])
     if tempdisplayimg.shape[0]*tempdisplayimg.shape[1]<850*850:
@@ -1306,7 +1308,7 @@ def export_result(iterver):
                 locs=np.where(colordicesband==i)
                 colordiv[locs]=colorbandtable[i]
             pyplt.imsave(path+'/'+originfile+'-colordevice'+'.png',colordiv.astype('uint8'))
-            pyplt.imsave(path+'/'+originfile+'-binaryimg'+'.png',binaryimg.astype('uint8'))
+            pyplt.imsave(path+'/'+originfile+'-binaryimg'+'.png',originbinaryimg.astype('uint8'))
 
             #restoredband=cv2.resize(src=restoredband,dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
             print(restoredband.shape)
