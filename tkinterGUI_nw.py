@@ -279,6 +279,7 @@ def Open_File(filename):   #add to multi-image,multi-gray  #call band calculatio
         Filersc=cv2.imread(filename,flags=cv2.IMREAD_ANYCOLOR)
         height,width,channel=np.shape(Filersc)
         Filesize=(height,width)
+        print('filesize:',height,width)
         RGBfile=cv2.cvtColor(Filersc,cv2.COLOR_BGR2RGB)
         Multiimage.update({filename:RGBfile})
         Grayfile=cv2.cvtColor(Filersc,cv2.COLOR_BGR2Lab)
@@ -429,6 +430,7 @@ def singleband(file):
     except:
         return
     bandsize=Multigraybands[file].size
+    print('bandsize',bandsize)
     try:
         channel,height,width=bands.shape
     except:
@@ -475,7 +477,9 @@ def singleband(file):
     displays={}
     fea_l,fea_w=bands.shape
     fea_vector=np.zeros((fea_l*fea_w,10))
+    pyplt.imsave('bands.png',bands)
     displaybands=cv2.resize(bands,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+    pyplt.imsave('displaybands.png',displaybands)
     displayfea_l,displayfea_w=displaybands.shape
     displayfea_vector=np.zeros((displayfea_l*displayfea_w,10))
 
@@ -1042,8 +1046,15 @@ def showcounting(tup,number=True,frame=True):
     #colortable=currlabeldict['colortable']
     uniquelabels=list(colortable.keys())
     originfile,extension=os.path.splitext(filename)
-    image=Image.open(filename)
-    image=image.resize([labels.shape[1],labels.shape[0]],resample=Image.BILINEAR)
+    imgrsc=cv2.imread(filename,flags=cv2.IMREAD_ANYCOLOR)
+    imgrsc=cv2.cvtColor(imgrsc,cv2.COLOR_BGR2RGB)
+    imgrsc=cv2.resize(imgrsc,(labels.shape[1],labels.shape[0]),interpolation=cv2.INTER_LINEAR)
+    image=Image.fromarray(imgrsc)
+    #print('showcounting img',image.size)
+    #image.save('beforeresize.gif',append_images=[image])
+    #image=image.resize([labels.shape[1],labels.shape[0]],resample=Image.BILINEAR)
+    print('showcounting_resize',image.size)
+    image.save('beforlabel.gif',append_images=[image])
     draw=ImageDraw.Draw(image)
     #font=ImageFont.load_default()
     sizeuniq,sizecounts=np.unique(labels,return_counts=True)
@@ -1119,12 +1130,17 @@ def showcounting(tup,number=True,frame=True):
     #    disimage=image.resize([int(labels.shape[1]*ratio),int(labels.shape[0]*ratio)],resample=Image.BILINEAR)
     #else:
     #    disimage=image.resize([int(labels.shape[1]/ratio),int(labels.shape[0]/ratio)],resample=Image.BILINEAR)
+    print('show counting ratio',ratio)
     if height*width<850*850:
+        print('showcounting small')
         disimage=image.resize([int(width*ratio),int(height*ratio)],resample=Image.BILINEAR)
     else:
+        print('showcounting big')
         disimage=image.resize([int(width/ratio),int(height/ratio)],resample=Image.BILINEAR)
+    print('showcounting shape',disimage.size)
     displayoutput=ImageTk.PhotoImage(disimage)
     disimage.save('output.gif',append_images=[disimage])
+    #image.save('originoutput.gif',append_images=[image])
     return displayoutput,image,disimage
     #displayimg['Output']=displayoutput
     #changedisplayimg(imageframe,'Output')
@@ -1714,18 +1730,24 @@ def gen_convband():
     if reseglabels is None:
         return
     processlabel=np.copy(reseglabels)
-    ratio=findratio([processlabel.shape[0],processlabel.shape[1]],[850,850])
+    displaysize=outputsegbands[currentfilename]['iter0'].size
+    print('reseglabels shape',reseglabels.shape)
+    print('displaysize',displaysize)
+    ratio=int(max(displaysize[0]/reseglabels.shape[1],displaysize[1]/reseglabels.shape[0]))
+
     #tempband=cv2.resize(processlabel.astype('float32'),(int(processlabel.shape[1]/ratio),int(processlabel.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
     print(ratio)
     if int(ratio)>1:
-        if processlabel.shape[0]*processlabel.shape[1]>850*850:
-            print('pool_forward')
-            convband,cache=tkintercorestat.pool_forward(processlabel,{"f":int(ratio),"stride":int(ratio)})
-        else:
+        if processlabel.shape[0]*processlabel.shape[1]<850*850:
+            print('pool_backward')
             cache=(np.zeros((processlabel.shape[0]*ratio,processlabel.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
             convband=tkintercorestat.pool_backward(processlabel,cache)
-    else:
-        convband=processlabel
+        else:
+            print('pool_forward')
+            convband,cache=tkintercorestat.pool_forward(processlabel,{"f":int(ratio),"stride":int(ratio)})
+     else:
+         convband=processlabel
+    print('convband shape',convband.shape)
 
 
 def process():
