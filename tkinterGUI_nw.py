@@ -1733,19 +1733,26 @@ def gen_convband():
     displaysize=outputsegbands[currentfilename]['iter0'].size
     print('reseglabels shape',reseglabels.shape)
     print('displaysize',displaysize)
-    ratio=int(max(displaysize[0]/reseglabels.shape[1],displaysize[1]/reseglabels.shape[0]))
-
+    forward=0
+    if displaysize[0]*displaysize[1]<reseglabels.shape[0]*reseglabels.shape[1]:
+        ratio=int(max(reseglabels.shape[0]/displaysize[1],reseglabels.shape[1]/displaysize[0]))
+        forward=1
+    else:
+        ratio=int(max(displaysize[0]/reseglabels.shape[1],displaysize[1]/reseglabels.shape[0]))
+        forward=-1
     #tempband=cv2.resize(processlabel.astype('float32'),(int(processlabel.shape[1]/ratio),int(processlabel.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
     print(ratio)
     if int(ratio)>1:
-        if processlabel.shape[0]*processlabel.shape[1]<850*850:
+        #if processlabel.shape[0]*processlabel.shape[1]<850*850:
+        if forward==-1:
             print('pool_backward')
             cache=(np.zeros((processlabel.shape[0]*ratio,processlabel.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
             convband=tkintercorestat.pool_backward(processlabel,cache)
         else:
-            print('pool_forward')
-            convband,cache=tkintercorestat.pool_forward(processlabel,{"f":int(ratio),"stride":int(ratio)})
-     else:
+            if forward==1:
+                print('pool_forward')
+                convband,cache=tkintercorestat.pool_forward(processlabel,{"f":int(ratio),"stride":int(ratio)})
+    else:
          convband=processlabel
     print('convband shape',convband.shape)
 
