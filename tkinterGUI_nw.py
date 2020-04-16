@@ -987,6 +987,30 @@ def changepca(event):
     generateimgplant(displaylabels)
     return
 
+def savePCAimg(path,originfile,file):
+    originpcabands=displaybandarray[currentfilename]['LabOstu']
+    pcah,pcaw,pcac=originpcabands.shape
+    pcacount={}
+    keys=list(pcaboxdict.keys())
+    for item in keys:
+        if pcaboxdict[item].get()=='1':
+            pcacount.update({item:pcaboxdict[item]})
+    pcakeys=list(pcacount.keys())
+    tempband=np.zeros((pcah,pcaw,len(pcakeys)))
+    for i in range(len(pcakeys)):
+        channel=int(pcakeys[i])-1
+        tempband[:,:,i]=tempband[:,:,i]+originpcabands[:,:,channel]
+    displaylabels=np.mean(tempband,axis=2)
+    # generateimgplant(displaylabels)
+    # grayimg=(((displaylabels-displaylabels.min())/(displaylabels.max()-displaylabels.min()))*255.9).astype(np.uint8)
+    # pyplt.imsave('k=1.png',displaylabels.astype('uint8'))
+    # pyplt.imsave('k=1.png',grayimg)
+    grayimg=Image.fromarray(displaylabels.astype('uint8'),'L')
+    originheight,originwidth=Multigraybands[file].size
+    origingray=grayimg.resize([originwidth,originheight],resample=Image.BILINEAR)
+    origingray.save(path+'/'+originfile+'-PCAimg.png',"PNG")
+    # addcolorstrip()
+    return
 
 def changecluster(event):
     global havecolorstrip
@@ -1006,7 +1030,14 @@ def changecluster(event):
             tempband[:,:,i]=tempband[:,:,i]+originpcabands[:,:,channel]
         displaylabels=np.mean(tempband,axis=2)
         generateimgplant(displaylabels)
-        pyplt.imsave('k=1.png',displaylabels)
+        # grayimg=(((displaylabels-displaylabels.min())/(displaylabels.max()-displaylabels.min()))*255.9).astype(np.uint8)
+        # pyplt.imsave('k=1.png',displaylabels.astype('uint8'))
+        # pyplt.imsave('k=1.png',grayimg)
+        grayimg=Image.fromarray(displaylabels.astype('uint8'),'L')
+        grayimg.save('k=1.png',"PNG")
+        # originheight,originwidth=Multigraybands[filenames[0]].size
+        # origingray=grayimg.resize([originwidth,originheight],resample=Image.BILINEAR)
+        # origingray.save('PCAimg.png',"PNG")
         addcolorstrip()
         return
     else:
@@ -1318,6 +1349,7 @@ def export_result(iterver):
             originrestoredband=np.copy(labels)
             restoredband=originrestoredband.astype('uint8')
             colordiv=np.zeros((colordicesband.shape[0],colordicesband.shape[1],3))
+            savePCAimg(path,originfile,file)
             kvar=int(kmeans.get())
             print('kvar',kvar)
             for i in range(kvar):
