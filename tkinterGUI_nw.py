@@ -36,6 +36,7 @@ class img():
         self.bands=bands
 
 displayimg={'Origin':None,
+            'PCs':None,
             'Color Deviation':None,
             'ColorIndices':None,
             'Output':None}
@@ -63,6 +64,7 @@ originsegbands={}
 oldpcachoice=[]
 multiselectitems=[]
 coinbox_list=[]
+pre_checkbox=[]
 
 root=Tk()
 root.title('GridFree')
@@ -205,7 +207,7 @@ def changedisplayimg(frame,text):
     #print('change to '+text)
     #time.sleep(1)
 
-def generatedisplayimg(filename):
+def generatedisplayimg(filename):  # init display images
     firstimg=Multiimagebands[filename]
     #height,width=firstimg.size
     height,width,c=displaybandarray[filename]['LabOstu'].shape
@@ -240,6 +242,11 @@ def generatedisplayimg(filename):
     #    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(np.zeros((int(height/ratio),int(width/ratio))).astype('uint8')))})
     tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(np.zeros((int(resizeshape[1]),int(resizeshape[0]))).astype('uint8')))})
     displayimg['Output']=tempdict
+    tempdict={}
+    tempdict.update({'Size':resize.shape})
+    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(np.zeros((int(resizeshape[1]),int(resizeshape[0]))).astype('uint8')))})
+    displayimg['PCs']=tempdict
+
     tempband=np.zeros((displaybandarray[filename]['LabOstu'].shape))
     tempband=tempband+displaybandarray[filename]['LabOstu']
     ratio=findratio([tempband.shape[0],tempband.shape[1]],[850,850])
@@ -266,9 +273,15 @@ def generatedisplayimg(filename):
     for i in range(kvar):
         locs=np.where(tempband[:,:,0]==i)
         colordeviate[locs]=colorbandtable[i,:]
+    # pyplt.imsave('colordeviation.png',colordeviate)
+    # # colordevimg=Image.fromarray(colordeviate.astype('uint8'))
+    # # colordevimg.save('colordeviation.png',"PNG")
+    # testcolor=Image.open('colordeviation.png')
+    print('colordeviation.png')
     colortempdict={}
     colortempdict.update({'Size':colordeviate.shape})
     colortempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colordeviate.astype('uint8')))})
+    # colortempdict.update({'Image':ImageTk.PhotoImage(testcolor)})
     displayimg['Color Deviation']=colortempdict
 
 
@@ -340,7 +353,7 @@ def Open_Map():
         corlortable=tkintercorestat.get_colortable(reseglabels)
         tup=(reseglabels,[],corlortable,{},currentfilename)
         print(elesize)
-        mapdict,mapimage,smallset=showcounting(tup)
+        mapdict,mapimage,smallset=showcounting(tup,True,True,False)
         tempimgbands={}
         tempimgdict={}
         tempsmall={}
@@ -810,12 +823,14 @@ def generatecheckbox(frame,classnum):
     #        ch.invoke()
 
 def generateimgplant(displaylabels):
-    global currentlabels,changekmeans,colordicesband,originbinaryimg
+    global currentlabels,changekmeans,colordicesband,originbinaryimg,pre_checkbox
     colordicesband=np.copy(displaylabels)
     keys=checkboxdict.keys()
     plantchoice=[]
+    pre_checkbox=[]
     for key in keys:
         plantchoice.append(checkboxdict[key].get())
+        pre_checkbox.append(checkboxdict[key].get())
     tempdisplayimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0],
                              displaybandarray[currentfilename]['LabOstu'].shape[1]))
     colordivimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0],
@@ -873,6 +888,7 @@ def generateimgplant(displaylabels):
         #bands=bands.convert('L')
         #bands.save('displayimg.png')
         #indimg=cv2.imread('displayimg.png')
+        Image.fromarray(colordeimg.astype('uint8')).save('allcolorindex.png',"PNG")
         tempdict={}
         tempdict.update({'Size':tempdisplayimg.shape})
         tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(binaryimg.astype('uint8')))})
@@ -882,6 +898,7 @@ def generateimgplant(displaylabels):
         #tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(indimg))})
         #
         colorimg=cv2.imread('allcolorindex.png')
+        Image.fromarray((binaryimg.astype('uint8'))).save('binaryimg.png',"PNG")
         colordivdict={}
         colordivdict.update({'Size':tempdisplayimg.shape})
         colordivdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colordeimg.astype('uint8')))})
@@ -933,8 +950,10 @@ def kmeansclassify():
             print('reshape',reshapedtif.shape)
             clf=KMeans(n_clusters=int(kmeans.get()),init='k-means++',n_init=10,random_state=0)
             tempdisplayimg=clf.fit(reshapedtif)
+            # print('label=0',np.any(tempdisplayimg==0))
             displaylabels=tempdisplayimg.labels_.reshape((displaybandarray[currentfilename]['LabOstu'].shape[0],
                                                   displaybandarray[currentfilename]['LabOstu'].shape[1]))
+
 
     # pixelarea=1.0
     # for i in range(int(kmeans.get())):
@@ -962,9 +981,40 @@ def addcolorstrip():
         widget.pack()
         havecolorstrip=True
 
+def getPCs():
+    global displayimg
+    originpcabands=displaybandarray[currentfilename]['LabOstu']
+    pcah,pcaw,pcac=originpcabands.shape
+    pcacount={}
+    keys=list(pcaboxdict.keys())
+    for item in keys:
+        if pcaboxdict[item].get()=='1':
+            pcacount.update({item:pcaboxdict[item]})
+    pcakeys=list(pcacount.keys())
+    tempband=np.zeros((pcah,pcaw,len(pcakeys)))
+    for i in range(len(pcakeys)):
+        channel=int(pcakeys[i])-1
+        tempband[:,:,i]=tempband[:,:,i]+originpcabands[:,:,channel]
+    # if int(kmeans.get())==1:
+    print('kmeans=1')
+    displaylabels=np.mean(tempband,axis=2)
+    pyplt.imsave('k=1.png',displaylabels)
+    ratio=findratio([originpcabands.shape[0],originpcabands.shape[1]],[850,850])
+    tempcolorimg=np.copy(displaylabels)
+    colordivimg=np.zeros((displaylabels.shape[0],
+                          displaylabels.shape[1]))
+    if originpcabands.shape[0]*originpcabands.shape[1]<850*850:
+        # tempdisplayimg=cv2.resize(originpcabands,(int(originpcabands.shape[1]*ratio),int(originpcabands.shape[0]*ratio)))
+        colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]*ratio),int(colordivimg.shape[0]*ratio)))
+    else:
+        # tempdisplayimg=cv2.resize(originpcabands,(int(originpcabands.shape[1]/ratio),int(originpcabands.shape[0]/ratio)))
+        colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]/ratio),int(colordivimg.shape[0]/ratio)))
+    grayimg=Image.fromarray(colordivimg.astype('uint8'),'L')
+    displayimg['PCs']['Image']=ImageTk.PhotoImage(grayimg)
+
 def changepca(event):
     global clusterdisplay,colordicesband,oldpcachoice
-    clusterdisplay={}
+
     if len(oldpcachoice)>0:
         keys=pcaboxdict.keys()
         newlist=[]
@@ -978,6 +1028,8 @@ def changepca(event):
                 samecount+=1
         if samecount==len(oldpcachoice):
             return
+    getPCs()
+    clusterdisplay={}
     keys=pcaboxdict.keys()
     oldpcachoice=[]
     for key in keys:
@@ -1012,8 +1064,9 @@ def savePCAimg(path,originfile,file):
     # addcolorstrip()
     return
 
+
 def changecluster(event):
-    global havecolorstrip
+    global havecolorstrip,pre_checkbox
     imageband=np.copy(displaybandarray[currentfilename]['LabOstu'])
     if int(kmeans.get())==1:
         originpcabands=displaybandarray[currentfilename]['LabOstu']
@@ -1034,6 +1087,8 @@ def changecluster(event):
         # pyplt.imsave('k=1.png',displaylabels.astype('uint8'))
         # pyplt.imsave('k=1.png',grayimg)
         grayimg=Image.fromarray(displaylabels.astype('uint8'),'L')
+        print('max',displaylabels.max())
+        print('min',displaylabels.min())
         grayimg.save('k=1.png',"PNG")
         # originheight,originwidth=Multigraybands[filenames[0]].size
         # origingray=grayimg.resize([originwidth,originheight],resample=Image.BILINEAR)
@@ -1043,6 +1098,18 @@ def changecluster(event):
     else:
         if kmeans.get() in clusterdisplay:
             displaylabels=clusterdisplay[kmeans.get()]
+            if len(pre_checkbox)>0:
+                keys=checkboxdict.keys()
+                plantchoice=[]
+                for key in keys:
+                    plantchoice.append(checkboxdict[key].get())
+                allsame=True
+                for i in range(len(pre_checkbox)):
+                    if pre_checkbox[i]!=plantchoice[i]:
+                        allsame=False
+                if allsame==True:
+                    print('allsame=true')
+                    return
         else:
             havecolorstrip=False
             choicelist=[]
@@ -1050,12 +1117,12 @@ def changecluster(event):
             #displaylabels=kmeansclassify(choicelist,reshapemodified_tif)
             displaylabels=kmeansclassify()
         generateimgplant(displaylabels)
-        pyplt.imsave('allcolorindex.png',displaylabels)
+        # pyplt.imsave('allcolorindex.png',displaylabels)
         #kmeanscanvas.update()
         addcolorstrip()
         return
 
-def showcounting(tup,number=True,frame=True):
+def showcounting(tup,number=True,frame=True,header=True,whext=False,blkext=False):
     global multi_results,kernersizes#,pixelmmratio,kernersizes
     global font
     labels=tup[0]
@@ -1081,6 +1148,22 @@ def showcounting(tup,number=True,frame=True):
     imgrsc=cv2.cvtColor(imgrsc,cv2.COLOR_BGR2RGB)
     imgrsc=cv2.resize(imgrsc,(labels.shape[1],labels.shape[0]),interpolation=cv2.INTER_LINEAR)
     image=Image.fromarray(imgrsc)
+    if whext==True:
+        # blkbkg=np.zeros((labels.shape[0],labels.shape[1],3),dtype='float')
+        whbkg=np.zeros((labels.shape[0],labels.shape[1],3),dtype='float')
+        whbkg[:,:,:]=[255,255,255]
+        itemlocs=np.where(labels!=0)
+        # blkbkg[itemlocs]=imgrsc[itemlocs]
+        whbkg[itemlocs]=imgrsc[itemlocs]
+        image=Image.fromarray(whbkg.astype('uint8'))
+    if blkext==True:
+        blkbkg=np.zeros((labels.shape[0],labels.shape[1],3),dtype='float')
+        itemlocs=np.where(labels!=0)
+        blkbkg[itemlocs]=imgrsc[itemlocs]
+        blkbkg[itemlocs]=imgrsc[itemlocs]
+        image=Image.fromarray(blkbkg.astype('uint8'))
+
+
     #print('showcounting img',image.size)
     #image.save('beforeresize.gif',append_images=[image])
     #image=image.resize([labels.shape[1],labels.shape[0]],resample=Image.BILINEAR)
@@ -1139,19 +1222,19 @@ def showcounting(tup,number=True,frame=True):
                     draw.text((midx,midy),text=canvastext,font=font,fill='black')
 
 
-
-    if refarea is not None:
-        content='item count:'+str(len(uniquelabels)-1)+'\n File: '+filename
-    else:
-        content='item count:'+str(len(uniquelabels))+'\n File: '+filename
-    contentlength=len(content)+50
-    #rectext=canvas.create_text(10,10,fill='black',font='Times 16',text=content,anchor=NW)
-    draw.text((10-1, 10+1), text=content, font=font, fill='white')
-    draw.text((10+1, 10+1), text=content, font=font, fill='white')
-    draw.text((10-1, 10-1), text=content, font=font, fill='white')
-    draw.text((10+1, 10-1), text=content, font=font, fill='white')
-    #draw.text((10,10),text=content,font=font,fill=(141,2,31,0))
-    draw.text((10,10),text=content,font=font,fill='black')
+    if header==True:
+        if refarea is not None:
+            content='item count:'+str(len(uniquelabels)-1)+'\n File: '+filename
+        else:
+            content='item count:'+str(len(uniquelabels))+'\n File: '+filename
+        contentlength=len(content)+50
+        #rectext=canvas.create_text(10,10,fill='black',font='Times 16',text=content,anchor=NW)
+        draw.text((10-1, 10+1), text=content, font=font, fill='white')
+        draw.text((10+1, 10+1), text=content, font=font, fill='white')
+        draw.text((10-1, 10-1), text=content, font=font, fill='white')
+        draw.text((10+1, 10-1), text=content, font=font, fill='white')
+        #draw.text((10,10),text=content,font=font,fill=(141,2,31,0))
+        draw.text((10,10),text=content,font=font,fill='black')
     #image.save(originfile+'-countresult'+extension,"JPEG")
     #firstimg=Multigraybands[currentfilename]
     #height,width=firstimg.size
@@ -1188,12 +1271,178 @@ def changeoutputimg(file,intnum):
     displayimg['Output']=tempdict
     changedisplayimg(imageframe,'Output')
 
+def export_ext(iterver,path,whext=False,blkext=False):
+    suggsize=8
+    print('fontsize',suggsize)
+    smallfont=ImageFont.truetype('cmb10.ttf',size=suggsize)
+    files=multi_results.keys()
+    # path=filedialog.askdirectory()
+    for file in files:
+        labeldict=multi_results[file][0]
+        totalitervalue=len(list(labeldict.keys()))
+        #itervalue='iter'+str(int(iterver.get())-1)
+        #itervalue='iter'+str(totalitervalue-1)
+        #itervalue=int(iterver.get())
+        itervalue='iter'+iterver
+        print(itervalue)
+        print(labeldict)
+        labels=labeldict[itervalue]['labels']
+        counts=labeldict[itervalue]['counts']
+        if len(mappath)>0:
+            colortable=tkintercorestat.get_mapcolortable(labels,elesize.copy(),labellist.copy())
+        else:
+            colortable=labeldict[itervalue]['colortable']
+        #originheight,originwidth=Multigraybands[file].size
+        #copylabels=np.copy(labels)
+        #copylabels[refarea]=65535
+        #labels=cv2.resize(copylabels.astype('float32'),dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
+        head_tail=os.path.split(file)
+        originfile,extension=os.path.splitext(head_tail[1])
+        if len(path)>0:
+            tup=(labels,counts,colortable,[],currentfilename)
+            _band,segimg,small_segimg=showcounting(tup,False,True,True,whext,blkext)
+            #imageband=outputimgbands[file][itervalue]
+            imageband=segimg
+            draw=ImageDraw.Draw(imageband)
+            uniquelabels=list(colortable.keys())
+            tempdict={}
+            if refarea is not None:
+                specarea=float(sizeentry.get())
+                pixelmmratio=(specarea/len(refarea[0]))**0.5
+            else:
+                pixelmmratio=1.0
+            #print('coinsize',coinsize.get(),'pixelmmratio',pixelmmratio)
+            print('pixelmmratio',pixelmmratio)
+            for uni in uniquelabels:
+                if uni !=0:
+                    pixelloc = np.where(labels == float(uni))
+                    try:
+                        ulx = min(pixelloc[1])
+                    except:
+                        continue
+                    uly = min(pixelloc[0])
+                    rlx = max(pixelloc[1])
+                    rly = max(pixelloc[0])
+                    print(ulx, uly, rlx, rly)
+                    midx = ulx + int((rlx - ulx) / 2)
+                    midy = uly + int((rly - uly) / 2)
+                    length={}
+                    currborder=tkintercore.get_boundaryloc(labels,uni)
+                    for i in range(len(currborder[0])):
+                        for j in range(i+1,len(currborder[0])):
+                            templength=float(((currborder[0][i]-currborder[0][j])**2+(currborder[1][i]-currborder[1][j])**2)**0.5)
+                            length.update({(i,j):templength})
+                    sortedlength=sorted(length,key=length.get,reverse=True)
+                    try:
+                        topcouple=sortedlength[0]
+                    except:
+                        continue
+                    kernellength=length[topcouple]
+                    i=topcouple[0]
+                    j=topcouple[1]
+                    x0=currborder[1][i]
+                    y0=currborder[0][i]
+                    x1=currborder[1][j]
+                    y1=currborder[0][j]
+                    #slope=float((y0-y1)/(x0-x1))
+                    linepoints=[(currborder[1][i],currborder[0][i]),(currborder[1][j],currborder[0][j])]
+                    #draw.line(linepoints,fill='yellow')
+                    #points=linepixels(currborder[1][i],currborder[0][i],currborder[1][j],currborder[0][j])
+
+                    lengthpoints=cal_kernelsize.bresenhamline(x0,y0,x1,y1)  #x0,y0,x1,y1
+                    for point in lengthpoints:
+                        if imgtypevar.get()=='0':
+                            draw.point([int(point[0]),int(point[1])],fill='yellow')
+                    tengentaddpoints=cal_kernelsize.tengentadd(x0,y0,x1,y1,rlx,rly,labels,uni) #find tangent line above
+                    #for point in tengentaddpoints:
+                        #if int(point[0])>=ulx and int(point[0])<=rlx and int(point[1])>=uly and int(point[1])<=rly:
+                    #    draw.point([int(point[0]),int(point[1])],fill='green')
+                    tengentsubpoints=cal_kernelsize.tengentsub(x0,y0,x1,y1,ulx,uly,labels,uni) #find tangent line below
+                    #for point in tengentsubpoints:
+                    #    draw.point([int(point[0]),int(point[1])],fill='green')
+                    pointmatchdict={}
+                    for i in range(len(tengentaddpoints)):  #find the pixel pair with shortest distance
+                        width=kernellength
+                        pointmatch=[]
+                        point=tengentaddpoints[i]
+                        try:
+                            templabel=labels[int(point[1]),int(point[0])]
+                        except:
+                            continue
+                        if templabel==uni:
+                            for j in range(len(tengentsubpoints)):
+                                subpoint=tengentsubpoints[j]
+                                tempwidth=float(((point[0]-subpoint[0])**2+(point[1]-subpoint[1])**2)**0.5)
+                                if tempwidth<width:
+                                    pointmatch[:]=[]
+                                    pointmatch.append(point)
+                                    pointmatch.append(subpoint)
+                                    #print('tempwidth',width)
+                                    width=tempwidth
+                        if len(pointmatch)>0:
+                            #print('pointmatch',pointmatch)
+                            pointmatchdict.update({(pointmatch[0],pointmatch[1]):width})
+                    widthsort=sorted(pointmatchdict,key=pointmatchdict.get,reverse=True)
+                    try:
+                        pointmatch=widthsort[0]
+                        print('final pointmatch',pointmatch)
+                    except:
+                        continue
+                    if len(pointmatch)>0:
+                        x0=int(pointmatch[0][0])
+                        y0=int(pointmatch[0][1])
+                        x1=int(pointmatch[1][0])
+                        y1=int(pointmatch[1][1])
+                        if imgtypevar.get()=='0':
+                            draw.line([(x0,y0),(x1,y1)],fill='yellow')
+                        width=float(((x0-x1)**2+(y0-y1)**2)**0.5)
+                        print('width',width,'length',kernellength)
+                        print('kernelwidth='+str(width*pixelmmratio))
+                        print('kernellength='+str(kernellength*pixelmmratio))
+                        #print('kernelwidth='+str(kernelwidth*pixelmmratio))
+                        tempdict.update({uni:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
+                    if uni in colortable:
+                        canvastext = str(colortable[uni])
+                    else:
+                        canvastext = 'No label'
+                    if imgtypevar.get()=='0':
+                        draw.text((midx-1, midy+1), text=canvastext, font=smallfont, fill='white')
+                        draw.text((midx+1, midy+1), text=canvastext, font=smallfont, fill='white')
+                        draw.text((midx-1, midy-1), text=canvastext, font=smallfont, fill='white')
+                        draw.text((midx+1, midy-1), text=canvastext, font=smallfont, fill='white')
+                        #draw.text((midx,midy),text=canvastext,font=font,fill=(141,2,31,0))
+                        draw.text((midx,midy),text=canvastext,font=smallfont,fill='black')
+
+                    #print(event.x, event.y, labels[event.x, event.y], ulx, uly, rlx, rly)
+
+                    #recborder = canvas.create_rectangle(ulx, uly, rlx, rly, outline='red')
+                    #drawcontents.append(recborder)
+
+            kernersizes.update({file:tempdict})
+            originheight,originwidth=Multigraybands[file].size
+            image=imageband.resize([originwidth,originheight],resample=Image.BILINEAR)
+            extcolor=""
+            if whext==True:
+                extcolor= "-extwht"
+            if blkext==True:
+                extcolor="-extblk"
+            image.save(path+'/'+originfile+extcolor+'-sizeresult'+'.png',"PNG")
+            tup=(labels,counts,colortable,[],currentfilename)
+            _band,segimg,small_segimg=showcounting(tup,False,True,True,whext,blkext)
+            segimage=segimg.resize([originwidth,originheight],resample=Image.BILINEAR)
+            segimage.save(path+'/'+originfile+extcolor+'-segmentresult'+'.png',"PNG")
+            _band,segimg,small_segimg=showcounting(tup,True,True,True,whext,blkext)
+            segimage=segimg.resize([originwidth,originheight],resample=Image.BILINEAR)
+            segimage.save(path+'/'+originfile+extcolor+'-labelresult'+'.png',"PNG")
+
 def export_result(iterver):
     suggsize=8
     print('fontsize',suggsize)
     smallfont=ImageFont.truetype('cmb10.ttf',size=suggsize)
     files=multi_results.keys()
     path=filedialog.askdirectory()
+    export_ext(iterver,path,True,False)
+    export_ext(iterver,path,False,True)
     for file in files:
         labeldict=multi_results[file][0]
         totalitervalue=len(list(labeldict.keys()))
@@ -1350,13 +1599,26 @@ def export_result(iterver):
             restoredband=originrestoredband.astype('uint8')
             colordiv=np.zeros((colordicesband.shape[0],colordicesband.shape[1],3))
             savePCAimg(path,originfile,file)
-            kvar=int(kmeans.get())
-            print('kvar',kvar)
-            for i in range(kvar):
-                locs=np.where(colordicesband==i)
-                colordiv[locs]=colorbandtable[i]
-            pyplt.imsave(path+'/'+originfile+'-colordevice'+'.png',colordiv.astype('uint8'))
-            pyplt.imsave(path+'/'+originfile+'-binaryimg'+'.png',originbinaryimg.astype('uint8'))
+
+            # kvar=int(kmeans.get())
+            # print('kvar',kvar)
+            # for i in range(kvar):
+            #     locs=np.where(colordicesband==i)
+            #     colordiv[locs]=colorbandtable[i]
+            # colordivimg=Image.fromarray(colordiv.astype('uint8'))
+            # colordivimg.save(path+'/'+originfile+'-colordevice'+'.jpeg',"JPEG")
+            colordivimg=Image.open('allcolorindex.png')
+            copycolordiv=colordivimg.resize([originwidth,originheight],resample=Image.BILINEAR)
+            copycolordiv.save(path+'/'+originfile+'-colordevice'+'.png',"PNG")
+            #pyplt.imsave(path+'/'+originfile+'-colordevice'+'.png',colordiv.astype('uint8'))
+            # copybinary=np.zeros((originbinaryimg.shape[0],originbinaryimg.shape[1],3),dtype='float')
+            # nonzeros=np.where(originbinaryimg==1)
+            # copybinary[nonzeros]=[255,255,0]
+            # binaryimg=Image.fromarray(copybinary.astype('uint8'))
+            binaryimg=Image.open('binaryimg.png')
+            copybinaryimg=binaryimg.resize([originwidth,originheight],resample=Image.BILINEAR)
+            copybinaryimg.save(path+'/'+originfile+'-binaryimg'+'.png',"PNG")
+            # pyplt.imsave(path+'/'+originfile+'-binaryimg'+'.png',originbinaryimg.astype('uint8'))
 
             #restoredband=cv2.resize(src=restoredband,dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
             print(restoredband.shape)
@@ -1487,7 +1749,7 @@ def resegment():
     tempsmall={}
     for key in labeldict:
         tup=(labeldict[key]['labels'],labeldict[key]['counts'],labeldict[key]['colortable'],{},currentfilename)
-        outputdisplay,outputimg,small_seg=showcounting(tup,False)
+        outputdisplay,outputimg,small_seg=showcounting(tup,False,True,False)
         tempimgdict.update({key:outputdisplay})
         tempimgbands.update({key:outputimg})
         tempsmall.update({key:small_seg})
@@ -1820,7 +2082,7 @@ def extraction():
     outputimgbands.clear()
     #for widget in frame.winfo_children():
     #    widget.pack_forget()
-    coin=refvar.get()=='1'
+    # coin=refvar.get()=='1'
     edgevar=edge.get()=='1'
     if edgevar:
         currentlabels=removeedge(currentlabels)
@@ -1890,7 +2152,7 @@ def extraction():
     tempsmall={}
     for key in labeldict:
         tup=(labeldict[key]['labels'],labeldict[key]['counts'],labeldict[key]['colortable'],{},currentfilename)
-        outputdisplay,outputimg,smallset=showcounting(tup,False)
+        outputdisplay,outputimg,smallset=showcounting(tup,False,True,False)
         tempimgdict.update({key:outputdisplay})
         tempimgbands.update({key:outputimg})
         tempsmall.update({key:smallset})
@@ -2498,10 +2760,11 @@ openfilebutton.pack(side=LEFT,padx=20,pady=5)
 mapbutton=Button(buttondisplay,text='Map',cursor='hand2',command=Open_Map)
 mapbutton.pack(side=LEFT,padx=20,pady=5)
 
-disbuttonoption={'Origin':'1','ColorIndices':'3','Color Deviation':'2','Output':'4'}
+disbuttonoption={'Origin':'1','PCs':'5','ColorIndices':'3','Color Deviation':'2','Output':'4'}
+buttonname={'Raw':'1','PCs':'5','Selected':'3','Clusters':'2','Output':'4'}
 #disbuttonoption={'Origin':'1','ColorIndices':'3','Output':'4'}
-for text in disbuttonoption:
-    b=Radiobutton(buttondisplay,text=text,variable=displaybut_var,value=disbuttonoption[text],command=partial(changedisplayimg,imageframe,text))
+for (text,v1),(name,v2) in zip(disbuttonoption.items(),buttonname.items()):
+    b=Radiobutton(buttondisplay,text=name,variable=displaybut_var,value=disbuttonoption[text],command=partial(changedisplayimg,imageframe,text))
     b.pack(side=LEFT,padx=20,pady=5)
     if disbuttonoption[text]=='1':
         b.invoke()
@@ -2558,9 +2821,9 @@ changefiledrop.pack()
 ### ----Class NUM----
 kmeansgenframe=LabelFrame(filter_fr,cursor='hand2',bd=0)
 kmeansgenframe.pack()
-pcaframe=LabelFrame(kmeansgenframe,text='Select PC#',cursor='hand2',bd=0)
+pcaframe=LabelFrame(kmeansgenframe,text='By PCs',cursor='hand2',bd=0)
 pcaframe.pack()
-kmeanslabel=LabelFrame(kmeansgenframe,text='Pick K value and cluster',bd=0)
+kmeanslabel=LabelFrame(kmeansgenframe,text='By Clusters',bd=0)
 checkboxframe=LabelFrame(kmeansgenframe,cursor='hand2',bd=0)#,text='Select classes',cursor='hand2')
 kmeanslabel.pack()
 pcaboxdict={}
@@ -2612,6 +2875,7 @@ kmeanscanvas=Canvas(kmeanscanvasframe,width=350,height=10,bg='Black')
 colordicesband=kmeansclassify()
 generateimgplant(colordicesband)
 changedisplayimg(imageframe,'Origin')
+getPCs()
 
 colorstrip=np.zeros((15,35*2,3),'uint8')
 for i in range(2):

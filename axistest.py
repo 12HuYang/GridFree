@@ -100,7 +100,7 @@ def drawdots(ulx,uly,rlx,rly,x_bins,y_bins,datalist,canvas,inputfigdotlist):
 
     minx=ulx
     maxx=rlx
-
+    canvas.create_text(int(ulx+(rlx-ulx)/2),rly-20,text='By size',font=('Times',14),anchor=N)
     canvas.create_line(ulx,uly,rlx,uly,width=2)
     canvas.create_line(ulx,uly,ulx,rly,width=2)
     canvas.create_line(ulx,rly,rlx,rly,width=2)
