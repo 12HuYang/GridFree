@@ -65,6 +65,13 @@ oldpcachoice=[]
 multiselectitems=[]
 coinbox_list=[]
 pre_checkbox=[]
+batch={'PCs':None,
+       'Kmeans':None,
+       'Kmeans_sel':None,
+       'Area_max':None,
+       'Area_min':None,
+       'L+W_max':None,
+       'L+W_min':None}
 
 root=Tk()
 root.title('GridFree')

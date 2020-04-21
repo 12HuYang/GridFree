@@ -502,7 +502,7 @@ def manualboundarywatershed(area,avgarea):
         #    markers=ndi.label(local_maxi)[0]
         #    break
         markers=ndi.label(local_maxi)[0]
-    unique=numpy.unique(markers)
+        unique=numpy.unique(markers)
     print('manual unique',unique)
     localarea=watershed(-distance,markers,mask=area)
 
