@@ -215,59 +215,86 @@ def changedisplayimg(frame,text):
     #time.sleep(1)
 
 def generatedisplayimg(filename):  # init display images
-    firstimg=Multiimagebands[filename]
-    #height,width=firstimg.size
-    height,width,c=displaybandarray[filename]['LabOstu'].shape
-    ratio=findratio([height,width],[850,850])
-    print('displayimg ratio',ratio)
-    resizeshape=[]
-    if height*width<850*850:
-        #resize=cv2.resize(Multiimage[filename],(int(width*ratio),int(height*ratio)),interpolation=cv2.INTER_LINEAR)
-        resizeshape.append(width*ratio)
-        resizeshape.append(height*ratio)
-    else:
-        #resize=cv2.resize(Multiimage[filename],(int(width/ratio),int(height/ratio)),interpolation=cv2.INTER_LINEAR)
-        resizeshape.append(width/ratio)
-        resizeshape.append(height/ratio)
-    resize=cv2.resize(Multiimage[filename],(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
-    originimg=Image.fromarray(resize.astype('uint8'))
-    originsegbands.update({'Origin':originimg})
-    rgbimg=ImageTk.PhotoImage(Image.fromarray(resize.astype('uint8')))
-    tempdict={}
-    tempdict.update({'Size':resize.shape})
-    tempdict.update({'Image':rgbimg})
+
+    try:
+        firstimg=Multiimagebands[filename]
+        #height,width=firstimg.size
+        height,width,c=displaybandarray[filename]['LabOstu'].shape
+        ratio=findratio([height,width],[850,850])
+        print('displayimg ratio',ratio)
+        resizeshape=[]
+        if height*width<850*850:
+            #resize=cv2.resize(Multiimage[filename],(int(width*ratio),int(height*ratio)),interpolation=cv2.INTER_LINEAR)
+            resizeshape.append(width*ratio)
+            resizeshape.append(height*ratio)
+        else:
+            #resize=cv2.resize(Multiimage[filename],(int(width/ratio),int(height/ratio)),interpolation=cv2.INTER_LINEAR)
+            resizeshape.append(width/ratio)
+            resizeshape.append(height/ratio)
+        resize=cv2.resize(Multiimage[filename],(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
+        originimg=Image.fromarray(resize.astype('uint8'))
+        originsegbands.update({'Origin':originimg})
+        rgbimg=ImageTk.PhotoImage(Image.fromarray(resize.astype('uint8')))
+        tempdict={}
+        tempdict.update({'Size':resize.shape})
+        tempdict.update({'Image':rgbimg})
+    except:
+        tempdict={}
+        tempimg=np.zeros((850,850))
+
+        tempdict.update({'Size':tempimg.shape})
+        tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(tempimg.astype('uint8')))})
     displayimg['Origin']=tempdict
     #if height*width<850*850:
     #    resize=cv2.resize(Multigray[filename],(int(width*ratio),int(height*ratio)),interpolation=cv2.INTER_LINEAR)
     #else:
         #resize=cv2.resize(Multigray[filename],(int(width/ratio),int(height/ratio)),interpolation=cv2.INTER_LINEAR)
     tempdict={}
-    tempdict.update({'Size':resize.shape})
+    try:
+        tempdict.update({'Size':resize.shape})
+        tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(np.zeros((int(resizeshape[1]),int(resizeshape[0]))).astype('uint8')))})
+
+    except:
+        tempdict.update({'Size':tempimg.shape})
     #if height*width<850*850:
     #    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(np.zeros((int(height*ratio),int(width*ratio))).astype('uint8')))})
     #else:
     #    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(np.zeros((int(height/ratio),int(width/ratio))).astype('uint8')))})
-    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(np.zeros((int(resizeshape[1]),int(resizeshape[0]))).astype('uint8')))})
+    # tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(np.zeros((int(resizeshape[1]),int(resizeshape[0]))).astype('uint8')))})
+        tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(tempimg.astype('uint8')))})
     displayimg['Output']=tempdict
+
     tempdict={}
-    tempdict.update({'Size':resize.shape})
-    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(np.zeros((int(resizeshape[1]),int(resizeshape[0]))).astype('uint8')))})
+    try:
+        tempdict.update({'Size':resize.shape})
+        tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(np.zeros((int(resizeshape[1]),int(resizeshape[0]))).astype('uint8')))})
+    except:
+        tempdict.update({'Size':tempimg.shape})
+        tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(tempimg.astype('uint8')))})
     displayimg['PCs']=tempdict
 
-    tempband=np.zeros((displaybandarray[filename]['LabOstu'].shape))
-    tempband=tempband+displaybandarray[filename]['LabOstu']
-    ratio=findratio([tempband.shape[0],tempband.shape[1]],[850,850])
+    tempdict={}
+
+    try:
+        tempband=np.zeros((displaybandarray[filename]['LabOstu'].shape))
+        tempband=tempband+displaybandarray[filename]['LabOstu']
+    # ratio=findratio([tempband.shape[0],tempband.shape[1]],[850,850])
+
     #if tempband.shape[0]*tempband.shape[1]<850*850:
     #    tempband=cv2.resize(ratio,(int(tempband.shape[1]*ratio),int(tempband.shape[0]*ratio)),interpolation=cv2.INTER_LINEAR)
     #else:
     #    tempband=cv2.resize(ratio,(int(tempband.shape[1]/ratio),int(tempband.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-    tempband=cv2.resize(tempband,(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
-    print('resizeshape',resizeshape)
+        tempband=cv2.resize(tempband,(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
+        tempdict.update({'Size':tempband.shape})
+        tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(tempband[:,:,0].astype('uint8')))})
+
+    # print('resizeshape',resizeshape)
     #pyplt.imsave('displayimg.png',tempband[:,:,0])
     #indimg=cv2.imread('displayimg.png')
-    tempdict={}
-    tempdict.update({'Size':tempband.shape})
-    tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(tempband[:,:,0].astype('uint8')))})
+    except:
+        tempdict.update({'Size':tempimg.shape})
+        tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(tempimg.astype('uint8')))})
+
     displayimg['ColorIndices']=tempdict
 
     #resize=cv2.resize(Multigray[filename],(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
@@ -275,21 +302,34 @@ def generatedisplayimg(filename):  # init display images
     #tempdict={}
     #tempdict.update({'Size':resize.shape})
     #tempdict.update({'Image':grayimg})
-    colordeviate=np.zeros((tempband[:,:,0].shape[0],tempband[:,:,0].shape[1],3),'uint8')
-    kvar=int(kmeans.get())
-    for i in range(kvar):
-        locs=np.where(tempband[:,:,0]==i)
-        colordeviate[locs]=colorbandtable[i,:]
+    tempdict={}
+    try:
+        colordeviate=np.zeros((tempband[:,:,0].shape[0],tempband[:,:,0].shape[1],3),'uint8')
+        kvar=int(kmeans.get())
+        for i in range(kvar):
+            locs=np.where(tempband[:,:,0]==i)
+            colordeviate[locs]=colorbandtable[i,:]
+
     # pyplt.imsave('colordeviation.png',colordeviate)
     # # colordevimg=Image.fromarray(colordeviate.astype('uint8'))
     # # colordevimg.save('colordeviation.png',"PNG")
     # testcolor=Image.open('colordeviation.png')
-    print('colordeviation.png')
-    colortempdict={}
-    colortempdict.update({'Size':colordeviate.shape})
-    colortempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colordeviate.astype('uint8')))})
+        print('colordeviation.png')
+    # colortempdict={}
+        tempdict.update({'Size':colordeviate.shape})
+        tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colordeviate.astype('uint8')))})
+    # colortempdict.update({'Size':colordeviate.shape})
+    # colortempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colordeviate.astype('uint8')))})
+
     # colortempdict.update({'Image':ImageTk.PhotoImage(testcolor)})
-    displayimg['Color Deviation']=colortempdict
+
+    # tempdict={}
+    except:
+        tempdict.update({'Size':tempimg.shape})
+        tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(tempimg.astype('uint8')))})
+
+    # displayimg['Color Deviation']=colortempdict
+    displayimg['Color Deviation']=tempdict
 
 
 
@@ -423,17 +463,19 @@ def Open_Multifile():
             singleband(MULTIFILES[i])
         for widget in changefileframe.winfo_children():
             widget.pack_forget()
+        currentfilename=filenames[0]
         filedropvar.set(filenames[0])
         changefiledrop=OptionMenu(changefileframe,filedropvar,*filenames,command=partial(changeimage,imageframe))
         changefiledrop.pack()
         #singleband(filenames[0])
         generatedisplayimg(filenames[0])
-        currentfilename=filenames[0]
+        getPCs()
+
         if len(bandchoice)>0:
             for i in range(len(cluster)):
                 bandchoice[cluster[i]].set('')
         #changedisplayimg(imageframe,'Origin')
-        kmeans.set(2)
+        kmeans.set(1)
         #reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],3))
         #colordicesband=kmeansclassify(['LabOstu'],reshapemodified_tif)
         colordicesband=kmeansclassify()
@@ -2740,8 +2782,8 @@ control_fr.pack(side=LEFT)
 #display_label.pack(padx=10,pady=10)
 
 imgtypevar.set('0')
-Open_File('seedsample.JPG')
-singleband('seedsample.JPG')
+# Open_File('seedsample.JPG')
+# singleband('seedsample.JPG')
 #cal indices
 generatedisplayimg('seedsample.JPG')
 
@@ -2798,9 +2840,9 @@ for text,mode in imgtypeoption:
 changefileframe=LabelFrame(filter_fr,text='Change Files',cursor='hand2')
 #changefileframe.pack()
 
-filedropvar.set(filenames[0])
-changefiledrop=OptionMenu(changefileframe,filedropvar,*filenames,command=partial(changeimage,imageframe))
-changefiledrop.pack()
+# filedropvar.set(filenames[0])
+# changefiledrop=OptionMenu(changefileframe,filedropvar,*filenames,command=partial(changeimage,imageframe))
+# changefiledrop.pack()
 ### ---choose color indices---
 # '''
 # chframe=LabelFrame(filter_fr,text='Select indicies below',cursor='hand2',bd=0)
@@ -2849,7 +2891,7 @@ keys=pcaboxdict.keys()
 oldpcachoice=[]
 for key in keys:
     oldpcachoice.append(pcaboxdict[key].get())
-kmeans.set(2)
+kmeans.set(1)
 #kmeansbar=Scale(kmeanslabel,from_=1,to=10,tickinterval=1,length=270,showvalue=0,orient=HORIZONTAL,variable=kmeans,command=partial(generatecheckbox,checkboxframe))
 kmeansbar=ttk.Scale(kmeanslabel,from_=1,to=10,length=350,orient=HORIZONTAL,variable=kmeans,cursor='hand2',command=partial(generatecheckbox,checkboxframe))
 kmeansbar.pack()
@@ -2879,10 +2921,11 @@ kmeanscanvas=Canvas(kmeanscanvasframe,width=350,height=10,bg='Black')
 #reshapemodified_tif=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0]*displaybandarray[currentfilename]['LabOstu'].shape[1],3))
 #colordicesband=kmeansclassify(['LabOstu'],reshapemodified_tif)
 #colordicesband=kmeansclassify([],reshapemodified_tif)
-colordicesband=kmeansclassify()
-generateimgplant(colordicesband)
-changedisplayimg(imageframe,'Origin')
-getPCs()
+
+# colordicesband=kmeansclassify()
+# generateimgplant(colordicesband)
+# changedisplayimg(imageframe,'Origin')
+# getPCs()
 
 colorstrip=np.zeros((15,35*2,3),'uint8')
 for i in range(2):
