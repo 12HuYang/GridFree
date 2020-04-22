@@ -65,13 +65,13 @@ oldpcachoice=[]
 multiselectitems=[]
 coinbox_list=[]
 pre_checkbox=[]
-batch={'PCs':None,
-       'Kmeans':None,
-       'Kmeans_sel':None,
-       'Area_max':None,
-       'Area_min':None,
-       'L+W_max':None,
-       'L+W_min':None}
+batch={'PCs':[],
+       'Kmeans':[],
+       'Kmeans_sel':[],
+       'Area_max':[],
+       'Area_min':[],
+       'L+W_max':[],
+       'L+W_min':[]}
 
 root=Tk()
 root.title('GridFree')
@@ -1747,12 +1747,24 @@ def export_result(iterver):
                     csvwriter.writerow(row)
             print('total data length=',len(datatable))
     messagebox.showinfo('Saved',message='Results are saved to '+path)
+    batchfile=path+'/'+originfile+'-batch'+'.txt'
+    with open(batchfile,'w') as f:
+        for key in batch.keys():
+            f.write(key)
+            f.write(',')
+            for i in range(len(batch[key])):
+                f.write(str(batch[key][i]))
+                f.write(',')
+            f.write('\n')
+        f.close()
+
 
 
 
 def resegment():
     global loccanvas,maxx,minx,maxy,miny,linelocs,bins,ybins,reseglabels,figcanvas,refvar,refsubframe,panelA
     global labelplotmap,figdotlist
+    global batch
     figcanvas.unbind('<Any-Enter>')
     figcanvas.unbind('<Any-Leave>')
     figcanvas.unbind('<Button-1>')
@@ -1897,6 +1909,26 @@ def resegment():
     if refarea is not None:
         reseglabels[refarea]=65535
 
+    pcasel=[]
+    pcakeys=list(pcaboxdict.keys())
+    for i in range(len(pcakeys)):
+        currvar=pcaboxdict[pcakeys[i]].get()
+        if currvar=='1':
+            pcasel.append(i+1)
+    kchoice=[]
+    kchoicekeys=list(checkboxdict.keys())
+    for i in range(len(kchoicekeys)):
+        currvar=checkboxdict[kchoicekeys[i]].get()
+        if currvar=='1':
+            kchoice.append(i+1)
+    batch['PCs']=pcasel.copy()
+    batch['Kmeans']=[int(kmeans.get())]
+    batch['Kmeans_sel']=kchoice.copy()
+    batch['Area_max']=[maxthres]
+    batch['Area_min']=[minthres]
+    batch['L+W_max']=[maxlw]
+    batch['L+W_min']=[minlw]
+    print(batch)
 
 
 def cal_yvalue(y):
@@ -2120,6 +2152,7 @@ def extraction():
     global currentlabels,panelA,outputbutton,reseglabels,refbutton,figcanvas,resegbutton,refvar
     global refsubframe,loccanvas,originlabels,changekmeans,originlabeldict,refarea
     global figdotlist,segmentratio
+    global batch
     if int(kmeans.get())==1:
         messagebox.showerror('Invalid Class #',message='#Class = 1, try change it to 2 or more, and refresh Color-Index.')
         return
@@ -2326,6 +2359,25 @@ def extraction():
         widget.config(state=NORMAL)
     outputbutton.config(state=NORMAL)
     #resegbutton.config(state=NORMAL)
+    pcasel=[]
+    pcakeys=list(pcaboxdict.keys())
+    for i in range(len(pcakeys)):
+        currvar=pcaboxdict[pcakeys[i]].get()
+        if currvar=='1':
+            pcasel.append(i+1)
+    kchoice=[]
+    kchoicekeys=list(checkboxdict.keys())
+    for i in range(len(kchoicekeys)):
+        currvar=checkboxdict[kchoicekeys[i]].get()
+        if currvar=='1':
+            kchoice.append(i+1)
+    batch['PCs']=pcasel.copy()
+    batch['Kmeans']=[int(kmeans.get())]
+    batch['Kmeans_sel']=kchoice.copy()
+    print(batch)
+
+
+
     pass
 
 def onFrameConfigure(inputcanvas):

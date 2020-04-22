@@ -477,7 +477,7 @@ def manualboundarywatershed(area,avgarea):
         markers=ndi.label(local_maxi)[0]
         unique=numpy.unique(markers)
     lastlength=0
-    while(len(unique)-1<possiblecount):
+    while(len(unique)-1<possiblecount and masklength>1):
         maskpara-=0.1
         try:
             masklength=int((avgarea*maskpara)**0.5)-1
@@ -493,7 +493,7 @@ def manualboundarywatershed(area,avgarea):
             #masklength=1
         lastlength=masklength
         try:
-            print(masklength)
+            print('masklength recover',masklength)
             local_maxi=peak_local_max(distance,indices=False,footprint=numpy.ones((masklength,masklength)),labels=area)
         except:
             maskpara+=0.1
