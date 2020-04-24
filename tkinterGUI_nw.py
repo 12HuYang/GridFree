@@ -29,6 +29,7 @@ import histograms
 import createBins
 import axistest
 from multiprocessing import Pool
+import lm_method
 
 class img():
     def __init__(self,size,bands):
@@ -65,6 +66,9 @@ oldpcachoice=[]
 multiselectitems=[]
 coinbox_list=[]
 pre_checkbox=[]
+originpcabands={}
+
+
 batch={'PCs':[],
        'Kmeans':[],
        'Kmeans_sel':[],
@@ -113,6 +117,7 @@ reflabel=0
 minflash=[]
 dotflash=[]
 labelplotmap={}
+
 mappath=''
 elesize=[]
 labellist=[]
@@ -486,7 +491,7 @@ def Open_Multifile():
 
 
 def singleband(file):
-    global displaybandarray,originbandarray
+    global displaybandarray,originbandarray,originpcabands
     try:
         bands=Multigraybands[file].bands
     except:
@@ -544,7 +549,7 @@ def singleband(file):
     pyplt.imsave('displaybands.png',displaybands)
     displayfea_l,displayfea_w=displaybands.shape
     displayfea_vector=np.zeros((displayfea_l*displayfea_w,10))
-
+    # originfea_vector=np.zeros((bandsize[0],bandsize[1],10))
 
     # saveimg=np.copy(bands).astype('uint8')
     # pyplt.imsave('ostuimg.png',saveimg)
@@ -552,8 +557,9 @@ def singleband(file):
     if 'LabOstu' not in originbands:
         originbands.update({'LabOstu':bands})
         fea_bands=bands.reshape(fea_l*fea_w,1)[:,0]
+        # originfea_vector[:,9]=originfea_vector[:,0]+fea_bands
         displayfea_bands=displaybands.reshape((displayfea_l*displayfea_w),1)[:,0]
-        fea_vector[:,0]=fea_vector[:,0]+fea_bands
+        fea_vector[:,9]=fea_vector[:,0]+fea_bands
         displayfea_vector[:,9]=displayfea_vector[:,0]+displayfea_bands
         #displaybands=displaybands.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         #kernel=np.ones((2,2),np.float32)/4
@@ -569,8 +575,10 @@ def singleband(file):
     # pyplt.imsave('NDIimg.png',saveimg)
     if 'NDI' not in originbands:
         originbands.update(tempdict)
+
         displaybands=cv2.resize(NDI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         fea_bands=NDI.reshape(fea_l*fea_w,1)[:,0]
+        # originfea_vector[:,1]=originfea_vector[:,1]+fea_bands
         displayfea_bands=displaybands.reshape((displayfea_l*displayfea_w),1)[:,0]
         fea_vector[:,1]=fea_vector[:,1]+fea_bands
         displayfea_vector[:,1]=displayfea_vector[:,1]+displayfea_bands
@@ -596,26 +604,31 @@ def singleband(file):
     # pyplt.imsave('Blueimg.png',saveimg)
     if 'Band1' not in originbands:
         originbands.update(tempdict)
+
         image=cv2.resize(Red,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         displaydict={'Band1':image}
         displays.update(displaydict)
         fea_bands=Red.reshape(fea_l*fea_w,1)[:,0]
+        # originfea_vector[:,2]=originfea_vector[:,2]+fea_bands
         displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
         fea_vector[:,2]=fea_vector[:,2]+fea_bands
         displayfea_vector[:,2]=displayfea_vector[:,2]+displayfea_bands
     tempdict={'Band2':Green}
     if 'Band2' not in originbands:
         originbands.update(tempdict)
+
         image=cv2.resize(Green,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         displaydict={'Band2':image}
         displays.update(displaydict)
         fea_bands=Green.reshape(fea_l*fea_w,1)[:,0]
+        # originfea_vector[:,3]=originfea_vector[:,3]+fea_bands
         displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
         fea_vector[:,3]=fea_vector[:,3]+fea_bands
         displayfea_vector[:,3]=displayfea_vector[:,3]+displayfea_bands
     tempdict={'Band3':Blue}
     if 'Band3' not in originbands:
         originbands.update(tempdict)
+        # originfea_vector[:,4]=originfea_vector[:,4]+Blue
         image=cv2.resize(Blue,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         displaydict={'Band3':image}
         displays.update(displaydict)
@@ -627,6 +640,7 @@ def singleband(file):
     tempdict = {'Greenness': Greenness}
     if 'Greenness' not in originbandarray:
         originbands.update(tempdict)
+        # originfea_vector[:,5]=originfea_vector[:,5]+Greenness
         image=cv2.resize(Greenness,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         displaydict={'Greenness':image}
@@ -640,6 +654,7 @@ def singleband(file):
     tempdict={'VEG':VEG}
     if 'VEG' not in originbandarray:
         originbands.update(tempdict)
+        # originfea_vector[:,6]=originfea_vector[:,6]+VEG
         image=cv2.resize(VEG,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         kernel=np.ones((4,4),np.float32)/16
         #displaybandarray.update({'LabOstu':})
@@ -654,6 +669,7 @@ def singleband(file):
     tempdict={'CIVE':CIVE}
     if 'CIVE' not in originbandarray:
         originbands.update(tempdict)
+        # originfea_vector[:,7]=originfea_vector[:,7]+CIVE
         image=cv2.resize(CIVE,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'CIVE':image}
@@ -666,6 +682,7 @@ def singleband(file):
     tempdict={'MExG':MExG}
     if 'MExG' not in originbandarray:
         originbands.update(tempdict)
+        # originfea_vector[:,8]=originfea_vector[:,8]+MExG
         image=cv2.resize(MExG,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'MExG':image}
@@ -678,13 +695,14 @@ def singleband(file):
     tempdict={'NDVI':NDVI}
     if 'NDVI' not in originbandarray:
         originbands.update(tempdict)
+        # originfea_vector[:,0]=originfea_vector[:,9]+NDVI
         image=cv2.resize(NDVI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
         worktempdict={'NDVI':image}
         displays.update(worktempdict)
         fea_bands=NDVI.reshape(fea_l*fea_w,1)[:,0]
         displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-        fea_vector[:,9]=fea_vector[:,9]+fea_bands
+        fea_vector[:,0]=fea_vector[:,9]+fea_bands
         displayfea_vector[:,0]=displayfea_vector[:,9]+displayfea_bands
     NGRDI=(bands[1,:,:]-bands[0,:,:])/(bands[1,:,:]+bands[0,:,:])
     tempdict={'NGRDI':NGRDI}
@@ -722,18 +740,23 @@ def singleband(file):
     '''
 
     M=np.mean(displayfea_vector.T,axis=1)
-    print('M',M,'M shape',M.shape)
+    OM=np.mean(fea_vector.T,axis=1)
+    print('M',M,'M shape',M.shape, 'OM',OM,'OM Shape',OM.shape)
     C=displayfea_vector-M
+    OC=fea_vector-OM
     #max=np.max(C.T,axis=1)
     #print('MAX',max)
     #C=C/max
-    print('C',C)
+    print('C',C,'OC',OC)
     #V=np.cov(C.T)
     V=np.corrcoef(C.T)
+    OV=np.corrcoef(OC.T)
     std=np.std(displayfea_vector.T,axis=1)
-    print(std)
+    O_std=np.std(fea_vector.T,axis=1)
+    print(std,O_std)
     std_displayfea=C/std
-    print(std_displayfea)
+    O_stddisplayfea=OC/O_std
+    print(std_displayfea,O_stddisplayfea)
     #eigvalues,eigvectors=np.linalg.eig(V)
     #n,m=displayfea_vector.shape
     #C=np.dot(displayfea_vector.T,displayfea_vector)/(n-1)
@@ -755,19 +778,24 @@ def singleband(file):
         eigvalueperc.update({i:eigvalues[i]/sum(eigvalues)})
         #if eigvalues[i]>0:
         featurechannel+=1
-
+    o_eigenvalue,o_eigenvector=np.linalg.eig(OV)
     pcabands=np.zeros((displayfea_vector.shape[0],featurechannel))
+    o_pcabands=np.zeros((fea_vector.shape[0],featurechannel))
     pcavar={}
     for i in range(featurechannel):
         pcn=eigvectors[:,i]
+        opcn=o_eigenvector[:,i]
         #pcnbands=np.dot(displayfea_vector,pcn)
         pcnbands=np.dot(std_displayfea,pcn)
+        opcnbands=np.dot(O_stddisplayfea,opcn)
         pcvar=np.var(pcnbands)
         print('pc',i+1,' var=',pcvar)
         temppcavar={i:pcvar}
         pcavar.update(temppcavar)
         pcnbands=np.dot(C,pcn)
+        opcnbands=np.dot(OC,opcn)
         pcabands[:,i]=pcabands[:,i]+pcnbands
+        o_pcabands[:,i]=o_pcabands[:,i]+opcnbands
     # sortvar=sorted(pcavar,key=pcavar.get)
     # print(sortvar)
     # for i in range(len(sortvar)):
@@ -783,6 +811,7 @@ def singleband(file):
     #for i in range(high):
 
     #threedplot(pcabands)
+    originpcabands.update({file:o_pcabands})
     pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
     #originbands={'LabOstu':pcabandsdisplay}
     tempdictdisplay={'LabOstu':pcabandsdisplay}
@@ -1674,6 +1703,12 @@ def export_result(iterver):
             currentsizes=kernersizes[file]
             indicekeys=list(originbandarray[file].keys())
             indeclist=[ 0 for i in range(len(indicekeys)*3)]
+            pcalist=[0 for i in range(3)]
+            temppcabands=np.zeros((originpcabands[file].shape[0],len(batch['PCs'])))
+            for i in range(len(batch['PCs'])):
+                temppcabands[:,i]=temppcabands[:,i]+originpcabands[file][:,batch['PCs'][i]-1]
+            pcabands=np.mean(temppcabands,axis=1)
+            pcabands=pcabands.reshape((originheight,originwidth))
             datatable={}
             origindata={}
             for key in indicekeys:
@@ -1707,7 +1742,7 @@ def export_result(iterver):
                     continue
                 #templist=[amount,length,width]
                 templist=[amount,sizes[0],sizes[1],sizes[2],sizes[3],sizes[4]]
-                tempdict={colortable[uni]:templist+indeclist}  #NIR,Redeyes,R,G,B,NDVI,area
+                tempdict={colortable[uni]:templist+indeclist+pcalist}  #NIR,Redeyes,R,G,B,NDVI,area
                 print(tempdict)
                 for ki in range(len(indicekeys)):
                     originNDVI=origindata[indicekeys[ki]]
@@ -1723,6 +1758,16 @@ def export_result(iterver):
                         pixellist.append(originNDVI[uniloc[0][k]][uniloc[1][k]])
                     tempdict[colortable[uni]][ki*3+6]=tempdict[colortable[uni]][ki*3+6]/amount
                     tempdict[colortable[uni]][ki*3+8]=np.std(pixellist)
+                pixellist=[]
+                for k in range(len(uniloc[0])):
+                    try:
+                        tempdict[colortable[uni]][-2]+=pcabands[uniloc[0][k]][uniloc[1][k]]
+                    except IndexError:
+                        print(uniloc[0][k],uniloc[1][k])
+                    tempdict[colortable[uni]][-3]+=pcabands[uniloc[0][k]][uniloc[1][k]]
+                    pixellist.append(pcabands[uniloc[0][k]][uniloc[1][k]])
+                    tempdict[colortable[uni]][-3]=tempdict[colortable[uni]][-3]/amount
+                    tempdict[colortable[uni]][-1]=np.std(pixellist)
                 datatable.update(tempdict)
             filename=path+'/'+originfile+'-outputdata.csv'
             with open(filename,mode='w') as f:
@@ -1732,6 +1777,9 @@ def export_result(iterver):
                     rowcontent.append('avg-'+str(key))
                     rowcontent.append('sum-'+str(key))
                     rowcontent.append('std-'+str(key))
+                rowcontent.append('avg-PCA')
+                rowcontent.append('sum-PCA')
+                rowcontent.append('std-PCA')
                 #csvwriter.writerow(['ID','NIR','Red Edge','Red','Green','Blue','NIRv.s.Green','LabOstu','area(#of pixel)'])
                 #csvwriter.writerow(['Index','Plot','Area(#pixels)','avg-NDVI','sum-NDVI','std-NDVI','Length(#pixel)','Width(#pixel)'])#,'#holes'])
                 csvwriter.writerow(rowcontent)
@@ -1833,8 +1881,11 @@ def resegment():
     data=[]
     uniquelabels=list(colortable.keys())
     lenwid=[]
+    lenlist=[]
+    widlist=[]
     labelplotmap={}
     templabelplotmap={}
+    unitable=[]
     for uni in uniquelabels:
         if uni!=0:
             pixelloc = np.where(reseglabels == uni)
@@ -1848,8 +1899,16 @@ def resegment():
             length=rly-uly
             width=rlx-ulx
             lenwid.append((length+width))
+            lenlist.append(length)
+            widlist.append(width)
             data.append(len(pixelloc[0]))
-            templabelplotmap.update({(len(pixelloc[0]),length+width):uni})
+            unitable.append(uni)
+            # templabelplotmap.update({(len(pixelloc[0]),length+width):uni})
+    residual,area=lm_method.lm_method(lenlist,widlist,data)
+    lenwid=list(residual)
+    data=list(area)
+    for i in range(len(unitable)):
+        templabelplotmap.update({(data[i],lenwid[i]):unitable[i]})
     miny=min(lenwid)
     maxy=max(lenwid)
     minx=min(data)
@@ -1970,7 +2029,7 @@ def item_leave(event):
     pass
 
 def item_multiselect(event):
-    print(event.type,'event')
+    print(event.type,'event item_multiselect')
     currx=event.x
     curry=event.y
     print('mul_x',currx,'mul_y',curry)
@@ -2000,7 +2059,7 @@ def item_start_drag(event):
     global figcanvas,linelocs,dotflash
     itemType=figcanvas.type(CURRENT)
     print(itemType)
-    print(event.type,'event')
+    print(event.type,'event start_drag')
     if itemType=='line':
         fill=figcanvas.itemconfigure(CURRENT,'fill')[4]
         dash=figcanvas.itemconfigure(CURRENT,'dash')[4]
@@ -2268,9 +2327,13 @@ def extraction():
     data=[]
     uniquelabels=list(colortable.keys())
     lenwid=[]
+    lenlist=[]
+    widlist=[]
     figcanvas.delete(ALL)
     labelplotmap={}
+
     templabelplotmap={}
+    unitable=[]
     for uni in uniquelabels:
         if uni!=0:
             pixelloc = np.where(originlabels == uni)
@@ -2284,8 +2347,16 @@ def extraction():
             length=rly-uly
             width=rlx-ulx
             lenwid.append((length+width))
+            lenlist.append(length)
+            widlist.append(width)
             data.append(len(pixelloc[0]))
-            templabelplotmap.update({(len(pixelloc[0]),length+width):uni})
+            unitable.append(uni)
+            # templabelplotmap.update({(len(pixelloc[0]),length+width):uni})
+    residual,area=lm_method.lm_method(lenlist,widlist,data)
+    lenwid=list(residual)
+    data=list(area)
+    for i in range(len(unitable)):
+        templabelplotmap.update({(data[i],lenwid[i]):unitable[i]})
     miny=min(lenwid)
     maxy=max(lenwid)
     minx=min(data)
@@ -2308,6 +2379,12 @@ def extraction():
     scaledDatalist=[]
     x_scalefactor=300/(maxx-minx)
     y_scalefactor=250/(maxy-miny)
+    if maxx-minx==0:
+        maxx=minx+10
+        x_scalefactor=300/10
+    if maxy-miny==0:
+        maxy=miny+10
+        y_scalefactor=250/10
     for (x,y) in plotdata:
         xval=50+(x-minx)*x_scalefactor+50
         yval=300-(y-miny)*y_scalefactor+25
@@ -2319,6 +2396,7 @@ def extraction():
         yval=300-(y-miny)*y_scalefactor+25
         unilabel=templabelplotmap[key]
         labelplotmap.update({(int(xval),int(yval)):unilabel})
+
     #print(labelplotmap)
     #print(scaledDatalist)
     figdotlist={}
@@ -2471,24 +2549,31 @@ def customcoin_multi(event):
         else:
             uly,rly=min(coinarea[0]),max(coinarea[0])
         a=panelA.create_rectangle(ulx,uly,rlx+1,rly+1,outline='yellow')
-        coinbox_list.append(a)
-        plotcoinarea=np.where(reseglabels==coinlabel)
-        ulx,uly=min(plotcoinarea[1]),min(plotcoinarea[0])
-        rlx,rly=max(plotcoinarea[1]),max(plotcoinarea[0])
-        unix=np.unique(plotcoinarea[1]).tolist()
-        uniy=np.unique(plotcoinarea[0]).tolist()
-        if len(unix)==1:
-            ulx,rlx=unix[0],unix[0]
-        else:
-            ulx,rlx=min(plotcoinarea[1]),max(plotcoinarea[1])
-        if len(uniy)==1:
-            uly,rly=uniy[0],uniy[0]
-        else:
-            uly,rly=min(plotcoinarea[0]),max(plotcoinarea[0])
-        lw=rlx-ulx+rly-uly
-        area=len(plotcoinarea[0])
-        print('lw',lw,'area',area)
-        plotflash(lw,area,'Orange','Orange')
+        # coinbox_list.append(a)
+        # plotcoinarea=np.where(reseglabels==coinlabel)
+        # ulx,uly=min(plotcoinarea[1]),min(plotcoinarea[0])
+        # rlx,rly=max(plotcoinarea[1]),max(plotcoinarea[0])
+        # unix=np.unique(plotcoinarea[1]).tolist()
+        # uniy=np.unique(plotcoinarea[0]).tolist()
+        # if len(unix)==1:
+        #     ulx,rlx=unix[0],unix[0]
+        # else:
+        #     ulx,rlx=min(plotcoinarea[1]),max(plotcoinarea[1])
+        # if len(uniy)==1:
+        #     uly,rly=uniy[0],uniy[0]
+        # else:
+        #     uly,rly=min(plotcoinarea[0]),max(plotcoinarea[0])
+        # lw=rlx-ulx+rly-uly
+        # area=len(plotcoinarea[0])
+        # print('lw',lw,'area',area)
+        for k,v in labelplotmap:
+            templabel=labelplotmap[(k,v)]
+            if templabel==reflabel:
+                xval=k
+                yval=v
+                print('lw',yval,'area',xval)
+                plotflash(yval,xval,'Orange','Orange')
+                break
 
 def customcoin(event,processlabels,tempband):
     global panelA#refarea,
@@ -2552,23 +2637,29 @@ def customcoin(event,processlabels,tempband):
             rlx,rly=max(coinarea[1]),max(coinarea[0])
         '''
         coinbox=panelA.create_rectangle(ulx,uly,rlx+1,rly+1,outline='yellow')
-        plotcoinarea=np.where(reseglabels==coinlabel)
-        ulx,uly=min(plotcoinarea[1]),min(plotcoinarea[0])
-        rlx,rly=max(plotcoinarea[1]),max(plotcoinarea[0])
-        unix=np.unique(plotcoinarea[1]).tolist()
-        uniy=np.unique(plotcoinarea[0]).tolist()
-        if len(unix)==1:
-            ulx,rlx=unix[0],unix[0]
-        else:
-            ulx,rlx=min(plotcoinarea[1]),max(plotcoinarea[1])
-        if len(uniy)==1:
-            uly,rly=uniy[0],uniy[0]
-        else:
-            uly,rly=min(plotcoinarea[0]),max(plotcoinarea[0])
-        lw=rlx-ulx+rly-uly
-        area=len(plotcoinarea[0])
-        print('lw',lw,'area',area)
-        plotflash(lw,area,'Orange','Orange')
+        # plotcoinarea=np.where(reseglabels==coinlabel)
+        # ulx,uly=min(plotcoinarea[1]),min(plotcoinarea[0])
+        # rlx,rly=max(plotcoinarea[1]),max(plotcoinarea[0])
+        # unix=np.unique(plotcoinarea[1]).tolist()
+        # uniy=np.unique(plotcoinarea[0]).tolist()
+        # if len(unix)==1:
+        #     ulx,rlx=unix[0],unix[0]
+        # else:
+        #     ulx,rlx=min(plotcoinarea[1]),max(plotcoinarea[1])
+        # if len(uniy)==1:
+        #     uly,rly=uniy[0],uniy[0]
+        # else:
+        #     uly,rly=min(plotcoinarea[0]),max(plotcoinarea[0])
+        # lw=rlx-ulx+rly-uly
+        # area=len(plotcoinarea[0])
+        for k,v in labelplotmap:
+            templabel=labelplotmap[(k,v)]
+            if templabel==reflabel:
+                xval=k
+                yval=v
+                print('lw',yval,'area',xval)
+                plotflash(yval,xval,'Orange','Orange')
+                break
         #panelA.unbind('<Button-1>')
 
 
@@ -2587,12 +2678,12 @@ def runflash(ulx,uly,rlx,rly,color):
     a=panelA.create_rectangle(ulx,uly,rlx+2,rly+2,outline=color)
     minflash.append(a)
 
-def plotflash(lw,area,outlinecolor,fillcolor):
+def plotflash(yval,xval,outlinecolor,fillcolor):
     global dotflash,figcanvas
-    x_scalefactor=300/(maxx-minx)
-    y_scalefactor=250/(maxy-miny)
-    xval=50+(area-minx)*x_scalefactor+50
-    yval=300-(lw-miny)*y_scalefactor+25
+    # x_scalefactor=300/(maxx-minx)
+    # y_scalefactor=250/(maxy-miny)
+    # xval=50+(area-minx)*x_scalefactor+50
+    # yval=300-(lw-miny)*y_scalefactor+25
     a=figcanvas.create_oval(xval-1,yval-1,xval+1,yval+1,width=1,outline=outlinecolor,fill=fillcolor)
     dotflash.append(a)
 

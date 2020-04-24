@@ -18,7 +18,7 @@ from scipy import ndimage as ndi
 from skimage.morphology import watershed
 from skimage.feature import peak_local_max
 
-
+import lm_method
 
 
 tinyareas=[]
@@ -51,6 +51,53 @@ def renamelabels(area):
         i+=1.0
     return res
 
+def get_residual(labeledarea,all=False):
+    unique,counts=numpy.unique(labeledarea,return_counts=True)
+    unique=unique[1:]
+    counts=counts[1:]
+    hist=dict(zip(unique,counts))
+    sortedlist=sorted(hist,key=hist.get,reverse=True)
+    lenlist=[]
+    widlist=[]
+    data=[]
+    itemlist=[]
+    for item in sortedlist:
+        itemlocs=numpy.where(labeledarea==item)
+        ulx,uly=min(itemlocs[1]),min(itemlocs[0])
+        rlx,rly=max(itemlocs[1]),max(itemlocs[0])
+        itemlength=rly-uly
+        itemwidth=rlx-ulx
+        lenlist.append(itemlength)
+        widlist.append(itemwidth)
+        data.append(hist[item])
+        itemlist.append(item)
+    if all==False:
+        residual,area=lm_method.lm_method(lenlist,widlist,data,all)
+        lenwid=list(residual)
+        data=list(area)
+        areahist={}
+        residualhist={}
+        for i in range(len(itemlist)):
+            item=itemlist[i]
+            itemarea=data[i]
+            itemresdisual=lenwid[i]
+            areahist.update({item:itemarea})
+            residualhist.update({item:itemresdisual})
+        return areahist,residualhist
+    else:
+        residual,area,tablestd,pcabands,coef=lm_method.lm_method(lenlist,widlist,data,all)
+        lenwid=list(residual)
+        data=list(area)
+        areahist={}
+        residualhist={}
+        # pcalist=list(pcabands)
+        for i in range(len(itemlist)):
+            item=itemlist[i]
+            itemarea=data[i]
+            itemresdisual=lenwid[i]
+            areahist.update({item:itemarea})
+            residualhist.update({item:itemresdisual})
+        return areahist,residualhist,tablestd,pcabands,coef
 
 def combinecrops(area,subarea,i,ele,ulx,uly,rlx,rly):
     print('combinecrops: i='+str(i)+' ele='+str(ele))
@@ -1256,13 +1303,15 @@ def resegdivideloop_watershed(area,maxthres,maxlw):
                     return area
     return area
 
-def resegdivideloop(area,maxthres,maxlw):
+# def resegdivideloop(area,maxthres,maxlw):
+def resegdivideloop(area,maxthres,minres):
     global greatareas
     greatareas=[]
-    unique,counts=numpy.unique(area,return_counts=True)
-    unique=unique[1:]
-    counts=counts[1:]
-    hist=dict(zip(unique,counts))
+    # unique,counts=numpy.unique(area,return_counts=True)
+    # unique=unique[1:]
+    # counts=counts[1:]
+    # hist=dict(zip(unique,counts))
+    hist,residualhist=get_residual(area)
     sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
     topkey=sortedkeys.pop(0)
     for i in range(len(sortedkeys)):
@@ -1276,14 +1325,17 @@ def resegdivideloop(area,maxthres,maxlw):
     itertime=int(min(abs(mrlx-mulx),abs(mrly-muly))/4)
     while len(sortedkeys)>=0:
         print('topkey=',topkey,hist[topkey])
-        topkeylocs=numpy.where(area==topkey)
-        ulx,uly=min(topkeylocs[1]),min(topkeylocs[0])
-        rlx,rly=max(topkeylocs[1]),max(topkeylocs[0])
-        topkeylen=rly-uly
-        topkeywid=rlx-ulx
-        topkeylw=topkeylen+topkeywid
+        # topkeylocs=numpy.where(area==topkey)
+        # ulx,uly=min(topkeylocs[1]),min(topkeylocs[0])
+        # rlx,rly=max(topkeylocs[1]),max(topkeylocs[0])
+        # topkeylen=rly-uly
+        # topkeywid=rlx-ulx
+        # topkeylw=topkeylen+topkeywid
+        topkeylw=residualhist[topkey]
         if topkey not in exceptions:
-            if hist[topkey]>maxthres or topkeylw>maxlw:
+            # if hist[topkey]>maxthres or topkeylw>maxlw:
+            #if hist[topkey]>maxthres or topkeylw<minres:
+            if hist[topkey]>maxthres:
                 locs=numpy.where(area==topkey)
                 ulx,uly=min(locs[1]),min(locs[0])
                 rlx,rly=max(locs[1]),max(locs[0])
@@ -1308,16 +1360,19 @@ def resegdivideloop(area,maxthres,maxlw):
                         add+=1
                     newsubarea=newsubarea+antitempsubarea.astype(int)
                     area[uly:rly+1,ulx:rlx+1]=newsubarea
-                    unique, counts = numpy.unique(area, return_counts=True)
-                    unique=unique[1:]
-                    counts=counts[1:]
-                    hist=dict(zip(unique,counts))
-                    print('hist length='+str(len(counts)-1))
-                    print('max label='+str(area.max()))
+                    # unique, counts = numpy.unique(area, return_counts=True)
+                    # unique=unique[1:]
+                    # counts=counts[1:]
+                    # hist=dict(zip(unique,counts))
+                    # print('hist length='+str(len(counts)-1))
+                    # print('max label='+str(area.max()))
+                    hist,residualhist=get_residual(area)
                     sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
                     topkey=sortedkeys.pop(0)
                 else:
-                    if hist[topkey]>maxthres or topkeylw>maxlw:
+                    # if hist[topkey]>maxthres or topkeylw>maxlw:
+                    # if hist[topkey]>maxthres or topkeylw<minres:
+                    if hist[topkey]>maxthres:
                         if topkey not in greatareas:
                             greatareas.append(topkey)
                         if len(sortedkeys)>0:
@@ -1344,22 +1399,25 @@ def resegdivideloop(area,maxthres,maxlw):
 def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
     global tinyareas
     tinyareas=[]
-    unique, counts = numpy.unique(area, return_counts=True)
-    unique=unique[1:]
-    counts=counts[1:]
-    hist=dict(zip(unique,counts))
+    # unique, counts = numpy.unique(area, return_counts=True)
+    # unique=unique[1:]
+    # counts=counts[1:]
+    # hist=dict(zip(unique,counts))
+    hist,residualhist,tablestd,pcabands,coef=get_residual(area,True)
     sortedkeys=list(sorted(hist,key=hist.get))
     topkey=sortedkeys.pop(0)
     while len(sortedkeys)>=0:
         print('tinytopkey=',topkey,hist[topkey])
         topkeylocs=numpy.where(area==topkey)
-        ulx,uly=min(topkeylocs[1]),min(topkeylocs[0])
-        rlx,rly=max(topkeylocs[1]),max(topkeylocs[0])
-        topkeylen=rly-uly
-        topkeywid=rlx-ulx
-        topkeylw=topkeylen+topkeywid
+        # ulx,uly=min(topkeylocs[1]),min(topkeylocs[0])
+        # rlx,rly=max(topkeylocs[1]),max(topkeylocs[0])
+        # topkeylen=rly-uly
+        # topkeywid=rlx-ulx
+        # topkeylw=topkeylen+topkeywid
+        topkeylw=residualhist[topkey]
         if topkey not in exceptions:
-            if hist[topkey]<minthres or topkeylw<minlw:
+            # if hist[topkey]<minthres or topkeylw<minlw:
+            if hist[topkey]<minthres or topkeylw>maxlw:
                 locs=numpy.where(area==topkey)
                 ulx,uly=min(locs[1]),min(locs[0])
                 rlx,rly=max(locs[1]),max(locs[0])
@@ -1430,19 +1488,33 @@ def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
                             rlx,rly=max(topkeylocs[1].tolist()+toplocs[1].tolist()),max(topkeylocs[0].tolist()+toplocs[0].tolist())
                             combinelength=rly-uly
                             combinewidth=rlx-ulx
+                            combinediag=(combinelength**2+combinewidth**2)**0.5
                             combinelw=combinelength+combinewidth
+                            tempdim=numpy.array([combinelength,combinewidth,combinediag,combinelw])
+                            tempdim=tempdim/tablestd
+                            temppcas=numpy.zeros(tempdim.shape)
+                            for i in range(temppcas.shape[0]):
+                                pc=pcabands[:,i]
+                                temppcas[i]=temppcas[i]+numpy.dot(tempdim,pc)
+                            multiply=numpy.matmul(temppcas,coef)
+                            tempresidual=hist[topkey]+topcount-multiply
+
+
                             if hist[topkey]+topcount>minthres and hist[topkey]+topcount<maxthres:
-                                if combinelw>minlw and combinelw<maxlw:
-                                    area=combinecrops(area,subarea,topkey,top,ulx,uly,rlx,rly)
-                                    stop=True
-                                    unique, counts = numpy.unique(area, return_counts=True)
-                                    unique=unique[1:]
-                                    counts=counts[1:]
-                                    hist=dict(zip(unique,counts))
-                                    print('hist length='+str(len(counts)-1))
-                                    print('max label='+str(area.max()))
-                                    sortedkeys=list(sorted(hist,key=hist.get))
-                                    break
+                                # if combinelw>minlw and combinelw<maxlw:
+                                print(tempresidual,minlw,maxlw)
+                                # if tempresidual>minlw and tempresidual<maxlw:
+                                area=combinecrops(area,subarea,topkey,top,ulx,uly,rlx,rly)
+                                stop=True
+                                # unique, counts = numpy.unique(area, return_counts=True)
+                                # unique=unique[1:]
+                                # counts=counts[1:]
+                                # hist=dict(zip(unique,counts))
+                                hist,residualhist,tablestd,pcabands,coef=get_residual(area,True)
+                                # print('hist length='+str(len(counts)-1))
+                                print('max label='+str(area.max()))
+                                sortedkeys=list(sorted(hist,key=hist.get))
+                                break
 
                         #topkey=sortedkeys.pop(0)
                 if len(poscombines)==0 and stop==False:  #combine to the closest one
@@ -1503,18 +1575,35 @@ def resegvalidation(minthres,maxthres,hist,minlw,maxlw,area):
     godivide=False
     gocombine=False
     sortedlist=sorted(hist,key=hist.get,reverse=True)
+    lenlist=[]
+    widlist=[]
+    data=[]
+    itemlist=[]
     for item in sortedlist:
         itemlocs=numpy.where(area==item)
         ulx,uly=min(itemlocs[1]),min(itemlocs[0])
         rlx,rly=max(itemlocs[1]),max(itemlocs[0])
         itemlength=rly-uly
         itemwidth=rlx-ulx
+        lenlist.append(itemlength)
+        widlist.append(itemwidth)
+        data.append(hist[item])
+        itemlist.append(item)
         itemlw=itemlength+itemwidth
+    residual,area=lm_method.lm_method(lenlist,widlist,data)
+    lenwid=list(residual)
+    data=list(data)
+    for i in range(len(itemlist)):
+        item=itemlist[i]
         if item not in exceptions:
-            if hist[item]>maxthres or itemlw>maxlw:
+            # if hist[item]>maxthres or itemlw>maxlw:
+            # if data[i]>maxthres or lenwid[i]<minlw:
+            if data[i]>maxthres:
                 res=False
                 godivide=True
-            if hist[item]<minthres or itemlw<minlw:
+            # if hist[item]<minthres or itemlw<minlw:
+            # if data[i]<minthres or lenwid[i]>maxlw:
+            if data[i]<minthres:
                 res=False
                 gocombine=True
                 break
@@ -1599,7 +1688,8 @@ def resegmentinput(inputlabels,minthres,maxthres,minlw,maxlw):
     labels=numpy.copy(inputlabels)
     while(validation==False):
         if godivide==True:
-            labels=resegdivideloop(labels,maxthres,maxlw)
+            # labels=resegdivideloop(labels,maxthres,maxlw)
+            labels=resegdivideloop(labels,maxthres,minlw)
             outputlabel,misslabel,localcolortable=relabel(labels)
             if lastgreatarea==greatareas and len(lastgreatarea)!=0:
                 print('lastgreatarea:',lastgreatarea)
