@@ -36,6 +36,7 @@ oldM=None
 oldstd=None
 oldeigenvector=None
 oldcoef=None
+oldintercept=None
 
 class node:
     def __init__(self,i,j):
@@ -79,7 +80,7 @@ def get_residual(labeledarea,all=False):  #for divideloop and combineloop
         data.append(hist[item])
         itemlist.append(item)
     if all==False:
-        residual,area=lm_method.lm_method_fit(lenlist,widlist,data,oldM,oldstd,oldeigenvector,oldcoef)
+        residual,area=lm_method.lm_method_fit(lenlist,widlist,data,oldM,oldstd,oldeigenvector,oldcoef,oldintercept)
         lenwid=list(residual)
         data=list(area)
         areahist={}
@@ -92,7 +93,7 @@ def get_residual(labeledarea,all=False):  #for divideloop and combineloop
             residualhist.update({item:itemresdisual})
         return areahist,residualhist
     else:
-        residual,area,M,tablestd,pcabands,coef=lm_method.lm_method(lenlist,widlist,data,all)
+        residual,area,M,tablestd,pcabands,coef,intercept=lm_method.lm_method(lenlist,widlist,data,all)
         lenwid=list(residual)
         data=list(area)
         areahist={}
@@ -104,7 +105,7 @@ def get_residual(labeledarea,all=False):  #for divideloop and combineloop
             itemresdisual=lenwid[i]
             areahist.update({item:itemarea})
             residualhist.update({item:itemresdisual})
-        return areahist,residualhist,M,tablestd,pcabands,coef
+        return areahist,residualhist,M,tablestd,pcabands,coef,intercept
 
 def combinecrops(area,subarea,i,ele,ulx,uly,rlx,rly):
     print('combinecrops: i='+str(i)+' ele='+str(ele))
@@ -1604,7 +1605,7 @@ def resegvalidation(minthres,maxthres,hist,minlw,maxlw,area):
         itemlist.append(item)
         itemlw=itemlength+itemwidth
     # residual,area=lm_method.lm_method(lenlist,widlist,data)
-    residual,area=lm_method.lm_method_fit(lenlist,widlist,data,oldM,oldstd,oldeigenvector,oldcoef)
+    residual,area=lm_method.lm_method_fit(lenlist,widlist,data,oldM,oldstd,oldeigenvector,oldcoef,oldintercept)
     lenwid=list(residual)
     data=list(data)
     for i in range(len(itemlist)):
@@ -1690,14 +1691,14 @@ def manualresegcombine(area):
 
 def resegmentinput(inputlabels,minthres,maxthres,minlw,maxlw):
     global exceptions
-    global oldM,oldstd,oldeigenvector,oldcoef
+    global oldM,oldstd,oldeigenvector,oldcoef,oldintercept
     exceptions=[]
     labeldict={}
     unique,counts=numpy.unique(inputlabels,return_counts=True)
     unique=unique[1:]
     counts=counts[1:]
     hist=dict(zip(unique,counts))
-    areahist,residualhist,oldM,oldstd,oldeigenvector,oldcoef=get_residual(inputlabels,True)
+    areahist,residualhist,oldM,oldstd,oldeigenvector,oldcoef,oldintercept=get_residual(inputlabels,True)
     validation,godivide,gocombine=resegvalidation(minthres,maxthres,hist,minlw,maxlw,inputlabels)
     lastgreatarea=[]
     lasttinyarea=[]

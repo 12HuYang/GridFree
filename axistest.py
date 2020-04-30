@@ -108,8 +108,8 @@ def drawdots(ulx,uly,rlx,rly,x_bins,y_bins,datalist,canvas,inputfigdotlist):
     vlinelocs=[ulx,rlx]
     hlinelocs=[rly,uly]
 
-    canvas.create_text(ulx-25-10,int(uly/2)+25,text='\n'.join('Residual'),font=('Times',12),anchor=E)
-    canvas.create_text(int(rlx/2)+50,uly+30,text='Area',font=('Times',12),anchor=N)
+    canvas.create_text(ulx-25-10,int(uly/2)+25,text='\n'.join('Shape'),font=('Times',12),anchor=E)
+    canvas.create_text(int(rlx/2)+50,uly+30,text='Pixels',font=('Times',12),anchor=N)
 
     xbinwidth=(rlx-ulx-50)/(len(x_bins)-1)
     for i in range(len(x_bins)):
