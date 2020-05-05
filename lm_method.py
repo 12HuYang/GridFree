@@ -34,44 +34,46 @@ def lm_method(lenlist,widlist,originarea,all=False):
         w=float(widlist[i])
         d=(l**2+w**2)**0.5
         s=l+w
-        templ=[l,w,d,s]
-        lwlist.append(templ)
+        # templ=[l,w,d,s]
+        # lwlist.append(templ)
         area.append(float(originarea[i]))
         dlist.append(d)
 
     dlist=np.array(dlist)
-    table=np.array(lwlist)
+    # table=np.array(lwlist)
+    # table=np.array(dlist)
     area=np.array(area)
-    print(table.shape,area.shape)
-    print(table)
-    M=np.mean(table.T,axis=1)
-    print('M',M,'M shape',M.shape)
-    C=table-M
-    # print('C',C)
-    V=np.corrcoef(C.T)
-    std_table=C/np.std(table.T,axis=1)
-    tablestd=np.std(table.T,axis=1)
-    print('Standarddeviation',std_table)
-    eigvalues,eigvectors=np.linalg.eig(V)
-    print('eigvalues',eigvalues)
-    print('eigvectors',eigvectors)
-
-    pcabands=np.zeros(table.shape)
-    for i in range(table.shape[1]):
-        pcn=eigvectors[:,i]
-        pcnband=np.dot(std_table,pcn)
-        pcabands[:,i]=pcabands[:,i]+pcnband
-    # savetxt('python-pcas.csv',pcabands,delimiter=',')
-    print('pcabands',pcabands)
+    # print(table.shape,area.shape)
+    # print(table)
+    # M=np.mean(table.T,axis=1)
+    # print('M',M,'M shape',M.shape)
+    # C=table-M
+    # # print('C',C)
+    # V=np.corrcoef(C.T)
+    # std_table=C/np.std(table.T,axis=1)
+    # tablestd=np.std(table.T,axis=1)
+    # print('Standarddeviation',std_table)
+    # eigvalues,eigvectors=np.linalg.eig(V)
+    # print('eigvalues',eigvalues)
+    # print('eigvectors',eigvectors)
+    #
+    # pcabands=np.zeros(table.shape)
+    # for i in range(table.shape[1]):
+    #     pcn=eigvectors[:,i]
+    #     pcnband=np.dot(std_table,pcn)
+    #     pcabands[:,i]=pcabands[:,i]+pcnband
+    # # savetxt('python-pcas.csv',pcabands,delimiter=',')
+    # print('pcabands',pcabands)
     regr=linear_model.LinearRegression()
-    temp=pcabands[:,0]
+    # temp=pcabands[:,0]
     # regr.fit(pcabands,area)
-    regr.fit(area.reshape(-1,1),temp)
-    # regr.fit(area.reshape(-1,1),dlist)
-    print('coef',regr.coef_,regr.coef_.shape,pcabands.shape,'intercept',regr.intercept_)
+    # regr.fit(area.reshape(-1,1),temp)
+    regr.fit(area.reshape(-1,1),dlist)
+    # print('coef',regr.coef_,regr.coef_.shape,pcabands.shape,'intercept',regr.intercept_)
+    print('coef',regr.coef_,regr.coef_.shape,'intercept',regr.intercept_)
     # residual=area-np.matmul(pcabands,regr.coef_)
-    residual=pcabands[:,0]-np.matmul(area.reshape(-1,1),regr.coef_)-regr.intercept_
-    # residual=dlist-np.matmul(area.reshape(-1,1),regr.coef_)
+    # residual=pcabands[:,0]-np.matmul(area.reshape(-1,1),regr.coef_)-regr.intercept_
+    residual=dlist-np.matmul(area.reshape(-1,1),regr.coef_)-regr.intercept_
     print(residual,residual.shape)
     print('residual sum',np.sum(residual))
 
@@ -83,9 +85,11 @@ def lm_method(lenlist,widlist,originarea,all=False):
     if all==False:
         return residual,area
     else:
-        return residual,area,M,tablestd,eigvectors,regr.coef_,regr.intercept_
+        # return residual,area,M,tablestd,eigvectors,regr.coef_,regr.intercept_
+        return residual,area,regr.coef_,regr.intercept_
 
-def lm_method_fit(lenlist,widlist,originarea,M,tablestd,eigvectors,coef,intercept):
+# def lm_method_fit(lenlist,widlist,originarea,M,tablestd,eigvectors,coef,intercept):
+def lm_method_fit(lenlist,widlist,originarea,coef,intercept):
     lwlist=[]
     area=[]
 
@@ -101,29 +105,29 @@ def lm_method_fit(lenlist,widlist,originarea,M,tablestd,eigvectors,coef,intercep
         dlist.append(d)
 
     dlist=np.array(dlist)
-    table=np.array(lwlist)
+    # table=np.array(lwlist)
     area=np.array(area)
-    print(table.shape,area.shape)
-    print(table)
-    # M=np.mean(table.T,axis=1)
-    print('M',M,'M shape',M.shape)
-    C=table-M
-    # print('C',C)
-    # V=np.corrcoef(C.T)
-    std_table=C/tablestd
-    # tablestd=np.std(table.T,axis=1)
-    print('Standarddeviation',std_table)
-    # eigvalues,eigvectors=np.linalg.eig(V)
-    # print('eigvalues',eigvalues)
-    print('eigvectors',eigvectors)
-
-    pcabands=np.zeros(table.shape)
-    for i in range(table.shape[1]):
-        pcn=eigvectors[:,i]
-        pcnband=np.dot(std_table,pcn)
-        pcabands[:,i]=pcabands[:,i]+pcnband
-    # savetxt('python-pcas.csv',pcabands,delimiter=',')
-    print('pcabands',pcabands)
+    # print(table.shape,area.shape)
+    # print(table)
+    # # M=np.mean(table.T,axis=1)
+    # print('M',M,'M shape',M.shape)
+    # C=table-M
+    # # print('C',C)
+    # # V=np.corrcoef(C.T)
+    # std_table=C/tablestd
+    # # tablestd=np.std(table.T,axis=1)
+    # print('Standarddeviation',std_table)
+    # # eigvalues,eigvectors=np.linalg.eig(V)
+    # # print('eigvalues',eigvalues)
+    # print('eigvectors',eigvectors)
+    #
+    # pcabands=np.zeros(table.shape)
+    # for i in range(table.shape[1]):
+    #     pcn=eigvectors[:,i]
+    #     pcnband=np.dot(std_table,pcn)
+    #     pcabands[:,i]=pcabands[:,i]+pcnband
+    # # savetxt('python-pcas.csv',pcabands,delimiter=',')
+    # print('pcabands',pcabands)
     # regr=linear_model.LinearRegression()
     # temp=pcabands[:,0]
     # regr.fit(pcabands,area)
@@ -131,8 +135,8 @@ def lm_method_fit(lenlist,widlist,originarea,M,tablestd,eigvectors,coef,intercep
     # regr.fit(area.reshape(-1,1),dlist)
     # print('coef',regr.coef_,regr.coef_.shape,pcabands.shape,'intercept',regr.intercept_)
     # residual=area-np.matmul(pcabands,regr.coef_)
-    residual=pcabands[:,0]-np.matmul(area.reshape(-1,1),coef)-intercept
-    # residual=dlist-np.matmul(area.reshape(-1,1),regr.coef_)
+    # residual=pcabands[:,0]-np.matmul(area.reshape(-1,1),coef)-intercept
+    residual=dlist-np.matmul(area.reshape(-1,1),coef)-intercept
     print(residual,residual.shape)
     return residual,area
 

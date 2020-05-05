@@ -80,7 +80,8 @@ def get_residual(labeledarea,all=False):  #for divideloop and combineloop
         data.append(hist[item])
         itemlist.append(item)
     if all==False:
-        residual,area=lm_method.lm_method_fit(lenlist,widlist,data,oldM,oldstd,oldeigenvector,oldcoef,oldintercept)
+        # residual,area=lm_method.lm_method_fit(lenlist,widlist,data,oldM,oldstd,oldeigenvector,oldcoef,oldintercept)
+        residual,area=lm_method.lm_method_fit(lenlist,widlist,data,oldcoef,oldintercept)
         lenwid=list(residual)
         data=list(area)
         areahist={}
@@ -93,7 +94,8 @@ def get_residual(labeledarea,all=False):  #for divideloop and combineloop
             residualhist.update({item:itemresdisual})
         return areahist,residualhist
     else:
-        residual,area,M,tablestd,pcabands,coef,intercept=lm_method.lm_method(lenlist,widlist,data,all)
+        # residual,area,M,tablestd,pcabands,coef,intercept=lm_method.lm_method(lenlist,widlist,data,all)
+        residual,area,coef,intercept=lm_method.lm_method(lenlist,widlist,data,all)
         lenwid=list(residual)
         data=list(area)
         areahist={}
@@ -105,7 +107,8 @@ def get_residual(labeledarea,all=False):  #for divideloop and combineloop
             itemresdisual=lenwid[i]
             areahist.update({item:itemarea})
             residualhist.update({item:itemresdisual})
-        return areahist,residualhist,M,tablestd,pcabands,coef,intercept
+        # return areahist,residualhist,M,tablestd,pcabands,coef,intercept
+        return areahist,residualhist,coef,intercept
 
 def combinecrops(area,subarea,i,ele,ulx,uly,rlx,rly):
     print('combinecrops: i='+str(i)+' ele='+str(ele))
@@ -1498,19 +1501,20 @@ def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
                             combinelength=rly-uly
                             combinewidth=rlx-ulx
                             combinediag=(combinelength**2+combinewidth**2)**0.5
-                            combinelw=combinelength+combinewidth
-                            tempdim=numpy.array([combinelength,combinewidth,combinediag,combinelw])
-                            tempdim=tempdim-oldM
-                            tempdim=tempdim/oldstd
-                            temppcas=numpy.zeros(tempdim.shape)
-                            for i in range(temppcas.shape[0]):
-                                pc=oldeigenvector[:,i]
-                                temppcas[i]=temppcas[i]+numpy.dot(tempdim,pc)
-                            # multiply=numpy.matmul(temppcas,oldcoef)
-                            # tempresidual=hist[topkey]+topcount-multiply
+                            # combinelw=combinelength+combinewidth
+                            # tempdim=numpy.array([combinelength,combinewidth,combinediag,combinelw])
+                            # tempdim=tempdim-oldM
+                            # tempdim=tempdim/oldstd
+                            # temppcas=numpy.zeros(tempdim.shape)
+                            # for i in range(temppcas.shape[0]):
+                            #     pc=oldeigenvector[:,i]
+                            #     temppcas[i]=temppcas[i]+numpy.dot(tempdim,pc)
+                            # # multiply=numpy.matmul(temppcas,oldcoef)
+                            # # tempresidual=hist[topkey]+topcount-multiply
                             temparea=hist[topkey]+topcount
                             temparea=numpy.array(temparea)
-                            tempresidual=temppcas[0]-numpy.matmul(temparea.reshape(-1,1),oldcoef)
+                            # tempresidual=temppcas[0]-numpy.matmul(temparea.reshape(-1,1),oldcoef)
+                            tempresidual=combinediag-numpy.matmul(temparea.reshape(-1,1),oldcoef)-oldintercept
 
 
                             if hist[topkey]+topcount>minthres and hist[topkey]+topcount<maxthres:
@@ -1605,7 +1609,8 @@ def resegvalidation(minthres,maxthres,hist,minlw,maxlw,area):
         itemlist.append(item)
         itemlw=itemlength+itemwidth
     # residual,area=lm_method.lm_method(lenlist,widlist,data)
-    residual,area=lm_method.lm_method_fit(lenlist,widlist,data,oldM,oldstd,oldeigenvector,oldcoef,oldintercept)
+    # residual,area=lm_method.lm_method_fit(lenlist,widlist,data,oldM,oldstd,oldeigenvector,oldcoef,oldintercept)
+    residual,area=lm_method.lm_method_fit(lenlist,widlist,data,oldcoef,oldintercept)
     lenwid=list(residual)
     data=list(data)
     for i in range(len(itemlist)):
@@ -1698,7 +1703,8 @@ def resegmentinput(inputlabels,minthres,maxthres,minlw,maxlw):
     unique=unique[1:]
     counts=counts[1:]
     hist=dict(zip(unique,counts))
-    areahist,residualhist,oldM,oldstd,oldeigenvector,oldcoef,oldintercept=get_residual(inputlabels,True)
+    # areahist,residualhist,oldM,oldstd,oldeigenvector,oldcoef,oldintercept=get_residual(inputlabels,True)
+    areahist,residualhist,oldcoef,oldintercept=get_residual(inputlabels,True)
     validation,godivide,gocombine=resegvalidation(minthres,maxthres,hist,minlw,maxlw,inputlabels)
     lastgreatarea=[]
     lasttinyarea=[]
