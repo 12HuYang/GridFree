@@ -17,6 +17,7 @@ import time
 import csv
 import scipy.linalg as la
 from functools import partial
+import threading
 import sys
 
 import kplus
@@ -198,6 +199,7 @@ def changedisplayimg(frame,text):
     widget.config(width=w,height=l)
     widget.create_image(0,0,image=displayimg[text]['Image'],anchor=NW)
     widget.pack()
+    widget.update()
     if text=='Output':
         try:
             image=outputsegbands[currentfilename]['iter0']
@@ -222,9 +224,15 @@ def changedisplayimg(frame,text):
 def generatedisplayimg(filename):  # init display images
 
     try:
-        firstimg=Multiimagebands[filename]
+        # firstimg=Multiimagebands[filename]
         #height,width=firstimg.size
-        height,width,c=displaybandarray[filename]['LabOstu'].shape
+        # height,width,c=displaybandarray[filename]['LabOstu'].shape
+        bandsize=Multiimagebands[filename].size
+        if bandsize[0]*bandsize[1]>2000*2000:
+            ratio=findratio([bandsize[0],bandsize[1]],[2000,2000])
+        else:
+            ratio=1
+        height,width=bandsize[0]/ratio,bandsize[1]/ratio
         ratio=findratio([height,width],[850,850])
         print('displayimg ratio',ratio)
         resizeshape=[]
@@ -254,6 +262,7 @@ def generatedisplayimg(filename):  # init display images
     #    resize=cv2.resize(Multigray[filename],(int(width*ratio),int(height*ratio)),interpolation=cv2.INTER_LINEAR)
     #else:
         #resize=cv2.resize(Multigray[filename],(int(width/ratio),int(height/ratio)),interpolation=cv2.INTER_LINEAR)
+    tempimg=np.zeros((850,850))
     tempdict={}
     try:
         tempdict.update({'Size':resize.shape})
@@ -465,7 +474,15 @@ def Open_Multifile():
         for i in range(len(MULTIFILES)):
             if Open_File(MULTIFILES[i])==False:
                 return
-            singleband(MULTIFILES[i])
+            generatedisplayimg(filenames[0])
+            changedisplayimg(imageframe,'Origin')
+            # imageframe.update()
+            # raise NameError
+            # yield
+            thread=threading.Thread(target=singleband,args=(MULTIFILES[i],))
+            # singleband(MULTIFILES[i])
+            thread.start()
+            thread.join()
         for widget in changefileframe.winfo_children():
             widget.pack_forget()
         currentfilename=filenames[0]
@@ -488,6 +505,14 @@ def Open_Multifile():
         changedisplayimg(imageframe,'Origin')
         if len(bandchoice)>0:
             bandchoice['LabOstu'].set('1')
+
+        global buttondisplay,extractbutton,pcaframe,kmeansbar
+        for widget in buttondisplay.winfo_children():
+            widget.config(state=NORMAL)
+        for widget in pcaframe.winfo_children():
+            widget.config(state=NORMAL)
+        extractbutton.config(state=NORMAL)
+        kmeansbar.state(["!disabled"])
 
 
 def singleband(file):
@@ -1718,6 +1743,8 @@ def export_result(iterver):
                 origindata.update(tempdict)
                 print(key)
             # for uni in colortable:
+            print(uniquelabels)
+            print('len uniquelabels',len(uniquelabels))
             for uni in uniquelabels:
                 print(uni,colortable[uni])
                 uniloc=np.where(labels==float(uni))
@@ -2846,6 +2873,54 @@ def del_reflabel():
         for i in range(len(multiselectitems)):
             refarea=np.where(processlabel==multiselectitems[i])
             reseglabels[refarea]=0
+    thresholds=[cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1])]
+    minthres=min(thresholds)
+    maxthres=max(thresholds)
+    lwthresholds=[cal_yvalue(linelocs[2]),cal_yvalue(linelocs[3])]
+    maxlw=max(lwthresholds)
+    minlw=min(lwthresholds)
+    unique,counts=np.unique(processlabel,return_counts=True)
+    unique=unique[1:]
+    counts=counts[1:]
+    hist=dict(zip(unique,counts))
+    outsizethreshold=[]
+    for key in hist:
+        if hist[key]>maxthres:
+            outsizethreshold.append(key)
+        if hist[key]<minthres:
+            outsizethreshold.append(key)
+    lenlist=[]
+    widlist=[]
+    data=[]
+    for uni in unique[1:]:
+        if uni!=0:
+            pixelloc = np.where(reseglabels == uni)
+            try:
+                ulx = min(pixelloc[1])
+            except:
+                continue
+            uly = min(pixelloc[0])
+            rlx = max(pixelloc[1])
+            rly = max(pixelloc[0])
+            length=rly-uly
+            width=rlx-ulx
+            lenlist.append(length)
+            widlist.append(width)
+            data.append(len(pixelloc[0]))
+    residual,area=lm_method.lm_method(lenlist,widlist,data)
+    residual=list(residual)
+    for i in range(len(residual)):
+        if residual[i]>maxlw:
+            outsizethreshold.append(unique[1:][i])
+        if residual[i]<minlw:
+            outsizethreshold.append(unique[1:][i])
+    while len(outsizethreshold)>0:
+        deletlabel=outsizethreshold.pop(0)
+        refarea=np.where(processlabel==deletlabel)
+        reseglabels[refarea]=0
+
+
+
 
     gen_convband()
     panelA.delete(coinbox)
@@ -2952,12 +3027,13 @@ openfilebutton.pack(side=LEFT,padx=20,pady=5)
 mapbutton=Button(buttondisplay,text='Map',cursor='hand2',command=Open_Map)
 mapbutton.pack(side=LEFT,padx=20,pady=5)
 
-disbuttonoption={'Origin':'1','PCs':'5','ColorIndices':'3','Color Deviation':'2','Output':'4'}
-buttonname={'Raw':'1','PCs':'5','Selected':'3','Clusters':'2','Output':'4'}
+disbuttonoption={'Origin':'1','PCs':'5','Color Deviation':'2','ColorIndices':'3','Output':'4'}
+buttonname={'Raw':'1','PCs':'5','Clusters':'2','Selected':'3','Output':'4'}
 #disbuttonoption={'Origin':'1','ColorIndices':'3','Output':'4'}
 for (text,v1),(name,v2) in zip(disbuttonoption.items(),buttonname.items()):
     b=Radiobutton(buttondisplay,text=name,variable=displaybut_var,value=disbuttonoption[text],command=partial(changedisplayimg,imageframe,text))
     b.pack(side=LEFT,padx=20,pady=5)
+    b.configure(state=DISABLED)
     if disbuttonoption[text]=='1':
         b.invoke()
 ### ---open file----
@@ -3028,6 +3104,7 @@ for i in range(10):
         tempdict[dictkey].set('0')
     pcaboxdict.update(tempdict)
     ch=Checkbutton(pcaframe,text=dictkey,variable=pcaboxdict[dictkey])#,command=changepca)
+    ch.configure(state=DISABLED)
     ch.pack(side=LEFT)
 pcaframe.bind('<Leave>',changepca)
 keys=pcaboxdict.keys()
@@ -3038,8 +3115,8 @@ kmeans.set(1)
 #kmeansbar=Scale(kmeanslabel,from_=1,to=10,tickinterval=1,length=270,showvalue=0,orient=HORIZONTAL,variable=kmeans,command=partial(generatecheckbox,checkboxframe))
 kmeansbar=ttk.Scale(kmeanslabel,from_=1,to=10,length=350,orient=HORIZONTAL,variable=kmeans,cursor='hand2',command=partial(generatecheckbox,checkboxframe))
 kmeansbar.pack()
-
 kmeansbar.bind('<ButtonRelease-1>',changecluster)
+kmeansbar.state(["disabled"])
 
 checkboxframe.pack()
 checkboxframe.bind('<Leave>',changecluster)
@@ -3124,16 +3201,16 @@ column=0
 #    if mode=='1':
 #        b.invoke()
 refsubframe.pack(side=LEFT)
-delrefbutton=Button(refsubframe,text='Del',command=del_reflabel)
-delrefbutton.pack(side=LEFT, padx=20,pady=5)
 refbutton=Checkbutton(refsubframe,text='Ref',variable=refvar,command=refchoice)
 #refbutton.config(state=DISABLED)
-refbutton.pack(side=LEFT)
+refbutton.pack(side=LEFT,padx=20,pady=5)
 sizeentry=Entry(refsubframe,width=5)
 sizeentry.insert(END,285)
 sizeentry.pack(side=LEFT,padx=5)
 sizeunit=Label(refsubframe,text='mm^2')
 sizeunit.pack(side=LEFT)
+delrefbutton=Button(refsubframe,text='Delete',command=del_reflabel)
+delrefbutton.pack(side=LEFT)
 
 #delrefbutton.config(state=DISABLED)
 #refbutton=Checkbutton(refsubframe,text='Ref',variable=refvar,command=partial(refchoice,refsubframe))
@@ -3141,8 +3218,8 @@ sizeunit.pack(side=LEFT)
 for widget in refsubframe.winfo_children():
     widget.config(state=DISABLED)
 #extractbutton=Button(refframe,text='Process',command=partial(extraction))
-extractbutton=Button(refframe,text='Process',command=process)
-extractbutton.configure(activebackground='blue')
+extractbutton=Button(refframe,text='Segment',command=process)
+extractbutton.configure(activebackground='blue',state=DISABLED)
 extractbutton.pack(side=LEFT,padx=20,pady=5)
 outputbutton=Button(refframe,text='Export',command=partial(export_result,'0'))
 outputbutton.pack(side=LEFT,padx=20,pady=5)

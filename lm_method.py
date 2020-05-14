@@ -73,7 +73,7 @@ def lm_method(lenlist,widlist,originarea,all=False):
     print('coef',regr.coef_,regr.coef_.shape,'intercept',regr.intercept_)
     # residual=area-np.matmul(pcabands,regr.coef_)
     # residual=pcabands[:,0]-np.matmul(area.reshape(-1,1),regr.coef_)-regr.intercept_
-    residual=dlist-np.matmul(area.reshape(-1,1),regr.coef_)-regr.intercept_
+    residual=-(dlist-np.matmul(area.reshape(-1,1),regr.coef_)-regr.intercept_)
     print(residual,residual.shape)
     print('residual sum',np.sum(residual))
 
@@ -136,7 +136,7 @@ def lm_method_fit(lenlist,widlist,originarea,coef,intercept):
     # print('coef',regr.coef_,regr.coef_.shape,pcabands.shape,'intercept',regr.intercept_)
     # residual=area-np.matmul(pcabands,regr.coef_)
     # residual=pcabands[:,0]-np.matmul(area.reshape(-1,1),coef)-intercept
-    residual=dlist-np.matmul(area.reshape(-1,1),coef)-intercept
+    residual=-(dlist-np.matmul(area.reshape(-1,1),coef)-intercept)
     print(residual,residual.shape)
     return residual,area
 

@@ -1514,7 +1514,7 @@ def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
                             temparea=hist[topkey]+topcount
                             temparea=numpy.array(temparea)
                             # tempresidual=temppcas[0]-numpy.matmul(temparea.reshape(-1,1),oldcoef)
-                            tempresidual=combinediag-numpy.matmul(temparea.reshape(-1,1),oldcoef)-oldintercept
+                            tempresidual=-(combinediag-numpy.matmul(temparea.reshape(-1,1),oldcoef)-oldintercept)
 
 
                             if hist[topkey]+topcount>minthres and hist[topkey]+topcount<maxthres:
