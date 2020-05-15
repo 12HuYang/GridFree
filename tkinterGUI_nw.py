@@ -2892,7 +2892,7 @@ def del_reflabel():
     lenlist=[]
     widlist=[]
     data=[]
-    for uni in unique[1:]:
+    for uni in unique:
         if uni!=0:
             pixelloc = np.where(reseglabels == uni)
             try:
@@ -2914,8 +2914,8 @@ def del_reflabel():
             outsizethreshold.append(unique[1:][i])
         if residual[i]<minlw:
             outsizethreshold.append(unique[1:][i])
-    while len(outsizethreshold)>0:
-        deletlabel=outsizethreshold.pop(0)
+    for i in range(len(outsizethreshold)):
+        deletlabel=outsizethreshold[i]
         refarea=np.where(processlabel==deletlabel)
         reseglabels[refarea]=0
 
@@ -2957,6 +2957,16 @@ def del_reflabel():
     #tup=list(figcanvas.find_all())
     #figcanvas.delete(tup[-1])
     multiselectitems=[]
+    if len(outsizethreshold)>0:
+        for k,v in copyplotmap.items():
+            if v in outsizethreshold and v!=reflabel:
+                figindex=figdotlist[k]
+                figcanvas.delete(figindex)
+    outsizethreshold=[]
+
+#     update plot
+
+
 
 
 
