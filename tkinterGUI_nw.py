@@ -1821,7 +1821,21 @@ def export_result(iterver):
                     print(row)
                     csvwriter.writerow(row)
             print('total data length=',len(datatable))
-    messagebox.showinfo('Saved',message='Results are saved to '+path)
+    # messagebox.showinfo('Saved',message='Results are saved to '+path)
+    tx=root.winfo_x()
+    ty=root.winfo_y()
+    top=Toplevel()
+    top.attributes("-topmost",True)
+    w = 300
+    h = 150
+    dx=100
+    dy=100
+    top.geometry("%dx%d+%d+%d" % (w, h, tx + dx, ty + dy))
+    top.title('Saved')
+    Message(top,text='Results are saved to '+path,padx=20,pady=20).pack()
+    okbut=Button(top,text='Okay',command=top.destroy)
+    okbut.pack(side=BOTTOM)
+    top.after(10000,top.destroy)
     batchfile=path+'/'+originfile+'-batch'+'.txt'
     with open(batchfile,'w') as f:
         for key in batch.keys():
@@ -2963,6 +2977,8 @@ def del_reflabel():
                 figindex=figdotlist[k]
                 figcanvas.delete(figindex)
     outsizethreshold=[]
+    labels=np.copy(reseglabels)
+    reseglabels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres,minlw,maxlw)
 
 #     update plot
 
