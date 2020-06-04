@@ -437,17 +437,18 @@ def Open_Map():
         changeoutputimg(currentfilename,'1')
 
 def Open_Multifile():
-    global extractbutton
+    global extractbutton,outputbutton
     if proc_mode[proc_name].get()=='1':
         batchprocess.Open_batchfolder()
         extractbutton.config(state=NORMAL)
+        outputbutton.config(state=NORMAL)
         return
-    else:
-        extractbutton.config(state=DISABLED)
+    # else:
+    #     extractbutton.config(state=DISABLED)
 
     global Multiimage,Multigray,Multitype,Multiimagebands,changefileframe,imageframe,Multigraybands,filenames
     global changefiledrop,filedropvar,originbandarray,displaybandarray,clusterdisplay,currentfilename,resviewframe
-    global refsubframe,outputbutton,reseglabels,refbutton,figcanvas,loccanvas,originlabels,changekmeans,refarea
+    global refsubframe,reseglabels,refbutton,figcanvas,loccanvas,originlabels,changekmeans,refarea
     global originlabeldict,convband,panelA
     global havecolorstrip
     global colordicesband,oldpcachoice
@@ -1558,7 +1559,7 @@ def export_ext(iterver,path,whext=False,blkext=False):
 
 def export_result(iterver):
     if proc_mode[proc_name].get()=='1':
-        batchprocess.batch_export_result()
+        batchprocess.batch_exportpath()
         return
     suggsize=8
     print('fontsize',suggsize)
@@ -2254,13 +2255,13 @@ def gen_convband():
 
 
 def process():
-    global outputbutton
+    # global outputbutton
     if proc_mode[proc_name].get()=='1':
         batchprocess.batch_process()
-        outputbutton.config(state=NORMAL)
+        # outputbutton.config(state=NORMAL)
         return
-    else:
-        outputbutton.config(state=DISABLED)
+    # else:
+    #     outputbutton.config(state=DISABLED)
 
     if originlabels is None:
         extraction()
