@@ -31,11 +31,14 @@ import createBins
 import axistest
 from multiprocessing import Pool
 import lm_method
+import batchprocess
 
 class img():
     def __init__(self,size,bands):
         self.size=size
         self.bands=bands
+
+import batchprocess
 
 displayimg={'Origin':None,
             'PCs':None,
@@ -77,6 +80,8 @@ batch={'PCs':[],
        'Area_min':[],
        'L+W_max':[],
        'L+W_min':[]}
+
+
 
 root=Tk()
 root.title('GridFree')
@@ -387,6 +392,11 @@ def Open_File(filename):   #add to multi-image,multi-gray  #call band calculatio
     return True
 
 def Open_Map():
+    if proc_mode[proc_name].get()=='1':
+        batchprocess.Open_batchfile()
+
+        return
+
     global mappath,elesize,labellist
     filepath=filedialog.askopenfilename()
     if len(filepath)>0:
@@ -427,6 +437,14 @@ def Open_Map():
         changeoutputimg(currentfilename,'1')
 
 def Open_Multifile():
+    global extractbutton
+    if proc_mode[proc_name].get()=='1':
+        batchprocess.Open_batchfolder()
+        extractbutton.config(state=NORMAL)
+        return
+    else:
+        extractbutton.config(state=DISABLED)
+
     global Multiimage,Multigray,Multitype,Multiimagebands,changefileframe,imageframe,Multigraybands,filenames
     global changefiledrop,filedropvar,originbandarray,displaybandarray,clusterdisplay,currentfilename,resviewframe
     global refsubframe,outputbutton,reseglabels,refbutton,figcanvas,loccanvas,originlabels,changekmeans,refarea
@@ -506,7 +524,7 @@ def Open_Multifile():
         if len(bandchoice)>0:
             bandchoice['LabOstu'].set('1')
 
-        global buttondisplay,extractbutton,pcaframe,kmeansbar
+        global buttondisplay,pcaframe,kmeansbar
         for widget in buttondisplay.winfo_children():
             widget.config(state=NORMAL)
         for widget in pcaframe.winfo_children():
@@ -663,7 +681,7 @@ def singleband(file):
         displayfea_vector[:,4]=displayfea_vector[:,4]+displayfea_bands
     Greenness = bands[1, :, :] / (bands[0, :, :] + bands[1, :, :] + bands[2, :, :])
     tempdict = {'Greenness': Greenness}
-    if 'Greenness' not in originbandarray:
+    if 'Greenness' not in originbands:
         originbands.update(tempdict)
         # originfea_vector[:,5]=originfea_vector[:,5]+Greenness
         image=cv2.resize(Greenness,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
@@ -677,7 +695,7 @@ def singleband(file):
         displayfea_vector[:,5]=displayfea_vector[:,5]+displayfea_bands
     VEG=bands[1,:,:]/(np.power(bands[0,:,:],0.667)*np.power(bands[2,:,:],(1-0.667)))
     tempdict={'VEG':VEG}
-    if 'VEG' not in originbandarray:
+    if 'VEG' not in originbands:
         originbands.update(tempdict)
         # originfea_vector[:,6]=originfea_vector[:,6]+VEG
         image=cv2.resize(VEG,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
@@ -692,7 +710,7 @@ def singleband(file):
         displayfea_vector[:,6]=displayfea_vector[:,6]+displayfea_bands
     CIVE=0.441*bands[0,:,:]-0.811*bands[1,:,:]+0.385*bands[2,:,:]+18.78745
     tempdict={'CIVE':CIVE}
-    if 'CIVE' not in originbandarray:
+    if 'CIVE' not in originbands:
         originbands.update(tempdict)
         # originfea_vector[:,7]=originfea_vector[:,7]+CIVE
         image=cv2.resize(CIVE,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
@@ -705,7 +723,7 @@ def singleband(file):
         displayfea_vector[:,7]=displayfea_vector[:,7]+displayfea_bands
     MExG=1.262*bands[1,:,:]-0.884*bands[0,:,:]-0.311*bands[2,:,:]
     tempdict={'MExG':MExG}
-    if 'MExG' not in originbandarray:
+    if 'MExG' not in originbands:
         originbands.update(tempdict)
         # originfea_vector[:,8]=originfea_vector[:,8]+MExG
         image=cv2.resize(MExG,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
@@ -718,7 +736,7 @@ def singleband(file):
         displayfea_vector[:,8]=displayfea_vector[:,8]+displayfea_bands
     NDVI=(bands[0,:,:]-bands[2,:,:])/(bands[0,:,:]+bands[2,:,:])
     tempdict={'NDVI':NDVI}
-    if 'NDVI' not in originbandarray:
+    if 'NDVI' not in originbands:
         originbands.update(tempdict)
         # originfea_vector[:,0]=originfea_vector[:,9]+NDVI
         image=cv2.resize(NDVI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
@@ -731,7 +749,7 @@ def singleband(file):
         displayfea_vector[:,0]=displayfea_vector[:,9]+displayfea_bands
     NGRDI=(bands[1,:,:]-bands[0,:,:])/(bands[1,:,:]+bands[0,:,:])
     tempdict={'NGRDI':NGRDI}
-    if 'NGRDI' not in originbandarray:
+    if 'NGRDI' not in originbands:
         originbands.update(tempdict)
         image=cv2.resize(NGRDI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
@@ -1539,6 +1557,9 @@ def export_ext(iterver,path,whext=False,blkext=False):
             segimage.save(path+'/'+originfile+extcolor+'-labelresult'+'.png',"PNG")
 
 def export_result(iterver):
+    if proc_mode[proc_name].get()=='1':
+        batchprocess.batch_export_result()
+        return
     suggsize=8
     print('fontsize',suggsize)
     smallfont=ImageFont.truetype('cmb10.ttf',size=suggsize)
@@ -2233,6 +2254,14 @@ def gen_convband():
 
 
 def process():
+    global outputbutton
+    if proc_mode[proc_name].get()=='1':
+        batchprocess.batch_process()
+        outputbutton.config(state=NORMAL)
+        return
+    else:
+        outputbutton.config(state=DISABLED)
+
     if originlabels is None:
         extraction()
     else:
@@ -2249,7 +2278,7 @@ def process():
 #def extraction(frame):
 def extraction():
     global kernersizes,multi_results,workingimg,outputimgdict,outputimgbands,pixelmmratio
-    global currentlabels,panelA,outputbutton,reseglabels,refbutton,figcanvas,resegbutton,refvar
+    global currentlabels,panelA,reseglabels,refbutton,figcanvas,resegbutton,refvar
     global refsubframe,loccanvas,originlabels,changekmeans,originlabeldict,refarea
     global figdotlist,segmentratio
     global batch
@@ -3047,6 +3076,13 @@ panelA.pack(padx=20,pady=20,expand=YES)
 buttondisplay=LabelFrame(bottomframe,bd=0)
 buttondisplay.config(cursor='hand2')
 buttondisplay.pack(side=LEFT)
+
+proc_name='batch_mode'
+proc_mode={proc_name:Variable()}
+proc_mode[proc_name].set('0')
+proc_but=Checkbutton(buttondisplay,text=proc_name,variable=proc_mode[proc_name])
+proc_but.pack(side=LEFT,padx=20,pady=5)
+
 
 openfilebutton=Button(buttondisplay,text='Image',command=Open_Multifile,cursor='hand2')
 openfilebutton.pack(side=LEFT,padx=20,pady=5)
