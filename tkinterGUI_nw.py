@@ -78,8 +78,8 @@ batch={'PCs':[],
        'Kmeans_sel':[],
        'Area_max':[],
        'Area_min':[],
-       'L+W_max':[],
-       'L+W_min':[]}
+       'shape_max':[],
+       'shape_min':[]}
 
 
 
@@ -1558,6 +1558,7 @@ def export_ext(iterver,path,whext=False,blkext=False):
             segimage.save(path+'/'+originfile+extcolor+'-labelresult'+'.png',"PNG")
 
 def export_result(iterver):
+    global batch
     if proc_mode[proc_name].get()=='1':
         batchprocess.batch_exportpath()
         return
@@ -1858,6 +1859,21 @@ def export_result(iterver):
     okbut=Button(top,text='Okay',command=top.destroy)
     okbut.pack(side=BOTTOM)
     top.after(10000,top.destroy)
+    thresholds=[cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1])]
+    minthres=min(thresholds)
+    maxthres=max(thresholds)
+    lwthresholds=[cal_yvalue(linelocs[2]),cal_yvalue(linelocs[3])]
+    maxlw=max(lwthresholds)
+    minlw=min(lwthresholds)
+
+
+    batch['Area_max']=[maxthres]
+    batch['Area_min']=[minthres]
+    batch['shape_max']=[maxlw]
+    batch['shape_min']=[minlw]
+
+    print('batch',batch)
+
     batchfile=path+'/'+originfile+'-batch'+'.txt'
     with open(batchfile,'w') as f:
         for key in batch.keys():
@@ -1906,6 +1922,7 @@ def resegment():
     #     workingimg=np.copy(labels)
 
     reseglabels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres,minlw,maxlw)
+
 
     # if segmentratio>1:
     #     cache=(np.zeros(labels.shape),{"f":int(segmentratio),"stride":int(segmentratio)})
@@ -2524,8 +2541,6 @@ def extraction():
     batch['Kmeans']=[int(kmeans.get())]
     batch['Kmeans_sel']=kchoice.copy()
     print(batch)
-
-
 
     pass
 

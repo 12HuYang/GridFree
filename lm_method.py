@@ -83,10 +83,10 @@ def lm_method(lenlist,widlist,originarea,all=False):
     # savetxt(name,residual,delimiter=',')
 
     if all==False:
-        return residual,area
+        return dlist,area
     else:
         # return residual,area,M,tablestd,eigvectors,regr.coef_,regr.intercept_
-        return residual,area,regr.coef_,regr.intercept_
+        return dlist,area,regr.coef_,regr.intercept_
 
 # def lm_method_fit(lenlist,widlist,originarea,M,tablestd,eigvectors,coef,intercept):
 def lm_method_fit(lenlist,widlist,originarea,coef,intercept):
@@ -138,7 +138,7 @@ def lm_method_fit(lenlist,widlist,originarea,coef,intercept):
     # residual=pcabands[:,0]-np.matmul(area.reshape(-1,1),coef)-intercept
     residual=-(dlist-np.matmul(area.reshape(-1,1),coef)-intercept)
     print(residual,residual.shape)
-    return residual,area
+    return dlist,area
 
     # plt.scatter(area,residual)
     # plt.show()

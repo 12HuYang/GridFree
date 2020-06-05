@@ -46,6 +46,7 @@ class batch_ser_func():
         self.batch_colordicesband={}
         self.batch_results={}
         self.kernersizes={}
+        self.reseglabels=None
 
     def Open_batchimage(self):
         try:
@@ -405,6 +406,15 @@ class batch_ser_func():
         Image.fromarray((binaryimg.astype('uint8'))).save(self.file+'-binaryimg.png',"PNG")
         return currentlabels,originbinaryimg
 
+    def resegment(self):
+        if type(self.reseglabels) == type(None):
+            return False
+        labels=np.copy(self.reseglabels)
+        reseglabels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres,minlw,maxlw)
+        self.batch_results.update({self.file:(labeldict,{})})
+        return True
+
+
     def extraction(self,currentlabels):
         if kmeans==1:
             messagebox.showerror('Invalid Class #',message='#Class = 1, try change it to 2 or more, and refresh Color-Index.')
@@ -454,7 +464,7 @@ class batch_ser_func():
         originlabels=None
         if originlabels is None:
             originlabels,border,colortable,originlabeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
-
+        self.reseglabels=originlabels
         self.batch_results.update({self.file:(originlabeldict,{})})
         return True
 
@@ -913,6 +923,8 @@ class batch_ser_func():
         currentlabels,originbinaryimg=self.generateimgplant(colordicesband)
         if self.extraction(currentlabels)==False:
             return
+        if self.resegment()==False:
+            return
         self.export_result()
 
 
@@ -939,6 +951,10 @@ batch_results={}
 pcs=[]
 kmeans=0
 kmeans_sel=[]
+maxthres=0
+minthres=0
+maxlw=0
+minlw=0
 FOLDER=''
 exportpath=''
 
@@ -1254,7 +1270,7 @@ def Open_batchimage(dir,filename):
     return True
 
 def Open_batchfile():
-    global pcs,kmeans,kmeans_sel
+    global pcs,kmeans,kmeans_sel,maxthres,minthres,maxlw,minlw
     btfile=filedialog.askopenfilename()
     if len(btfile)>0:
         if '-batch.txt' in btfile:
@@ -1268,9 +1284,18 @@ def Open_batchfile():
                 kmeans=setting[1].split(',')[1]
                 kmeans=int(kmeans)
                 kmeans_sel=setting[2].split(',')[1:-1]
+                maxthres=setting[3].split(',')[1]
+                maxthres=float(maxthres)
+                minthres=setting[4].split(',')[1]
+                minthres=float(minthres)
+                maxlw=setting[5].split(',')[1]
+                maxlw=float(maxlw)
+                minlw=setting[6].split(',')[1]
+                minlw=float(minlw)
                 for i in range(len(kmeans_sel)):
                     kmeans_sel[i]=int(kmeans_sel[i])
                 print('PCs',pcs,'KMeans',kmeans,'KMeans-Selection',kmeans_sel)
+                print('maxthres',maxthres,'minthres',minthres,'maxlw',maxlw,'minlw',minlw)
 
 def Open_batchfolder():
     # global batch_filenames,batch_Multiimage,batch_Multigray,batch_Multitype,batch_Multiimagebands,batch_Multigraybands
@@ -1433,6 +1458,15 @@ def batch_extraction(currentlabels,file):
     batch_results.update({file:(originlabeldict,{})})
 
 def batch_proc_func(file):
+    if len(FOLDER)==0:
+        messagebox.showerror('No image folder','Need to assign image folder')
+        return
+    if len(exportpath)==0:
+        messagebox.showerror('No output folder','Need to assign output folder')
+        return
+    if len(pcs)==0:
+        messagebox.showerror('No batch file','Need to load batch file')
+        return
     procobj=batch_ser_func(file)
     procobj.process()
     del procobj
