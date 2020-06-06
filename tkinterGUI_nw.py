@@ -1156,7 +1156,10 @@ def getPCs():
     else:
         # tempdisplayimg=cv2.resize(originpcabands,(int(originpcabands.shape[1]/ratio),int(originpcabands.shape[0]/ratio)))
         colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]/ratio),int(colordivimg.shape[0]/ratio)))
+    if colordivimg.min()<0:
+        colordivimg=colordivimg-colordivimg.min()
     grayimg=Image.fromarray(colordivimg.astype('uint8'),'L')
+    # grayimg=Image.fromarray(np.uint8(colordivimg*255),'L')
     displayimg['PCs']['Image']=ImageTk.PhotoImage(grayimg)
 
 def changepca(event):
