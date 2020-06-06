@@ -345,7 +345,7 @@ class batch_ser_func():
     def kmeansclassify(self):
         if kmeans==0:
             messagebox.showerror('Kmeans error','Kmeans should greater than 0')
-            return []
+            return None
         file=self.file
         originpcabands=self.batch_displaybandarray[self.file]['LabOstu']
         pcah,pcaw,pcac=originpcabands.shape
@@ -919,6 +919,8 @@ class batch_ser_func():
             return
         self.singleband()
         colordicesband=self.kmeansclassify()
+        if type(colordicesband)==type(None):
+            return
         self.batch_colordicesband.update({self.file:colordicesband})
         currentlabels,originbinaryimg=self.generateimgplant(colordicesband)
         if self.extraction(currentlabels)==False:
@@ -1273,7 +1275,7 @@ def Open_batchfile():
     global pcs,kmeans,kmeans_sel,maxthres,minthres,maxlw,minlw
     btfile=filedialog.askopenfilename()
     if len(btfile)>0:
-        if '-batch.txt' in btfile:
+        if '.txt' in btfile:
             with open(btfile,mode='r') as f:
                 setting=f.readlines()
                 # print(setting)
