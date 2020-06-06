@@ -997,6 +997,8 @@ def generateimgplant(displaylabels):
     binaryimg[locs]=[240,228,66]
     colordeimg=np.zeros((colordivimg.shape[0],colordivimg.shape[1],3))
     if kvar==1:
+        if colordivimg.min()<0:
+            colordivimg=colordivimg-colordivimg.min()
         grayimg=Image.fromarray(colordivimg.astype('uint8'),'L')
         #grayimg.show()
         colordivdict={}
@@ -1207,6 +1209,8 @@ def savePCAimg(path,originfile,file):
     # grayimg=(((displaylabels-displaylabels.min())/(displaylabels.max()-displaylabels.min()))*255.9).astype(np.uint8)
     # pyplt.imsave('k=1.png',displaylabels.astype('uint8'))
     # pyplt.imsave('k=1.png',grayimg)
+    if displaylabels.min()<0:
+        displaylabels=displaylabels-displaylabels.min()
     grayimg=Image.fromarray(displaylabels.astype('uint8'),'L')
     originheight,originwidth=Multigraybands[file].size
     origingray=grayimg.resize([originwidth,originheight],resample=Image.BILINEAR)
@@ -1236,6 +1240,9 @@ def changecluster(event):
         # grayimg=(((displaylabels-displaylabels.min())/(displaylabels.max()-displaylabels.min()))*255.9).astype(np.uint8)
         # pyplt.imsave('k=1.png',displaylabels.astype('uint8'))
         # pyplt.imsave('k=1.png',grayimg)
+        if displaylabels.min()<0:
+            displaylabels=displaylabels-displaylabels.min()
+
         grayimg=Image.fromarray(displaylabels.astype('uint8'),'L')
         print('max',displaylabels.max())
         print('min',displaylabels.min())
