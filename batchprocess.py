@@ -1285,7 +1285,11 @@ def Open_batchfile():
                 kmeans=int(kmeans)
                 kmeans_sel=setting[2].split(',')[1:-1]
                 maxthres=setting[3].split(',')[1]
-                maxthres=float(maxthres)
+                try:
+                    maxthres=float(maxthres)
+                except:
+                    messagebox.showerror('Load Max area error','No Max area threshold value.')
+                    return
                 minthres=setting[4].split(',')[1]
                 minthres=float(minthres)
                 maxlw=setting[5].split(',')[1]
@@ -1296,6 +1300,10 @@ def Open_batchfile():
                     kmeans_sel[i]=int(kmeans_sel[i])
                 print('PCs',pcs,'KMeans',kmeans,'KMeans-Selection',kmeans_sel)
                 print('maxthres',maxthres,'minthres',minthres,'maxlw',maxlw,'minlw',minlw)
+                messagebox.showinfo('Batch settings','PCs='+str(pcs)+'\nKMeans='+str(kmeans)+
+                                    '\nCluster selection'+str(kmeans_sel)+'\nMax area='+str(maxthres)+
+                                    '\nMin area='+str(minthres)+'\nMax diagonal='+str(maxlw)+'\nMin diagonal='+
+                                    str(minlw))
 
 def Open_batchfolder():
     # global batch_filenames,batch_Multiimage,batch_Multigray,batch_Multitype,batch_Multiimagebands,batch_Multigraybands
