@@ -372,6 +372,22 @@ class batch_ser_func():
                 # print('label=0',np.any(tempdisplayimg==0))
                 displaylabels=tempdisplayimg.labels_.reshape((self.batch_displaybandarray[self.file]['LabOstu'].shape[0],
                                                       self.batch_displaybandarray[self.file]['LabOstu'].shape[1]))
+
+            clusterdict={}
+            displaylabels=displaylabels+10
+            for i in range(kmeans):
+                locs=np.where(tempdisplayimg.labels_==i)
+                maxval=reshapedtif[locs].max()
+                print(maxval)
+                clusterdict.update({maxval:i+10})
+            print(clusterdict)
+            sortcluster=list(sorted(clusterdict))
+            print(sortcluster)
+            for i in range(len(sortcluster)):
+                cluster_num=clusterdict[sortcluster[i]]
+                displaylabels=np.where(displaylabels==cluster_num,i,displaylabels)
+
+
         return displaylabels
 
     def generateimgplant(self,displaylabels):

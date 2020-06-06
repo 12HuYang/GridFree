@@ -104,7 +104,7 @@ checkboxdict={}
 
 coinbox=None
 
-currentfilename='seedsample.JPG'
+currentfilename=''
 currentlabels=None
 workingimg=None
 
@@ -252,7 +252,19 @@ def generatedisplayimg(filename):  # init display images
         resize=cv2.resize(Multiimage[filename],(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
         originimg=Image.fromarray(resize.astype('uint8'))
         originsegbands.update({'Origin':originimg})
-        rgbimg=ImageTk.PhotoImage(Image.fromarray(resize.astype('uint8')))
+
+        rgbimg=Image.fromarray(resize.astype('uint8'))
+        draw=ImageDraw.Draw(rgbimg)
+        suggsize=14
+        font=ImageFont.truetype('cmb10.ttf',size=suggsize)
+        content='\n File: '+currentfilename
+        draw.text((10-1, 10+1), text=content, font=font, fill='white')
+        draw.text((10+1, 10+1), text=content, font=font, fill='white')
+        draw.text((10-1, 10-1), text=content, font=font, fill='white')
+        draw.text((10+1, 10-1), text=content, font=font, fill='white')
+        #draw.text((10,10),text=content,font=font,fill=(141,2,31,0))
+        draw.text((10,10),text=content,font=font,fill='black')
+        rgbimg=ImageTk.PhotoImage(rgbimg)
         tempdict={}
         tempdict.update({'Size':resize.shape})
         tempdict.update({'Image':rgbimg})
@@ -1075,6 +1087,19 @@ def kmeansclassify():
             # print('label=0',np.any(tempdisplayimg==0))
             displaylabels=tempdisplayimg.labels_.reshape((displaybandarray[currentfilename]['LabOstu'].shape[0],
                                                   displaybandarray[currentfilename]['LabOstu'].shape[1]))
+        clusterdict={}
+        displaylabels=displaylabels+10
+        for i in range(int(kmeans.get())):
+            locs=np.where(tempdisplayimg.labels_==i)
+            maxval=reshapedtif[locs].max()
+            print(maxval)
+            clusterdict.update({maxval:i+10})
+        print(clusterdict)
+        sortcluster=list(sorted(clusterdict))
+        print(sortcluster)
+        for i in range(len(sortcluster)):
+            cluster_num=clusterdict[sortcluster[i]]
+            displaylabels=np.where(displaylabels==cluster_num,i,displaylabels)
 
 
     # pixelarea=1.0
