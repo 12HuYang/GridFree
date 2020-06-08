@@ -848,8 +848,8 @@ def singleband(file):
         print('pc',i+1,' var=',pcvar)
         temppcavar={i:pcvar}
         pcavar.update(temppcavar)
-        pcnbands=np.dot(C,pcn)
-        opcnbands=np.dot(OC,opcn)
+        # pcnbands=np.dot(C,pcn)
+        # opcnbands=np.dot(OC,opcn)
         pcabands[:,i]=pcabands[:,i]+pcnbands
         o_pcabands[:,i]=o_pcabands[:,i]+opcnbands
     # sortvar=sorted(pcavar,key=pcavar.get)
@@ -858,8 +858,8 @@ def singleband(file):
     #     pcn=eigvectors[:,sortvar[i]]
     #     pcnbands=np.dot(displayfea_vector,pcn)
     #     pcabands[:,i]=pcabands[:,i]+pcnbands
-    #np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%s')
-    #np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%s')
+    np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%s')
+    np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%s')
     #high,width=pcabands.shape
     #fp=open('pcs.csv',w)
     #fc=open('color-index.csv',w)
@@ -867,7 +867,8 @@ def singleband(file):
     #for i in range(high):
 
     #threedplot(pcabands)
-    originpcabands.update({file:o_pcabands})
+    # originpcabands.update({file:o_pcabands})
+    originpcabands.update({file:pcabands})
     pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
     #originbands={'LabOstu':pcabandsdisplay}
     tempdictdisplay={'LabOstu':pcabandsdisplay}
@@ -1252,6 +1253,8 @@ def changecluster(event):
         # grayimg=(((displaylabels-displaylabels.min())/(displaylabels.max()-displaylabels.min()))*255.9).astype(np.uint8)
         # pyplt.imsave('k=1.png',displaylabels.astype('uint8'))
         # pyplt.imsave('k=1.png',grayimg)
+        print('max',displaylabels.max())
+        print('min',displaylabels.min())
         if displaylabels.min()<0:
             # if abs(displaylabels.min())<displaylabels.max():
             displaylabels=displaylabels-displaylabels.min()
@@ -2115,8 +2118,8 @@ def resegment():
     batch['Kmeans_sel']=kchoice.copy()
     batch['Area_max']=[maxthres]
     batch['Area_min']=[minthres]
-    batch['L+W_max']=[maxlw]
-    batch['L+W_min']=[minlw]
+    # batch['L+W_max']=[maxlw]
+    # batch['L+W_min']=[minlw]
     print(batch)
 
 
