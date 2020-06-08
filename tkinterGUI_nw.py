@@ -998,7 +998,10 @@ def generateimgplant(displaylabels):
     colordeimg=np.zeros((colordivimg.shape[0],colordivimg.shape[1],3))
     if kvar==1:
         if colordivimg.min()<0:
+            # if abs(colordivimg.min())<colordivimg.max():
             colordivimg=colordivimg-colordivimg.min()
+        colorrange=colordivimg.max()-colordivimg.min()
+        colordivimg=colordivimg*255/colorrange
         grayimg=Image.fromarray(colordivimg.astype('uint8'),'L')
         #grayimg.show()
         colordivdict={}
@@ -1158,10 +1161,16 @@ def getPCs():
     else:
         # tempdisplayimg=cv2.resize(originpcabands,(int(originpcabands.shape[1]/ratio),int(originpcabands.shape[0]/ratio)))
         colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]/ratio),int(colordivimg.shape[0]/ratio)))
+    # if colordivimg.min()<0:
+    #     if abs(colordivimg.min())<colordivimg.max():
+    #         colordivimg=colordivimg-colordivimg.min()
+
     if colordivimg.min()<0:
         colordivimg=colordivimg-colordivimg.min()
-    grayimg=Image.fromarray(colordivimg.astype('uint8'),'L')
-    # grayimg=Image.fromarray(np.uint8(colordivimg*255),'L')
+    colorrange=colordivimg.max()-colordivimg.min()
+    colordivimg=colordivimg*255/colorrange
+    colordivimg=colordivimg.astype('uint8')
+    grayimg=Image.fromarray(colordivimg,'L')
     displayimg['PCs']['Image']=ImageTk.PhotoImage(grayimg)
 
 def changepca(event):
@@ -1210,7 +1219,10 @@ def savePCAimg(path,originfile,file):
     # pyplt.imsave('k=1.png',displaylabels.astype('uint8'))
     # pyplt.imsave('k=1.png',grayimg)
     if displaylabels.min()<0:
+        # if abs(displaylabels.min())<displaylabels.max():
         displaylabels=displaylabels-displaylabels.min()
+    colorrange=displaylabels.max()-displaylabels.min()
+    displaylabels=displaylabels*255/colorrange
     grayimg=Image.fromarray(displaylabels.astype('uint8'),'L')
     originheight,originwidth=Multigraybands[file].size
     origingray=grayimg.resize([originwidth,originheight],resample=Image.BILINEAR)
@@ -1241,7 +1253,10 @@ def changecluster(event):
         # pyplt.imsave('k=1.png',displaylabels.astype('uint8'))
         # pyplt.imsave('k=1.png',grayimg)
         if displaylabels.min()<0:
+            # if abs(displaylabels.min())<displaylabels.max():
             displaylabels=displaylabels-displaylabels.min()
+        colorrange=displaylabels.max()-displaylabels.min()
+        displaylabels=displaylabels*255/colorrange
 
         grayimg=Image.fromarray(displaylabels.astype('uint8'),'L')
         print('max',displaylabels.max())
