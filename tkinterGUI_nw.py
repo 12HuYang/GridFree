@@ -145,6 +145,7 @@ zoombox=[]
 
 displayfea_l=0
 displayfea_w=0
+resizeshape=[]
 
 def distance(p1,p2):
     return np.sum((p1-p2)**2)
@@ -230,7 +231,7 @@ def changedisplayimg(frame,text):
     #time.sleep(1)
 
 def generatedisplayimg(filename):  # init display images
-
+    global resizeshape
     try:
         # firstimg=Multiimagebands[filename]
         #height,width=firstimg.size
@@ -248,10 +249,22 @@ def generatedisplayimg(filename):  # init display images
             #resize=cv2.resize(Multiimage[filename],(int(width*ratio),int(height*ratio)),interpolation=cv2.INTER_LINEAR)
             resizeshape.append(width*ratio)
             resizeshape.append(height*ratio)
+            if height>850:
+                resizeshape=[]
+                ratio=round(height/850)
+                resizeshape.append(width/ratio)
+                resizeshape.append(height/ratio)
+            if width>850:
+                resizeshape=[]
+                ratio=round(width/850)
+                resizeshape.append(width/ratio)
+                resizeshape.append(height/ratio)
         else:
             #resize=cv2.resize(Multiimage[filename],(int(width/ratio),int(height/ratio)),interpolation=cv2.INTER_LINEAR)
             resizeshape.append(width/ratio)
             resizeshape.append(height/ratio)
+
+
         resize=cv2.resize(Multiimage[filename],(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
         originimg=Image.fromarray(resize.astype('uint8'))
         originsegbands.update({'Origin':originimg})
@@ -260,7 +273,7 @@ def generatedisplayimg(filename):  # init display images
         draw=ImageDraw.Draw(rgbimg)
         suggsize=14
         font=ImageFont.truetype('cmb10.ttf',size=suggsize)
-        content='\n File: '+currentfilename
+        content='\n File: '+filename
         draw.text((10-1, 10+1), text=content, font=font, fill='white')
         draw.text((10+1, 10+1), text=content, font=font, fill='white')
         draw.text((10-1, 10-1), text=content, font=font, fill='white')
@@ -350,6 +363,7 @@ def generatedisplayimg(filename):  # init display images
     # testcolor=Image.open('colordeviation.png')
         print('colordeviation.png')
     # colortempdict={}
+        colordeviate=cv2.resize(colordeviate,(int(resizeshape[0]),int(resizeshape[1])),interpolation=cv2.INTER_LINEAR)
         tempdict.update({'Size':colordeviate.shape})
         tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(colordeviate.astype('uint8')))})
     # colortempdict.update({'Size':colordeviate.shape})
@@ -525,6 +539,7 @@ def Open_Multifile():
         changefiledrop.pack()
         #singleband(filenames[0])
         generatedisplayimg(filenames[0])
+        # changedisplayimg(imageframe,'Origin')
         getPCs()
 
         if len(bandchoice)>0:
@@ -602,11 +617,13 @@ def singleband(file):
     originbands={}
     displays={}
     fea_l,fea_w=bands.shape
-    fea_vector=np.zeros((fea_l*fea_w,3))
+    # fea_vector=np.zeros((fea_l*fea_w,3))
+
     pyplt.imsave('bands.png',bands)
     displaybands=cv2.resize(bands,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
     pyplt.imsave('displaybands.png',displaybands)
     displayfea_l,displayfea_w=displaybands.shape
+    fea_vector=np.zeros((displayfea_l*displayfea_w,3))
     displayfea_vector=np.zeros((displayfea_l*displayfea_w,7))
     # originfea_vector=np.zeros((bandsize[0],bandsize[1],10))
 
@@ -667,7 +684,8 @@ def singleband(file):
         image=cv2.resize(Red,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         displaydict={'Band1':image}
         displays.update(displaydict)
-        fea_bands=Red.reshape(fea_l*fea_w,1)[:,0]
+        # fea_bands=Red.reshape(fea_l*fea_w,1)[:,0]
+        fea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
         # originfea_vector[:,2]=originfea_vector[:,2]+fea_bands
         displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
         fea_vector[:,0]=fea_vector[:,0]+fea_bands
@@ -679,7 +697,8 @@ def singleband(file):
         image=cv2.resize(Green,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         displaydict={'Band2':image}
         displays.update(displaydict)
-        fea_bands=Green.reshape(fea_l*fea_w,1)[:,0]
+        # fea_bands=Green.reshape(fea_l*fea_w,1)[:,0]
+        fea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
         # originfea_vector[:,3]=originfea_vector[:,3]+fea_bands
         displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
         fea_vector[:,1]=fea_vector[:,1]+fea_bands
@@ -691,7 +710,8 @@ def singleband(file):
         image=cv2.resize(Blue,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
         displaydict={'Band3':image}
         displays.update(displaydict)
-        fea_bands=Blue.reshape(fea_l*fea_w,1)[:,0]
+        # fea_bands=Blue.reshape(fea_l*fea_w,1)[:,0]
+        fea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
         displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
         fea_vector[:,2]=fea_vector[:,2]+fea_bands
         # displayfea_vector[:,4]=displayfea_vector[:,4]+displayfea_bands
@@ -975,10 +995,15 @@ def generateimgplant(displaylabels):
     for key in keys:
         plantchoice.append(checkboxdict[key].get())
         pre_checkbox.append(checkboxdict[key].get())
-    tempdisplayimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0],
-                             displaybandarray[currentfilename]['LabOstu'].shape[1]))
-    colordivimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0],
-                          displaybandarray[currentfilename]['LabOstu'].shape[1]))
+    origindisplaylabels=np.copy(displaybandarray[currentfilename]['LabOstu'])
+    h,w,c=origindisplaylabels.shape
+
+    # tempdisplayimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0],
+    #                          displaybandarray[currentfilename]['LabOstu'].shape[1]))
+    # colordivimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0],
+    #                       displaybandarray[currentfilename]['LabOstu'].shape[1]))
+    tempdisplayimg=np.zeros((h,w))
+    colordivimg=np.zeros((h,w))
     sel_count=plantchoice.count('1')
     if sel_count == int(kmeans.get()):
         tempdisplayimg=tempdisplayimg+1
@@ -994,13 +1019,24 @@ def generateimgplant(displaylabels):
     originbinaryimg=np.copy(tempdisplayimg)
 
     tempcolorimg=np.copy(displaylabels).astype('float32')
-    ratio=findratio([tempdisplayimg.shape[0],tempdisplayimg.shape[1]],[850,850])
-    if tempdisplayimg.shape[0]*tempdisplayimg.shape[1]<850*850:
-        tempdisplayimg=cv2.resize(tempdisplayimg,(int(tempdisplayimg.shape[1]*ratio),int(tempdisplayimg.shape[0]*ratio)))
-        colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]*ratio),int(colordivimg.shape[0]*ratio)))
-    else:
-        tempdisplayimg=cv2.resize(tempdisplayimg,(int(tempdisplayimg.shape[1]/ratio),int(tempdisplayimg.shape[0]/ratio)))
-        colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]/ratio),int(colordivimg.shape[0]/ratio)))
+    # ratio=findratio([h,w],[850,850])
+    # if h*w<850*850:
+    #     tempdisplayimg=cv2.resize(tempdisplayimg,(int(w*ratio),int(h*ratio)))
+    #     colordivimg=cv2.resize(tempcolorimg,(int(w*ratio),int(h*ratio)))
+    #     if h>850:
+    #         ratio=round(h/850)
+    #         tempdisplayimg=cv2.resize(tempdisplayimg,(int(w/ratio),int(h/ratio)))
+    #         colordivimg=cv2.resize(tempcolorimg,(int(w/ratio),int(h/ratio)))
+    #     if w>850:
+    #         ratio=round(w/850)
+    #         tempdisplayimg=cv2.resize(tempdisplayimg,(int(w/ratio),int(h/ratio)))
+    #         colordivimg=cv2.resize(tempcolorimg,(int(w/ratio),int(h/ratio)))
+    # else:
+    #     tempdisplayimg=cv2.resize(tempdisplayimg,(int(w/ratio),int(h/ratio)))
+    #     colordivimg=cv2.resize(tempcolorimg,(int(w/ratio),int(h/ratio)))
+    tempdisplayimg=cv2.resize(tempdisplayimg,(int(resizeshape[0]),int(resizeshape[1])))
+    colordivimg=cv2.resize(tempcolorimg,(int(resizeshape[0]),int(resizeshape[1])))
+
     binaryimg=np.zeros((tempdisplayimg.shape[0],tempdisplayimg.shape[1],3))
     kvar=int(kmeans.get())
     locs=np.where(tempdisplayimg==1)
@@ -1165,15 +1201,16 @@ def getPCs():
     tempcolorimg=np.copy(displaylabels)
     colordivimg=np.zeros((displaylabels.shape[0],
                           displaylabels.shape[1]))
-    if originpcabands.shape[0]*originpcabands.shape[1]<850*850:
-        # tempdisplayimg=cv2.resize(originpcabands,(int(originpcabands.shape[1]*ratio),int(originpcabands.shape[0]*ratio)))
-        colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]*ratio),int(colordivimg.shape[0]*ratio)))
-    else:
-        # tempdisplayimg=cv2.resize(originpcabands,(int(originpcabands.shape[1]/ratio),int(originpcabands.shape[0]/ratio)))
-        colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]/ratio),int(colordivimg.shape[0]/ratio)))
+    # if originpcabands.shape[0]*originpcabands.shape[1]<850*850:
+    #     # tempdisplayimg=cv2.resize(originpcabands,(int(originpcabands.shape[1]*ratio),int(originpcabands.shape[0]*ratio)))
+    #     colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]*ratio),int(colordivimg.shape[0]*ratio)))
+    # else:
+    #     # tempdisplayimg=cv2.resize(originpcabands,(int(originpcabands.shape[1]/ratio),int(originpcabands.shape[0]/ratio)))
+    #     colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]/ratio),int(colordivimg.shape[0]/ratio)))
     # if colordivimg.min()<0:
     #     if abs(colordivimg.min())<colordivimg.max():
     #         colordivimg=colordivimg-colordivimg.min()
+    colordivimg=cv2.resize(tempcolorimg,(int(resizeshape[0]),int(resizeshape[1])))
 
     if colordivimg.min()<0:
         colordivimg=colordivimg-colordivimg.min()

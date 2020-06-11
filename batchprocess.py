@@ -47,6 +47,8 @@ class batch_ser_func():
         self.batch_results={}
         self.kernersizes={}
         self.reseglabels=None
+        self.displayfea_l=0
+        self.displayfea_w=0
 
     def Open_batchimage(self):
         try:
@@ -103,19 +105,21 @@ class batch_ser_func():
         originbands={}
         displays={}
         fea_l,fea_w=bands.shape
-        fea_vector=np.zeros((fea_l*fea_w,10))
-        # pyplt.imsave('bands.png',bands)
+        # fea_vector=np.zeros((fea_l*fea_w,10))
+        # pyplt.imsave('batch_bands.png',bands)
         displaybands=cv2.resize(bands,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-        # pyplt.imsave('displaybands.png',displaybands)
+        # pyplt.imsave('batch_displaybands.png',displaybands)
         displayfea_l,displayfea_w=displaybands.shape
-        displayfea_vector=np.zeros((displayfea_l*displayfea_w,10))
+        self.displayfea_l,self.displayfea_w=displaybands.shape
+        fea_vector=np.zeros((displayfea_l*displayfea_w,3))
+        displayfea_vector=np.zeros((displayfea_l*displayfea_w,7))
 
         if 'LabOstu' not in originbands:
             originbands.update({'LabOstu':bands})
             fea_bands=bands.reshape(fea_l*fea_w,1)[:,0]
             displayfea_bands=displaybands.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,9]=fea_vector[:,0]+fea_bands
-            displayfea_vector[:,9]=displayfea_vector[:,0]+displayfea_bands
+            # fea_vector[:,9]=fea_vector[:,0]+fea_bands
+            displayfea_vector[:,6]=displayfea_vector[:,6]+displayfea_bands
             displays.update({'LabOstu':displaybands})
 
         bands=self.batch_Multiimagebands[self.file].bands
@@ -130,7 +134,7 @@ class batch_ser_func():
             fea_bands=NDI.reshape(fea_l*fea_w,1)[:,0]
             # originfea_vector[:,1]=originfea_vector[:,1]+fea_bands
             displayfea_bands=displaybands.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,1]=fea_vector[:,1]+fea_bands
+            # fea_vector[:,1]=fea_vector[:,1]+fea_bands
             displayfea_vector[:,1]=displayfea_vector[:,1]+displayfea_bands
             displaydict={'NDI':displaybands}
             displays.update(displaydict)
@@ -149,8 +153,8 @@ class batch_ser_func():
             fea_bands=Red.reshape(fea_l*fea_w,1)[:,0]
             # originfea_vector[:,2]=originfea_vector[:,2]+fea_bands
             displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,2]=fea_vector[:,2]+fea_bands
-            displayfea_vector[:,2]=displayfea_vector[:,2]+displayfea_bands
+            fea_vector[:,0]=fea_vector[:,0]+displayfea_bands
+            # displayfea_vector[:,2]=displayfea_vector[:,2]+displayfea_bands
         tempdict={'Band2':Green}
         if 'Band2' not in originbands:
             originbands.update(tempdict)
@@ -161,8 +165,8 @@ class batch_ser_func():
             fea_bands=Green.reshape(fea_l*fea_w,1)[:,0]
             # originfea_vector[:,3]=originfea_vector[:,3]+fea_bands
             displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,3]=fea_vector[:,3]+fea_bands
-            displayfea_vector[:,3]=displayfea_vector[:,3]+displayfea_bands
+            fea_vector[:,1]=fea_vector[:,1]+displayfea_bands
+            # displayfea_vector[:,3]=displayfea_vector[:,3]+displayfea_bands
         tempdict={'Band3':Blue}
         if 'Band3' not in originbands:
             originbands.update(tempdict)
@@ -172,8 +176,8 @@ class batch_ser_func():
             displays.update(displaydict)
             fea_bands=Blue.reshape(fea_l*fea_w,1)[:,0]
             displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,4]=fea_vector[:,4]+fea_bands
-            displayfea_vector[:,4]=displayfea_vector[:,4]+displayfea_bands
+            fea_vector[:,2]=fea_vector[:,2]+displayfea_bands
+            # displayfea_vector[:,4]=displayfea_vector[:,4]+displayfea_bands
         Greenness = bands[1, :, :] / (bands[0, :, :] + bands[1, :, :] + bands[2, :, :])
         tempdict = {'Greenness': Greenness}
         if 'Greenness' not in originbands:
@@ -186,8 +190,8 @@ class batch_ser_func():
             displays.update(displaydict)
             fea_bands=Greenness.reshape(fea_l*fea_w,1)[:,0]
             displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,5]=fea_vector[:,5]+fea_bands
-            displayfea_vector[:,5]=displayfea_vector[:,5]+displayfea_bands
+            # fea_vector[:,5]=fea_vector[:,5]+fea_bands
+            displayfea_vector[:,2]=displayfea_vector[:,2]+displayfea_bands
         VEG=bands[1,:,:]/(np.power(bands[0,:,:],0.667)*np.power(bands[2,:,:],(1-0.667)))
         tempdict={'VEG':VEG}
         if 'VEG' not in originbands:
@@ -201,8 +205,8 @@ class batch_ser_func():
             displays.update(worktempdict)
             fea_bands=VEG.reshape(fea_l*fea_w,1)[:,0]
             displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,6]=fea_vector[:,6]+fea_bands
-            displayfea_vector[:,6]=displayfea_vector[:,6]+displayfea_bands
+            # fea_vector[:,6]=fea_vector[:,6]+fea_bands
+            displayfea_vector[:,3]=displayfea_vector[:,3]+displayfea_bands
         CIVE=0.441*bands[0,:,:]-0.811*bands[1,:,:]+0.385*bands[2,:,:]+18.78745
         tempdict={'CIVE':CIVE}
         if 'CIVE' not in originbands:
@@ -214,8 +218,8 @@ class batch_ser_func():
             displays.update(worktempdict)
             fea_bands=CIVE.reshape(fea_l*fea_w,1)[:,0]
             displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,7]=fea_vector[:,7]+fea_bands
-            displayfea_vector[:,7]=displayfea_vector[:,7]+displayfea_bands
+            # fea_vector[:,7]=fea_vector[:,7]+fea_bands
+            displayfea_vector[:,4]=displayfea_vector[:,4]+displayfea_bands
         MExG=1.262*bands[1,:,:]-0.884*bands[0,:,:]-0.311*bands[2,:,:]
         tempdict={'MExG':MExG}
         if 'MExG' not in originbands:
@@ -227,8 +231,8 @@ class batch_ser_func():
             displays.update(worktempdict)
             fea_bands=MExG.reshape(fea_l*fea_w,1)[:,0]
             displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,8]=fea_vector[:,8]+fea_bands
-            displayfea_vector[:,8]=displayfea_vector[:,8]+displayfea_bands
+            # fea_vector[:,8]=fea_vector[:,8]+fea_bands
+            displayfea_vector[:,5]=displayfea_vector[:,5]+displayfea_bands
         NDVI=(bands[0,:,:]-bands[2,:,:])/(bands[0,:,:]+bands[2,:,:])
         tempdict={'NDVI':NDVI}
         if 'NDVI' not in originbands:
@@ -240,8 +244,8 @@ class batch_ser_func():
             displays.update(worktempdict)
             fea_bands=NDVI.reshape(fea_l*fea_w,1)[:,0]
             displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,0]=fea_vector[:,9]+fea_bands
-            displayfea_vector[:,0]=displayfea_vector[:,9]+displayfea_bands
+            # fea_vector[:,0]=fea_vector[:,9]+fea_bands
+            displayfea_vector[:,0]=displayfea_vector[:,0]+displayfea_bands
         NGRDI=(bands[1,:,:]-bands[0,:,:])/(bands[1,:,:]+bands[0,:,:])
         tempdict={'NGRDI':NGRDI}
         if 'NGRDI' not in originbands:
@@ -295,7 +299,7 @@ class batch_ser_func():
         print('eigvalue',eigvalues)
         print('eigvectors',eigvectors)
         eigvalueperc={}
-        featurechannel=0
+        featurechannel=10
         for i in range(len(eigvalues)):
             print('percentage',i,eigvalues[i]/sum(eigvalues))
             eigvalueperc.update({i:eigvalues[i]/sum(eigvalues)})
@@ -303,22 +307,45 @@ class batch_ser_func():
             featurechannel+=1
         o_eigenvalue,o_eigenvector=np.linalg.eig(OV)
         pcabands=np.zeros((displayfea_vector.shape[0],featurechannel))
-        o_pcabands=np.zeros((fea_vector.shape[0],featurechannel))
+        # o_pcabands=np.zeros((fea_vector.shape[0],featurechannel))
         pcavar={}
-        for i in range(featurechannel):
+        #separate PCA
+        for i in range(3):
+            pcn=o_eigenvector[:,i]
+            pcnbands=np.dot(O_stddisplayfea,pcn)
+            pcvar=np.var(pcnbands)
+            print('pc',i+1,' var=',pcvar)
+            pcabands[:,i]=pcabands[:,i]+pcnbands
+        for i in range(7):
             pcn=eigvectors[:,i]
-            opcn=o_eigenvector[:,i]
+            # opcn=o_eigenvector[:,i]
             #pcnbands=np.dot(displayfea_vector,pcn)
             pcnbands=np.dot(std_displayfea,pcn)
-            opcnbands=np.dot(O_stddisplayfea,opcn)
+            # opcnbands=np.dot(O_stddisplayfea,opcn)
             pcvar=np.var(pcnbands)
             print('pc',i+1,' var=',pcvar)
             temppcavar={i:pcvar}
             pcavar.update(temppcavar)
-            pcnbands=np.dot(C,pcn)
-            opcnbands=np.dot(OC,opcn)
-            pcabands[:,i]=pcabands[:,i]+pcnbands
-            o_pcabands[:,i]=o_pcabands[:,i]+opcnbands
+            # pcnbands=np.dot(C,pcn)
+            # opcnbands=np.dot(OC,opcn)
+            pcabands[:,i+3]=pcabands[:,i+3]+pcnbands
+
+        #10 bands pca
+        # for i in range(featurechannel):
+        #     pcn=eigvectors[:,i]
+        #     opcn=o_eigenvector[:,i]
+        #     #pcnbands=np.dot(displayfea_vector,pcn)
+        #     pcnbands=np.dot(std_displayfea,pcn)
+        #     opcnbands=np.dot(O_stddisplayfea,opcn)
+        #     pcvar=np.var(pcnbands)
+        #     print('pc',i+1,' var=',pcvar)
+        #     temppcavar={i:pcvar}
+        #     pcavar.update(temppcavar)
+        #     pcnbands=np.dot(C,pcn)
+        #     opcnbands=np.dot(OC,opcn)
+        #     pcabands[:,i]=pcabands[:,i]+pcnbands
+            # o_pcabands[:,i]=o_pcabands[:,i]+opcnbands
+
         # sortvar=sorted(pcavar,key=pcavar.get)
         # print(sortvar)
         # for i in range(len(sortvar)):
@@ -334,7 +361,8 @@ class batch_ser_func():
         #for i in range(high):
 
         #threedplot(pcabands)
-        self.batch_originpcabands.update({self.file:o_pcabands})
+        # self.batch_originpcabands.update({self.file:o_pcabands})
+        self.batch_originpcabands.update({self.file:pcabands})
         pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
         #originbands={'LabOstu':pcabandsdisplay}
         tempdictdisplay={'LabOstu':pcabandsdisplay}
@@ -499,6 +527,10 @@ class batch_ser_func():
         # grayimg=(((displaylabels-displaylabels.min())/(displaylabels.max()-displaylabels.min()))*255.9).astype(np.uint8)
         # pyplt.imsave('k=1.png',displaylabels.astype('uint8'))
         # pyplt.imsave('k=1.png',grayimg)
+        if displaylabels.min()<0:
+            displaylabels=displaylabels-displaylabels.min()
+        colorrange=displaylabels.max()-displaylabels.min()
+        displaylabels=displaylabels*255/colorrange
         grayimg=Image.fromarray(displaylabels.astype('uint8'),'L')
         originheight,originwidth=self.batch_Multigraybands[file].size
         origingray=grayimg.resize([originwidth,originheight],resample=Image.BILINEAR)
@@ -841,7 +873,8 @@ class batch_ser_func():
         for i in range(len(pcs)):
             temppcabands[:,i]=temppcabands[:,i]+self.batch_originpcabands[self.file][:,pcs[i]-1]
         pcabands=np.mean(temppcabands,axis=1)
-        pcabands=pcabands.reshape((originheight,originwidth))
+        # pcabands=pcabands.reshape((originheight,originwidth))
+        pcabands=pcabands.reshape((self.displayfea_l,self.displayfea_w))
         datatable={}
         origindata={}
         for key in indicekeys:
