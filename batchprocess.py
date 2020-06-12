@@ -309,49 +309,50 @@ class batch_ser_func():
             displays.update(worktempdict)
 
         '''PCA part'''
-        # M=np.mean(displayfea_vector.T,axis=1)
-        # OM=np.mean(fea_vector.T,axis=1)
-        # print('M',M,'M shape',M.shape, 'OM',OM,'OM Shape',OM.shape)
-        # C=displayfea_vector-M
-        # OC=fea_vector-OM
-        # #max=np.max(C.T,axis=1)
-        # #print('MAX',max)
-        # #C=C/max
-        # print('C',C,'OC',OC)
-        # #V=np.cov(C.T)
-        # V=np.corrcoef(C.T)
-        # OV=np.corrcoef(OC.T)
-        # std=np.std(displayfea_vector.T,axis=1)
-        # O_std=np.std(fea_vector.T,axis=1)
-        # print(std,O_std)
-        # std_displayfea=C/std
-        # O_stddisplayfea=OC/O_std
-        # print(std_displayfea,O_stddisplayfea)
-        # #eigvalues,eigvectors=np.linalg.eig(V)
-        # #n,m=displayfea_vector.shape
-        # #C=np.dot(displayfea_vector.T,displayfea_vector)/(n-1)
-        # V_var=np.cov(std_displayfea.T)
-        # print('COV',V_var)
-        # print('COR',V)
-        # eigvalues=la.eigvals(V_var)
-        # #eigvalues=np.linalg.eigvals(C)
-        # print('eigvalue',eigvalues)
-        # idx=np.argsort(eigvalues)
-        # print('idx',idx)
-        # eigvalues,eigvectors=np.linalg.eig(V)
-        # print('eigvalue',eigvalues)
-        # print('eigvectors',eigvectors)
-        # eigvalueperc={}
-        # featurechannel=10
+        displayfea_vector=np.concatenate((fea_vector,displayfea_vector),axis=1)
+        M=np.mean(displayfea_vector.T,axis=1)
+        OM=np.mean(fea_vector.T,axis=1)
+        print('M',M,'M shape',M.shape, 'OM',OM,'OM Shape',OM.shape)
+        C=displayfea_vector-M
+        OC=fea_vector-OM
+        #max=np.max(C.T,axis=1)
+        #print('MAX',max)
+        #C=C/max
+        print('C',C,'OC',OC)
+        #V=np.cov(C.T)
+        V=np.corrcoef(C.T)
+        OV=np.corrcoef(OC.T)
+        std=np.std(displayfea_vector.T,axis=1)
+        O_std=np.std(fea_vector.T,axis=1)
+        print(std,O_std)
+        std_displayfea=C/std
+        O_stddisplayfea=OC/O_std
+        print(std_displayfea,O_stddisplayfea)
+        #eigvalues,eigvectors=np.linalg.eig(V)
+        #n,m=displayfea_vector.shape
+        #C=np.dot(displayfea_vector.T,displayfea_vector)/(n-1)
+        V_var=np.cov(std_displayfea.T)
+        print('COV',V_var)
+        print('COR',V)
+        eigvalues=la.eigvals(V_var)
+        #eigvalues=np.linalg.eigvals(C)
+        print('eigvalue',eigvalues)
+        idx=np.argsort(eigvalues)
+        print('idx',idx)
+        eigvalues,eigvectors=np.linalg.eig(V)
+        print('eigvalue',eigvalues)
+        print('eigvectors',eigvectors)
+        eigvalueperc={}
+        featurechannel=10
         # for i in range(len(eigvalues)):
         #     print('percentage',i,eigvalues[i]/sum(eigvalues))
         #     eigvalueperc.update({i:eigvalues[i]/sum(eigvalues)})
         #     #if eigvalues[i]>0:
         #     featurechannel+=1
         # o_eigenvalue,o_eigenvector=np.linalg.eig(OV)
-        # pcabands=np.zeros((displayfea_vector.shape[0],featurechannel))
-        # # o_pcabands=np.zeros((fea_vector.shape[0],featurechannel))
-        # pcavar={}
+        pcabands=np.zeros((displayfea_vector.shape[0],featurechannel))
+        # o_pcabands=np.zeros((fea_vector.shape[0],featurechannel))
+        pcavar={}
 
         #separate PCA
         # for i in range(3):
@@ -374,20 +375,16 @@ class batch_ser_func():
         #     # opcnbands=np.dot(OC,opcn)
         #     pcabands[:,i+3]=pcabands[:,i+3]+pcnbands
 
-        #10 bands pca
-        # for i in range(featurechannel):
-        #     pcn=eigvectors[:,i]
-        #     opcn=o_eigenvector[:,i]
-        #     #pcnbands=np.dot(displayfea_vector,pcn)
-        #     pcnbands=np.dot(std_displayfea,pcn)
-        #     opcnbands=np.dot(O_stddisplayfea,opcn)
-        #     pcvar=np.var(pcnbands)
-        #     print('pc',i+1,' var=',pcvar)
-        #     temppcavar={i:pcvar}
-        #     pcavar.update(temppcavar)
-        #     pcnbands=np.dot(C,pcn)
-        #     opcnbands=np.dot(OC,opcn)
-        #     pcabands[:,i]=pcabands[:,i]+pcnbands
+        #combined PCa
+        for i in range(featurechannel):
+            pcn=eigvectors[:,i]
+            # pcnbands=np.dot(std_displayfea,pcn)
+            pcnbands=np.dot(C,pcn)
+            pcvar=np.var(pcnbands)
+            print('pc',i+1,' var=',pcvar)
+            temppcavar={i:pcvar}
+            pcavar.update(temppcavar)
+            pcabands[:,i]=pcabands[:,i]+pcnbands
             # o_pcabands[:,i]=o_pcabands[:,i]+opcnbands
 
         # sortvar=sorted(pcavar,key=pcavar.get)
@@ -404,13 +401,13 @@ class batch_ser_func():
         #head=['Otsu','NDI','R','G','B','Greenness','VEG','CIVE','MExG','NDVI']
         #for i in range(high):
 
-        '''No PCA'''
-        colorfea_vector=np.concatenate((fea_vector,colorfea_vector),axis=1)
-        displayfea_vector=np.concatenate((fea_vector,displayfea_vector),axis=1)
-        M=np.mean(colorfea_vector.T,axis=1)
-        print('colorfea_vector M',M)
-        pcabands=np.copy(colorfea_vector)
-        featurechannel=10
+        # '''No PCA'''
+        # colorfea_vector=np.concatenate((fea_vector,colorfea_vector),axis=1)
+        # displayfea_vector=np.concatenate((fea_vector,displayfea_vector),axis=1)
+        # M=np.mean(colorfea_vector.T,axis=1)
+        # print('colorfea_vector M',M)
+        # pcabands=np.copy(colorfea_vector)
+        # featurechannel=10
 
         #threedplot(pcabands)
         # self.batch_originpcabands.update({self.file:o_pcabands})

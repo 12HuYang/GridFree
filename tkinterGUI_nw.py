@@ -84,7 +84,7 @@ batch={'PCs':[],
 
 
 root=Tk()
-root.title('GridFree Index Version v.1.0.0 ')
+root.title('GridFree v.1.0.2 ')
 root.geometry("")
 root.option_add('*tearoff',False)
 emptymenu=Menu(root)
@@ -833,50 +833,50 @@ def singleband(file):
         displays.update(worktempdict)
 
     '''PCA part'''
-    # displayfea_vector=np.concatenate((fea_vector,displayfea_vector),axis=1)
-    # M=np.mean(displayfea_vector.T,axis=1)
-    # OM=np.mean(fea_vector.T,axis=1)
-    # print('M',M,'M shape',M.shape, 'OM',OM,'OM Shape',OM.shape)
-    # C=displayfea_vector-M
-    # OC=fea_vector-OM
-    # #max=np.max(C.T,axis=1)
-    # #print('MAX',max)
-    # #C=C/max
-    # print('C',C,'OC',OC)
-    # #V=np.cov(C.T)
-    # V=np.corrcoef(C.T)
-    # OV=np.corrcoef(OC.T)
-    # std=np.std(displayfea_vector.T,axis=1)
-    # O_std=np.std(fea_vector.T,axis=1)
-    # print(std,O_std)
-    # std_displayfea=C/std
-    # O_stddisplayfea=OC/O_std
-    # print(std_displayfea,O_stddisplayfea)
-    # #eigvalues,eigvectors=np.linalg.eig(V)
-    # #n,m=displayfea_vector.shape
-    # #C=np.dot(displayfea_vector.T,displayfea_vector)/(n-1)
-    # V_var=np.cov(std_displayfea.T)
-    # print('COV',V_var)
-    # print('COR',V)
-    # eigvalues=la.eigvals(V_var)
-    # #eigvalues=np.linalg.eigvals(C)
-    # print('eigvalue',eigvalues)
-    # idx=np.argsort(eigvalues)
-    # print('idx',idx)
-    # eigvalues,eigvectors=np.linalg.eig(V)
-    # print('eigvalue',eigvalues)
-    # print('eigvectors',eigvectors)
-    # eigvalueperc={}
-    # featurechannel=10
-    # # for i in range(len(eigvalues)):
-    # #     print('percentage',i,eigvalues[i]/sum(eigvalues))
-    # #     eigvalueperc.update({i:eigvalues[i]/sum(eigvalues)})
-    # #     #if eigvalues[i]>0:
-    # #     featurechannel+=1
+    displayfea_vector=np.concatenate((fea_vector,displayfea_vector),axis=1)
+    M=np.mean(displayfea_vector.T,axis=1)
+    OM=np.mean(fea_vector.T,axis=1)
+    print('M',M,'M shape',M.shape, 'OM',OM,'OM Shape',OM.shape)
+    C=displayfea_vector-M
+    OC=fea_vector-OM
+    #max=np.max(C.T,axis=1)
+    #print('MAX',max)
+    #C=C/max
+    print('C',C,'OC',OC)
+    #V=np.cov(C.T)
+    V=np.corrcoef(C.T)
+    OV=np.corrcoef(OC.T)
+    std=np.std(displayfea_vector.T,axis=1)
+    O_std=np.std(fea_vector.T,axis=1)
+    print(std,O_std)
+    std_displayfea=C/std
+    O_stddisplayfea=OC/O_std
+    print(std_displayfea,O_stddisplayfea)
+    #eigvalues,eigvectors=np.linalg.eig(V)
+    #n,m=displayfea_vector.shape
+    #C=np.dot(displayfea_vector.T,displayfea_vector)/(n-1)
+    V_var=np.cov(std_displayfea.T)
+    print('COV',V_var)
+    print('COR',V)
+    eigvalues=la.eigvals(V_var)
+    #eigvalues=np.linalg.eigvals(C)
+    print('eigvalue',eigvalues)
+    idx=np.argsort(eigvalues)
+    print('idx',idx)
+    eigvalues,eigvectors=np.linalg.eig(V)
+    print('eigvalue',eigvalues)
+    print('eigvectors',eigvectors)
+    eigvalueperc={}
+    featurechannel=10
+    # for i in range(len(eigvalues)):
+    #     print('percentage',i,eigvalues[i]/sum(eigvalues))
+    #     eigvalueperc.update({i:eigvalues[i]/sum(eigvalues)})
+    #     #if eigvalues[i]>0:
+    #     featurechannel+=1
     # o_eigenvalue,o_eigenvector=np.linalg.eig(OV)
-    # pcabands=np.zeros((displayfea_vector.shape[0],featurechannel))
-    # # o_pcabands=np.zeros((fea_vector.shape[0],featurechannel))
-    # pcavar={}
+    pcabands=np.zeros((displayfea_vector.shape[0],featurechannel))
+    # o_pcabands=np.zeros((fea_vector.shape[0],featurechannel))
+    pcavar={}
     # #
     # # # separate PCs
     # # for i in range(3):
@@ -895,23 +895,24 @@ def singleband(file):
     # #     pcabands[:,i+3]=pcabands[:,i+3]+pcnbands
     # #
     # #
-    # # combined PCs
-    # for i in range(featurechannel):
-    #     pcn=eigvectors[:,i]
-    #     pcnbands=np.dot(std_displayfea,pcn)
-    #     pcvar=np.var(pcnbands)
-    #     print('pc',i+1,' var=',pcvar)
-    #     temppcavar={i:pcvar}
-    #     pcavar.update(temppcavar)
-    #     pcabands[:,i]=pcabands[:,i]+pcnbands
+    # combined PCs
+    for i in range(featurechannel):
+        pcn=eigvectors[:,i]
+        # pcnbands=np.dot(std_displayfea,pcn)
+        pcnbands=np.dot(C,pcn)
+        pcvar=np.var(pcnbands)
+        print('pc',i+1,' var=',pcvar)
+        temppcavar={i:pcvar}
+        pcavar.update(temppcavar)
+        pcabands[:,i]=pcabands[:,i]+pcnbands
 
-    ''' NO PCA'''
-    colorfea_vector=np.concatenate((fea_vector,colorfea_vector),axis=1)
-    displayfea_vector=np.concatenate((fea_vector,displayfea_vector),axis=1)
-    M=np.mean(colorfea_vector.T,axis=1)
-    print('colorfea_vector M',M)
-    pcabands=np.copy(colorfea_vector)
-    featurechannel=10
+    # ''' NO PCA'''
+    # colorfea_vector=np.concatenate((fea_vector,colorfea_vector),axis=1)
+    # displayfea_vector=np.concatenate((fea_vector,displayfea_vector),axis=1)
+    # M=np.mean(colorfea_vector.T,axis=1)
+    # print('colorfea_vector M',M)
+    # pcabands=np.copy(colorfea_vector)
+    # featurechannel=10
 
     '''Export to CSV'''
     # np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%s')
@@ -3406,11 +3407,11 @@ refbutton=Checkbutton(refsubframe,text='Ref',variable=refvar,command=refchoice)
 refbutton.pack(side=LEFT,padx=20,pady=5)
 sizeentry=Entry(refsubframe,width=5)
 sizeentry.insert(END,285)
-sizeentry.pack(side=LEFT,padx=5)
+sizeentry.pack(side=LEFT,padx=2)
 sizeunit=Label(refsubframe,text='mm^2')
 sizeunit.pack(side=LEFT)
 delrefbutton=Button(refsubframe,text='Delete',command=del_reflabel)
-delrefbutton.pack(side=LEFT)
+delrefbutton.pack(side=LEFT,padx=40)
 
 #delrefbutton.config(state=DISABLED)
 #refbutton=Checkbutton(refsubframe,text='Ref',variable=refvar,command=partial(refchoice,refsubframe))
