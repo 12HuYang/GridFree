@@ -165,12 +165,14 @@ class batch_ser_func():
         print('color_eigvec',color_eigvec)
         featurechannel=14
         pcabands=np.zeros((self.colorindex_vector.shape[0],featurechannel))
-        for i in range(2):
+        for i in range(3):
             pcn=rgb_eigvec[:,i]
             pcnbands=np.dot(rgb_std,pcn)
             pcvar=np.var(pcnbands)
             print('rgb pc',i+1,'var=',pcvar)
             pcabands[:,i]=pcabands[:,i]+pcnbands
+        pcabands[:,1]=np.copy(pcabands[:,2])
+        pcabands[:,2]=pcabands[:,2]*0
         for i in range(2,featurechannel):
             pcn=color_eigvec[:,i-2]
             pcnbands=np.dot(color_std,pcn)

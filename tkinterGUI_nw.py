@@ -806,18 +806,26 @@ def singleband(file):
     print('color_eigvec',color_eigvec)
     featurechannel=14
     pcabands=np.zeros((colorindex_vector.shape[0],featurechannel))
-    for i in range(2):
+    for i in range(3):
         pcn=rgb_eigvec[:,i]
         pcnbands=np.dot(rgb_std,pcn)
         pcvar=np.var(pcnbands)
         print('rgb pc',i+1,'var=',pcvar)
         pcabands[:,i]=pcabands[:,i]+pcnbands
+    pcabands[:,1]=np.copy(pcabands[:,2])
+    pcabands[:,2]=pcabands[:,2]*0
     for i in range(2,featurechannel):
         pcn=color_eigvec[:,i-2]
         pcnbands=np.dot(color_std,pcn)
         pcvar=np.var(pcnbands)
         print('color index pc',i-1,'var=',pcvar)
         pcabands[:,i]=pcabands[:,i]+pcnbands
+
+    '''save to csv'''
+    # np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%s')
+    # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%s')
+
     displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
     originpcabands.update({file:displayfea_vector})
     pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
@@ -831,6 +839,7 @@ def singleband(file):
         band=np.copy(pcabandsdisplay[:,:,i])
         imgband=(band-band.min())*255/(band.max()-band.min())
         pcimg=Image.fromarray(imgband.astype('uint8'),'L')
+        # pcimg.save('pc'+'_'+str(i)+'.png',"PNG")
         pcimg.thumbnail((need_w,need_h),Image.ANTIALIAS)
         # pcimg.save('pc'+'_'+str(i)+'.png',"PNG")
         # ratio=max(displayfea_l/need_h,displayfea_w/need_w)
@@ -3781,6 +3790,7 @@ def del_reflabel():
     reseglabels=tkintercorestat.renamelabels(reseglabels)
     resegment()
     displayfig()
+
     # newcolortables=tkintercorestat.get_colortable(reseglabels)
     # newunique,newcounts=np.unique(reseglabels,return_counts=True)
     # tup=(reseglabels,newcounts,newcolortables,{},currentfilename)
