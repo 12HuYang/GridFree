@@ -540,8 +540,11 @@ class batch_ser_func():
                 rgbpc=originpcabands[:,:,0]
             else:
                 rgbpc=originpcabands[:,:,1]
+            rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
             firstterm=abs(pcweight)*2*rgbpc
-            secondterm=(1-abs(pcweight)*2)*originpcabands[:,:,pcs]
+            colorpc=originpcabands[:,:,pcs]
+            colorpc=(colorpc-colorpc.min())*255/(colorpc.max()-colorpc.min())
+            secondterm=(1-abs(pcweight)*2)*colorpc
             tempband[:,:,0]=tempband[:,:,0]+firstterm+secondterm
         self.displaypclagels=np.copy(tempband[:,:,0])
         if kmeans==1:
@@ -734,8 +737,11 @@ class batch_ser_func():
                 rgbpc=originpcabands[:,:,0]
             else:
                 rgbpc=originpcabands[:,:,1]
+            rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
             firstterm=abs(pcweight)*2*rgbpc
-            secondterm=(1-abs(pcweight)*2)*originpcabands[:,:,pcs]
+            colorpc=originpcabands[:,:,pcs]
+            colorpc=(colorpc-colorpc.min())*255/(colorpc.max()-colorpc.min())
+            secondterm=(1-abs(pcweight)*2)*colorpc
             tempband=tempband+firstterm+secondterm
         displaylabels=np.copy(tempband)
 
