@@ -1377,7 +1377,7 @@ def generateimgplant(event):
         colorrange=colordivimg.max()-colordivimg.min()
         colordivimg=colordivimg*255/colorrange
         grayimg=Image.fromarray(colordivimg.astype('uint8'),'L')
-        grayimg.thumbnail((int(resizeshape[0]),int(resizeshape[1])),Image.ANTIALIAS)
+        grayimg=grayimg.resize((int(resizeshape[0]),int(resizeshape[1])))
         #grayimg.show()
         colordivdict={}
         colordivdict.update({'Size':[resizeshape[1],resizeshape[0]]})
@@ -1387,7 +1387,7 @@ def generateimgplant(event):
         colordivpreview={}
         # colordivpreimg=cv2.resize(colordivimg,(int(previewshape[0]),int(previewshape[1])))
         graypreviewimg=Image.fromarray(colordivimg.astype('uint8'),'L')
-        graypreviewimg.thumbnail((int(previewshape[0]),int(previewshape[1])),Image.ANTIALIAS)
+        graypreviewimg=graypreviewimg.resize((int(previewshape[0]),int(previewshape[1])))
         colordivpreview.update({'Size':[previewshape[1],previewshape[0]]})
         colordivpreview.update({'Image':ImageTk.PhotoImage(graypreviewimg)})
         previewimg['Color Deviation']=colordivpreview
@@ -1420,14 +1420,14 @@ def generateimgplant(event):
         colordeimg.save('allcolorindex.png',"PNG")
         binaryimg=Image.fromarray(binaryimg.astype('uint8'))
         binaryimg.save('binaryimg.png',"PNG")
-        binaryimg.thumbnail((int(resizeshape[0]),int(resizeshape[1])),Image.ANTIALIAS)
+        binaryimg=binaryimg.resize((int(resizeshape[0]),int(resizeshape[1])))
         tempdict={}
         tempdict.update({'Size':[resizeshape[1],resizeshape[0]]})
         tempdict.update({'Image':ImageTk.PhotoImage(binaryimg)})
         displayimg['ColorIndices']=tempdict
 
         tempdict={}
-        binaryimg.thumbnail((int(previewshape[0]),int(previewshape[1])),Image.ANTIALIAS)
+        binaryimg=binaryimg.resize((int(previewshape[0]),int(previewshape[1])))
         tempdict.update({'Size':[previewshape[1],previewshape[0]]})
         tempdict.update({'Image':ImageTk.PhotoImage(binaryimg)})
         previewimg['ColorIndices']=tempdict
@@ -1438,7 +1438,7 @@ def generateimgplant(event):
         #
         # colorimg=cv2.imread('allcolorindex.png')
         # Image.fromarray((binaryimg.astype('uint8'))).save('binaryimg.png',"PNG")
-        colordeimg.thumbnail((resizeshape[0],resizeshape[1]),Image.ANTIALIAS)
+        colordeimg=colordeimg.resize((resizeshape[0],resizeshape[1]))
         colordivdict={}
         colordivdict.update({'Size':[resizeshape[1],resizeshape[0]]})
         colordivdict.update({'Image':ImageTk.PhotoImage(colordeimg)})
@@ -1446,7 +1446,7 @@ def generateimgplant(event):
 
         colordivdict={}
         # colordeimgpre=cv2.resize(colordeimg,(int(previewshape[0]),int(previewshape[1])))
-        colordeimg.thumbnail((previewshape[0],previewshape[1]),Image.ANTIALIAS)
+        colordeimg=colordeimg.resize((previewshape[0],previewshape[1]))
         colordivdict.update({'Size':[previewshape[1],previewshape[0]]})
         colordivdict.update({'Image':ImageTk.PhotoImage(colordeimg)})
         previewimg['Color Deviation']=colordivdict
@@ -1547,8 +1547,11 @@ def kmeansclassify():
             rgbpc=originpcabands[:,:,0]
         else:
             rgbpc=originpcabands[:,:,1]
+        rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
         firstterm=abs(pcweights)*2*rgbpc
-        secondterm=(1-abs(pcweights)*2)*originpcabands[:,:,pcsel]
+        colorpc=originpcabands[:,:,pcsel]
+        colorpc=(colorpc-colorpc.min())*255/(colorpc.max()-colorpc.min())
+        secondterm=(1-abs(pcweights)*2)*colorpc
         tempband[:,:,0]=tempband[:,:,0]+firstterm+secondterm
     if int(kmeans.get())==1:
         print('kmeans=1')
@@ -1614,8 +1617,11 @@ def getPCs():
             rgbpc=originpcabands[:,:,0]
         else:
             rgbpc=originpcabands[:,:,1]
+        rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
         firstterm=abs(pcweights)*2*rgbpc
-        secondterm=(1-abs(pcweights)*2)*originpcabands[:,:,pcsel]
+        colorpc=originpcabands[:,:,pcsel]
+        colorpc=(colorpc-colorpc.min())*255/(colorpc.max()-colorpc.min())
+        secondterm=(1-abs(pcweights)*2)*colorpc
         tempband=tempband+firstterm+secondterm
     displaypclabels=np.copy(tempband)
     displaylabels=np.copy(tempband)
@@ -1629,7 +1635,7 @@ def getPCs():
     colorrange=colordivimg.max()-colordivimg.min()
     colordivimg=(colordivimg)*255/colorrange
     colordivimg=Image.fromarray(colordivimg.astype('uint8'),'L')
-    colordivimg.thumbnail((int(resizeshape[0]),int(resizeshape[1])),Image.ANTIALIAS)
+    colordivimg=colordivimg.resize((int(resizeshape[0]),int(resizeshape[1])),Image.ANTIALIAS)
     displayimg['PCs']['Image']=ImageTk.PhotoImage(colordivimg)
     # displayimg['Color Deviation']['Image']=ImageTk.PhotoImage(colordivimg)
 
@@ -1730,8 +1736,11 @@ def savePCAimg(path,originfile,file):
             rgbpc=originpcabands[:,:,0]
         else:
             rgbpc=originpcabands[:,:,1]
+        rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
         firstterm=abs(pcweights)*2*rgbpc
-        secondterm=(1-abs(pcweights)*2)*originpcabands[:,:,pcsel]
+        colorpc=originpcabands[:,:,pcsel]
+        colorpc=(colorpc-colorpc.min())*255/(colorpc.max()-colorpc.min())
+        secondterm=(1-abs(pcweights)*2)*colorpc
         tempband=tempband+firstterm+secondterm
     displaylabels=np.copy(tempband)
     if displaylabels.min()<0:
@@ -1762,8 +1771,11 @@ def changecluster(event):
             rgbpc=originpcabands[:,:,0]
         else:
             rgbpc=originpcabands[:,:,1]
+        rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
         firstterm=abs(pcweights)*2*rgbpc
-        secondterm=(1-abs(pcweights)*2)*originpcabands[:,:,pcsel]
+        colorpc=originpcabands[:,:,pcsel]
+        colorpc=(colorpc-colorpc.min())*255/(colorpc.max()-colorpc.min())
+        secondterm=(1-abs(pcweights)*2)*colorpc
         tempband[:,:,0]=tempband[:,:,0]+firstterm+secondterm
     if int(kmeans.get())==1:
         displaylabels=np.mean(tempband,axis=2)
@@ -3767,46 +3779,50 @@ def del_reflabel():
     gen_convband()
     panelA.delete(coinbox)
     reseglabels=tkintercorestat.renamelabels(reseglabels)
-    newcolortables=tkintercorestat.get_colortable(reseglabels)
-    newunique,newcounts=np.unique(reseglabels,return_counts=True)
-    tup=(reseglabels,newcounts,newcolortables,{},currentfilename)
-    outputdisplay,outputimg,smallset=showcounting(tup,False)
-    tempimgdict={}
-    tempimgbands={}
-    tempsmall={}
-    tempimgdict.update({'iter0':outputdisplay})
-    tempimgbands.update({'iter0':outputimg})
-    tempsmall.update({'iter0':smallset})
-    outputimgdict.update({currentfilename:tempimgdict})
-    outputimgbands.update({currentfilename:tempimgbands})
-    outputsegbands.update({currentfilename:tempsmall})
-    changeoutputimg(currentfilename,'1')
-    #update plot
-    print('done image')
-    copyplotmap=labelplotmap.copy()
-    for k,v in copyplotmap.items():
-        if v==reflabel:
-            figindex=figdotlist[k]
-            figcanvas.delete(figindex)
-    if len(multiselectitems)>0:
-        for k,v in copyplotmap.items():
-            if v in multiselectitems and v!=reflabel:
-                figindex=figdotlist[k]
-                figcanvas.delete(figindex)
-        if len(dotflash)>0:
-            for i in range(len(dotflash)):
-                figcanvas.delete(dotflash.pop(0))
-    #tup=list(figcanvas.find_all())
-    #figcanvas.delete(tup[-1])
-    multiselectitems=[]
-    if len(outsizethreshold)>0:
-        for k,v in copyplotmap.items():
-            if v in outsizethreshold and v!=reflabel:
-                figindex=figdotlist[k]
-                figcanvas.delete(figindex)
-    outsizethreshold=[]
-    labels=np.copy(reseglabels)
-    reseglabels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres,minlw,maxlw)
+    resegment()
+    displayfig()
+    # newcolortables=tkintercorestat.get_colortable(reseglabels)
+    # newunique,newcounts=np.unique(reseglabels,return_counts=True)
+    # tup=(reseglabels,newcounts,newcolortables,{},currentfilename)
+    # outputdisplay,outputimg,smallset=showcounting(tup,False)
+    # tempimgdict={}
+    # tempimgbands={}
+    # tempsmall={}
+    # tempimgdict.update({'iter0':outputdisplay})
+    # tempimgbands.update({'iter0':outputimg})
+    # tempsmall.update({'iter0':smallset})
+    # outputimgdict.update({currentfilename:tempimgdict})
+    # outputimgbands.update({currentfilename:tempimgbands})
+    # outputsegbands.update({currentfilename:tempsmall})
+    # changeoutputimg(currentfilename,'1')
+    # #update plot
+    # print('done image')
+    # copyplotmap=labelplotmap.copy()
+    # for k,v in copyplotmap.items():
+    #     if v==reflabel:
+    #         figindex=figdotlist[k]
+    #         figcanvas.delete(figindex)
+    # if len(multiselectitems)>0:
+    #     for k,v in copyplotmap.items():
+    #         if v in multiselectitems and v!=reflabel:
+    #             figindex=figdotlist[k]
+    #             figcanvas.delete(figindex)
+    #     if len(dotflash)>0:
+    #         for i in range(len(dotflash)):
+    #             figcanvas.delete(dotflash.pop(0))
+    # #tup=list(figcanvas.find_all())
+    # #figcanvas.delete(tup[-1])
+    # multiselectitems=[]
+    # if len(outsizethreshold)>0:
+    #     for k,v in copyplotmap.items():
+    #         if v in outsizethreshold and v!=reflabel:
+    #             figindex=figdotlist[k]
+    #             figcanvas.delete(figindex)
+    # outsizethreshold=[]
+    # displayfig()
+    # labels=np.copy(reseglabels)
+    # reseglabels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres,minlw,maxlw)
+    # displayfig()
 
 #     update plot
 
