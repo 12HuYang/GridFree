@@ -146,7 +146,7 @@ havecolorstrip=True
 kmeanschanged=False
 pcweightchanged=False
 originbinaryimg=None
-
+clusterchanged=False
 
 maxx=0
 minx=0
@@ -1301,7 +1301,7 @@ def generatecheckbox(frame,classnum):
         tempdict={dictkey:Variable()}
         tempdict[dictkey].set('0')
         checkboxdict.update(tempdict)
-        ch=Checkbutton(checkboxframe,text=dictkey,variable=checkboxdict[dictkey])#,command=partial(changecluster,''))
+        ch=Checkbutton(checkboxframe,text=dictkey,variable=checkboxdict[dictkey],command=partial(changeclusterbox,''))#,command=partial(changecluster,''))
         if i+1>int(kmeans.get()):
             ch.config(state=DISABLED)
         ch.pack(side=LEFT)
@@ -1462,11 +1462,12 @@ def generateimgplant(event):
 
         # changedisplayimg(imageframe,'ColorIndices')
     # print('sel count',sel_count)
-    if sel_count==0:
-        changedisplayimg(imageframe,'Color Deviation')
-    else:
-        changedisplayimg(imageframe,'ColorIndices')
-    changekmeans=True
+    if kvar>1:
+        if sel_count==0:
+            changedisplayimg(imageframe,'Color Deviation')
+        else:
+            changedisplayimg(imageframe,'ColorIndices')
+    # changekmeans=True
 
 
 #def kmeansclassify(choicelist,reshapedtif):
@@ -3869,6 +3870,11 @@ def changepcweight(event):
     pcweightchanged=True
     if kmeans.get()>1:
         kmeanschanged=True
+
+def changeclusterbox(event):
+    global clusterchanged,changekmeans
+    clusterchanged=True
+    changekmeans=True
 
 def beforecluster(event):
     global kmeanschanged,pcweightchanged,imageframe
