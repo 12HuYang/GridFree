@@ -459,6 +459,42 @@ def label_boundary(res,areaboundary,arealabels):
         leftboundaryspots.pop(0)
     return area
 
+def boundarywatershed_origin(area,itertime=20):
+    if avgarea is not None and numpy.count_nonzero(area)<avgarea/2:
+        return area
+    x=[0,-1,-1,-1,0,1,1,1]
+    y=[1,1,0,-1,-1,-1,0,1]
+    #x=[0,-1,0,1]
+    #y=[1,0,-1,0]
+    #
+    #temptif=cv2.GaussianBlur(area,(3,3),0,0,cv2.BORDER_DEFAULT)
+    #areaboundary=cv2.Laplacian(area,cv2.CV_8U,ksize=5)
+    #plt.imshow(areaboundary)
+    #areaboundary=find_boundaries(area,mode=boundarytype)
+    # areaboundary=get_boundary(area)
+    #areaboundary=areaboundary*1   #boundary = 1's, nonboundary=0's
+    # temparea=area-areaboundary
+    arealabels=labelgapnp(area)
+    unique, counts = numpy.unique(arealabels, return_counts=True)
+    # if segbondtimes>=itertime:
+    #     return area
+    if(len(unique)>2):
+        res=arealabels#+areaboundary
+        # leftboundaryspots=numpy.where(areaboundary==1)
+        # res=label_boundary(res,areaboundary,arealabels)
+        # res=numpy.asarray(res)-1
+        # res=numpy.where(res<0,0,res)
+        return res
+    else:
+        temparea=numpy.copy(area)
+        newarea=boundarywatershed(temparea,1,'inner')
+        res=newarea
+        # leftboundaryspots=numpy.where(res==1)
+        # res=label_boundary(res,areaboundary,newarea)
+        # res=numpy.asarray(res)/2
+        # res=numpy.where(res<1,0,res)
+        return res
+
 
 def boundarywatershed(area,segbondtimes,boundarytype,itertime=20):   #area = 1's
     if avgarea is not None and numpy.count_nonzero(area)<avgarea/2:
@@ -1325,15 +1361,15 @@ def resegdivideloop(area,maxthres,maxlw):
     hist,residualhist=get_residual(area)
     sortedkeys=list(sorted(hist,key=hist.get,reverse=True))
     topkey=sortedkeys.pop(0)
-    for i in range(len(sortedkeys)):
-        keysize=hist[sortedkeys[i]]
-        if keysize<maxthres:
-            minikey=sortedkeys[int(i/2)]
-            break
-    minikeysize=numpy.where(area==minikey)
-    mulx,muly=min(minikeysize[1]),min(minikeysize[0])
-    mrlx,mrly=max(minikeysize[1]),max(minikeysize[0])
-    itertime=int(min(abs(mrlx-mulx),abs(mrly-muly))/4)
+    # for i in range(len(sortedkeys)):
+    #     keysize=hist[sortedkeys[i]]
+        # if keysize<maxthres:
+    #         minikey=sortedkeys[int(i/2)]
+    #         break
+    # minikeysize=numpy.where(area==minikey)
+    # mulx,muly=min(minikeysize[1]),min(minikeysize[0])
+    # mrlx,mrly=max(minikeysize[1]),max(minikeysize[0])
+    # itertime=int(min(abs(mrlx-mulx),abs(mrly-muly))/4)
     while len(sortedkeys)>=0:
         print('topkey=',topkey,hist[topkey])
         # topkeylocs=numpy.where(area==topkey)
@@ -1345,7 +1381,7 @@ def resegdivideloop(area,maxthres,maxlw):
         topkeylw=residualhist[topkey]
         if topkey not in exceptions:
             if hist[topkey]>maxthres or topkeylw>maxlw:
-            #if hist[topkey]>maxthres or topkeylw<minres:
+            # if hist[topkey]>maxthres or topkeylw<minres:
             # if hist[topkey]>maxthres:
                 locs=numpy.where(area==topkey)
                 ulx,uly=min(locs[1]),min(locs[0])
@@ -1514,8 +1550,8 @@ def resegcombineloop(area,maxthres,minthres,maxlw,minlw):
                             temparea=hist[topkey]+topcount
                             temparea=numpy.array(temparea)
                             # tempresidual=temppcas[0]-numpy.matmul(temparea.reshape(-1,1),oldcoef)
-                            tempresidual=-(combinediag-numpy.matmul(temparea.reshape(-1,1),oldcoef)-oldintercept)
-
+                            # tempresidual=-(combinediag-numpy.matmul(temparea.reshape(-1,1),oldcoef)-oldintercept)
+                            tempresidual=combinediag
 
                             if hist[topkey]+topcount>minthres and hist[topkey]+topcount<maxthres:
                                 # if combinelw>minlw and combinelw<maxlw:
@@ -1570,7 +1606,8 @@ def get_mapcolortable(area,inputelesize,inputlabellist):
 
 def firstprocess(input,validmap,avgarea):
     band=input
-    boundaryarea=boundarywatershed(band,1,'inner')
+    # boundaryarea=boundarywatershed(band,1,'inner')
+    boundaryarea=boundarywatershed_origin(band)
     labeldict={}
     boundaryarea=boundaryarea.astype(int)
     originmethod,misslabel,localcolortable=relabel(boundaryarea)
@@ -1642,6 +1679,9 @@ def manualresegdivide(area,maxthres,minthres):
     try:
         meanpixel=sum(normalcounts)/len(normalcounts)
     except:
+        if len(normalcounts)==0:
+            for key in hist.keys():
+                exceptions.append(key)
         return area
 
     while(len(greatareas)>0):
