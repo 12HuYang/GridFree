@@ -2214,6 +2214,7 @@ def export_result(iterver):
     smallfont=ImageFont.truetype('cmb10.ttf',size=suggsize)
     files=multi_results.keys()
     path=filedialog.askdirectory()
+    root.update()
     export_ext(iterver,path,True,False)
     export_ext(iterver,path,False,True)
     for file in files:
