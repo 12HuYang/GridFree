@@ -1604,10 +1604,13 @@ def get_mapcolortable(area,inputelesize,inputlabellist):
     copycolortable={**colortable}
     return copycolortable
 
-def firstprocess(input,validmap,avgarea):
+def firstprocess(input,validmap,avgarea,occupationratio):
     band=input
     # boundaryarea=boundarywatershed(band,1,'inner')
-    boundaryarea=boundarywatershed_origin(band)
+    if occupationratio<0.02:
+        boundaryarea=boundarywatershed_origin(band)
+    else:
+        boundaryarea=boundarywatershed(band,1,'inner')
     labeldict={}
     boundaryarea=boundaryarea.astype(int)
     originmethod,misslabel,localcolortable=relabel(boundaryarea)
@@ -2269,7 +2272,7 @@ def init(input,validmap,map,layers,ittimes,coin):
 
     #if occupiedratio>=0.5:
     #labels,res,colortable,greatareas,tinyareas,coinparts,labeldict=processinput(input,validmap,avgarea,layers,ittimes,coin,shrink)
-    labels,res,colortable,labeldict=firstprocess(input,validmap,avgarea)
+    labels,res,colortable,labeldict=firstprocess(input,validmap,avgarea,occupiedratio)
     #else:
     #    labels,res,colortable,greatareas,tinyareas=kmeansprocess(pixellocs,input,counts)
 
