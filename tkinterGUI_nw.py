@@ -66,6 +66,7 @@ Multigraybands={}
 workbandarray={}
 displaybandarray={}
 originbandarray={}
+colorindicearray={}
 clusterdisplay={}
 kernersizes={}
 multi_results={}
@@ -98,6 +99,10 @@ root.geometry("")
 root.option_add('*tearoff',False)
 emptymenu=Menu(root)
 root.config(menu=emptymenu)
+screenheight=root.winfo_screenheight()
+screenwidth=root.winfo_screenwidth()
+print('screenheight',screenheight,'screenwidth',screenwidth)
+screenstd=min(screenheight-100,screenwidth-100,850)
 
 coinsize=StringVar()
 refvar=StringVar()
@@ -183,7 +188,8 @@ def findratio(originsize,objectsize):
         ratio=round(max((oria/obja),(orib/objb)))
     else:
         ratio=round(min((obja/oria),(objb/orib)))
-    if oria*orib>850 * 850:
+    # if oria*orib>850 * 850:
+    if oria*orib>screenstd * screenstd:
         if ratio<2:
             ratio=2
     return ratio
@@ -233,11 +239,17 @@ def pcweightupdate(displayframe):
     changedisplay_pc(displayframe)
 
 
-def buttonpress(val,displayframe):
+def buttonpress(val,displayframe,buttonframe):
     global buttonvar,pc_combine_up,kmeans
     buttonvar.set(val)
     kmeans.set(1)
     pc_combine_up.set(0.5)
+    buttonchildren=buttonframe.winfo_children()
+    for child in buttonchildren:
+        child.config(highlightbackground='white')
+    print(buttonchildren[val])
+    buttonchild=buttonchildren[val]
+    buttonchild.config(highlightbackground='red')
     print('press button ',buttonvar.get())
     getPCs()
     changedisplay_pc(displayframe)
@@ -249,14 +261,16 @@ def buttonpress(val,displayframe):
 def PCbuttons(frame,displayframe):
     #display pc buttons
     # buttonvar=IntVar()
-    buttonvar.set(0)
+    #buttonvar.set(0)
     for widget in frame.winfo_children():
         widget.pack_forget()
     buttonframe=LabelFrame(frame)
     buttonframe.pack()
     for i in range(len(pcbuttons)):
         butimg=pcbuttons[i]
-        but=Button(buttonframe,text='',image=butimg,compound=TOP,command=partial(buttonpress,i,displayframe))
+        but=Button(buttonframe,text='',image=butimg,compound=TOP,command=partial(buttonpress,i,displayframe,buttonframe))
+        if i==buttonvar.get():
+            but.config(highlightbackground='red')
         row=int(i/3)
         col=i%3
         # print(row,col)
@@ -355,23 +369,25 @@ def generatedisplayimg(filename):  # init display images
         else:
             ratio=1
         height,width=bandsize[0]/ratio,bandsize[1]/ratio
-        ratio=findratio([height,width],[850,850])
+        # ratio=findratio([height,width],[850,850])
+        ratio=findratio([height,width],[screenstd,screenstd])
         print('displayimg ratio',ratio)
         resizeshape=[]
-        if height*width<850*850:
+        # if height*width<850*850:
+        if height*width<screenstd*screenstd:
             #resize=cv2.resize(Multiimage[filename],(int(width*ratio),int(height*ratio)),interpolation=cv2.INTER_LINEAR)
             updateresizeshape(resizeshape,width*ratio)
             updateresizeshape(resizeshape,height*ratio)
             # resizeshape.append(width*ratio)
             # resizeshape.append(height*ratio)
-            if height>850:
+            if height>screenstd:
                 resizeshape=[]
-                ratio=round(height/850)
+                ratio=round(height/screenstd)
                 updateresizeshape(resizeshape,width*ratio)
                 updateresizeshape(resizeshape,height*ratio)
-            if width>850:
+            if width>screenstd:
                 resizeshape=[]
-                ratio=round(width/850)
+                ratio=round(width/screenstd)
                 updateresizeshape(resizeshape,width*ratio)
                 updateresizeshape(resizeshape,height*ratio)
         else:
@@ -388,12 +404,12 @@ def generatedisplayimg(filename):  # init display images
             updateresizeshape(previewshape,height*ratio)
             if height>400:
                 previewshape=[]
-                ratio=round(height/850)
+                ratio=round(height/screenstd)
                 updateresizeshape(previewshape,width/ratio)
                 updateresizeshape(previewshape,height/ratio)
             if width>450:
                 previewshape=[]
-                ratio=round(width/850)
+                ratio=round(width/screenstd)
                 updateresizeshape(previewshape,width/ratio)
                 updateresizeshape(previewshape,height/ratio)
         else:
@@ -422,7 +438,7 @@ def generatedisplayimg(filename):  # init display images
         tempdict.update({'Image':rgbimg})
     except:
         tempdict={}
-        tempimg=np.zeros((850,850))
+        tempimg=np.zeros((screenstd,screenstd))
 
         tempdict.update({'Size':tempimg.shape})
         tempdict.update({'Image':ImageTk.PhotoImage(Image.fromarray(tempimg.astype('uint8')))})
@@ -431,7 +447,7 @@ def generatedisplayimg(filename):  # init display images
     #    resize=cv2.resize(Multigray[filename],(int(width*ratio),int(height*ratio)),interpolation=cv2.INTER_LINEAR)
     #else:
         #resize=cv2.resize(Multigray[filename],(int(width/ratio),int(height/ratio)),interpolation=cv2.INTER_LINEAR)
-    tempimg=np.zeros((850,850))
+    tempimg=np.zeros((screenstd,screenstd))
     tempdict={}
     try:
         tempdict.update({'Size':resize.shape})
@@ -637,7 +653,10 @@ def Open_Multifile():
     global colordicesband,oldpcachoice
     global pccombinebar_up
     global displaylabels,displaypclabels
+    global buttonvar
+    global colorindicearray
     MULTIFILES=filedialog.askopenfilenames()
+    root.update()
     if len(MULTIFILES)>0:
         Multiimage={}
         Multigray={}
@@ -646,6 +665,7 @@ def Open_Multifile():
         Multigraybands={}
         filenames=[]
         originbandarray={}
+        colorindicearray={}
         displaybandarray={}
         clusterdisplay={}
         oldpcachoice=[]
@@ -662,6 +682,7 @@ def Open_Multifile():
         refarea=None
         havecolorstrip=False
         displaypclabels=None
+        buttonvar.set(0)
         # if 'NDI' in bandchoice:
         #     bandchoice['NDI'].set('1')
         # if 'NDVI' in bandchoice:
@@ -734,6 +755,41 @@ def fillbands(originbands,displaybands,vector,vectorindex,name,band):
         vector[:,vectorindex]=vector[:,vectorindex]+fea_bands
     return
 
+def plot3d(pcas):
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+    import matplotlib.pyplot as plt
+
+    fig=plt.figure()
+    ax=fig.add_subplot(111,projection='3d')
+
+    x=pcas[:,0]
+    y=pcas[:,1]
+    z=pcas[:,2]*0+np.min(pcas[:,2])
+
+    ax.scatter(x,y,z,color='tab:purple')
+
+    x=pcas[:,0]*0+np.min(pcas[:,0])
+    y=pcas[:,1]
+    z=pcas[:,2]
+
+    ax.scatter(x,y,z,color='tab:pink')
+
+    x=pcas[:,0]
+    y=pcas[:,1]*0+np.max(pcas[:,1])
+    z=pcas[:,2]
+
+    ax.scatter(x,y,z,color='tab:olive')
+
+    ax.set_xlabel('Color Indices PC1')
+    ax.set_ylabel('Color Indices PC2')
+    ax.set_zlabel('Color Indices PC3')
+
+    # plt.show()
+    plt.savefig('3dplot_PC.png')
+
+
+
+
 def singleband(file):
     global displaybandarray,originbandarray,originpcabands,displayfea_l,displayfea_w
     global pcbuttons
@@ -753,7 +809,10 @@ def singleband(file):
     originbands={}
     displays={}
     displaybands=cv2.resize(bands[0,:,:],(int(fea_w/ratio),int(fea_l/ratio)),interpolation=cv2.INTER_LINEAR)
+    # displaybands=np.copy(bands[0,:,:])
     displayfea_l,displayfea_w=displaybands.shape
+    # displayfea_l,displayfea_w=fea_l,fea_w
+    print(displayfea_l,displayfea_w)
     RGB_vector=np.zeros((displayfea_l*displayfea_w,3))
     colorindex_vector=np.zeros((displayfea_l*displayfea_w,12))
     Red=bands[0,:,:]
@@ -762,6 +821,15 @@ def singleband(file):
     fillbands(originbands,displays,RGB_vector,0,'Band1',Red)
     fillbands(originbands,displays,RGB_vector,1,'Band2',Green)
     fillbands(originbands,displays,RGB_vector,2,'Band3',Blue)
+
+    secondsmallest_R=np.partition(Red,1)[1][0]
+    secondsmallest_G=np.partition(Green,1)[1][0]
+    secondsmallest_B=np.partition(Blue,1)[1][0]
+
+    Red=Red+secondsmallest_R
+    Green=Green+secondsmallest_G
+    Blue=Blue+secondsmallest_B
+
     PAT_R=Red/(Red+Green)
     PAT_G=Green/(Green+Blue)
     PAT_B=Blue/(Blue+Red)
@@ -806,27 +874,39 @@ def singleband(file):
     print('color_eigvec',color_eigvec)
     featurechannel=14
     pcabands=np.zeros((colorindex_vector.shape[0],featurechannel))
+    rgbbands=np.zeros((colorindex_vector.shape[0],3))
     for i in range(3):
         pcn=rgb_eigvec[:,i]
         pcnbands=np.dot(rgb_std,pcn)
         pcvar=np.var(pcnbands)
         print('rgb pc',i+1,'var=',pcvar)
         pcabands[:,i]=pcabands[:,i]+pcnbands
+        rgbbands[:,i]=rgbbands[:,i]+pcnbands
+    # plot3d(pcabands)
+    # np.savetxt('rgb.csv',rgbbands,delimiter=',',fmt='%10.5f')
     pcabands[:,1]=np.copy(pcabands[:,2])
     pcabands[:,2]=pcabands[:,2]*0
+    indexbands=np.zeros((colorindex_vector.shape[0],3))
     for i in range(2,featurechannel):
         pcn=color_eigvec[:,i-2]
         pcnbands=np.dot(color_std,pcn)
         pcvar=np.var(pcnbands)
         print('color index pc',i-1,'var=',pcvar)
         pcabands[:,i]=pcabands[:,i]+pcnbands
+        # if i<5:
+        #     indexbands[:,i-2]=indexbands[:,i-2]+pcnbands
 
     '''save to csv'''
-    # np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%s')
-    # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
-    # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%s')
+    # indexbands[:,0]=indexbands[:,0]+pcabands[:,2]
+    # indexbands[:,1]=indexbands[:,1]+pcabands[:,3]
+    # indexbands[:,2]=indexbands[:,2]+pcabands[:,4]
+    # plot3d(indexbands)
+    # np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%10.5f')
 
     displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%10.5f')
+
+    # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
     originpcabands.update({file:displayfea_vector})
     pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
     tempdictdisplay={'LabOstu':pcabandsdisplay}
@@ -853,6 +933,58 @@ def singleband(file):
         # buttonimg=Image.fromarray(band.astype('uint8'),'L')
         pcbuttons.append(ImageTk.PhotoImage(pcimg))
 
+
+def colorindices_cal(file):
+    global colorindicearray
+    try:
+        bands=Multiimagebands[file].bands
+    except:
+        return
+    channel,fea_l,fea_w=bands.shape
+    print('bandsize',fea_l,fea_w)
+    if fea_l*fea_w>2000*2000:
+        ratio=findratio([fea_l,fea_w],[2000,2000])
+    else:
+        ratio=1
+    print('ratio',ratio)
+
+    originbands={}
+    displays={}
+    # displaybands=cv2.resize(bands[0,:,:],(int(fea_w/ratio),int(fea_l/ratio)),interpolation=cv2.INTER_LINEAR)
+    # displaybands=np.copy(bands[0,:,:])
+    # displayfea_l,displayfea_w=displaybands.shape
+    # displayfea_l,displayfea_w=fea_l,fea_w
+    print(displayfea_l,displayfea_w)
+    colorindex_vector=np.zeros((displayfea_l*displayfea_w,7))
+    Red=bands[0,:,:]
+    Green=bands[1,:,:]
+    Blue=bands[2,:,:]
+
+    secondsmallest_R=np.partition(Red,1)[1][0]
+    secondsmallest_G=np.partition(Green,1)[1][0]
+    secondsmallest_B=np.partition(Blue,1)[1][0]
+
+    Red=Red+secondsmallest_R
+    Green=Green+secondsmallest_G
+    Blue=Blue+secondsmallest_B
+
+    NDI=128*((Green-Red)/(Green+Red)+1)
+    VEG=Green/(np.power(Red,0.667)*np.power(Blue,(1-0.667)))
+    Greenness=Green/(Green+Red+Blue)
+    CIVE=0.44*Red+0.811*Green+0.385*Blue+18.7845
+    MExG=1.262*Green-0.844*Red-0.311*Blue
+    NDRB=(Red-Blue)/(Red+Blue)
+    NGRDI=(Green-Red)/(Green+Red)
+
+    fillbands(originbands,displays,colorindex_vector,0,'NDI',NDI)
+    fillbands(originbands,displays,colorindex_vector,1,'VEG',VEG)
+    fillbands(originbands,displays,colorindex_vector,2,'Greenness',Greenness)
+    fillbands(originbands,displays,colorindex_vector,3,'CIVE',CIVE)
+    fillbands(originbands,displays,colorindex_vector,4,'MExG',MExG)
+    fillbands(originbands,displays,colorindex_vector,5,'NDRB',NDRB)
+    fillbands(originbands,displays,colorindex_vector,6,'NGRDI',NGRDI)
+
+    colorindicearray.update({file:originbands})
 
 
 def singleband_oldversion(file):
@@ -1667,7 +1799,7 @@ def getPCs_olcversion():
     print('kmeans=1')
     displaylabels=np.mean(tempband,axis=2)
     pyplt.imsave('k=1.png',displaylabels)
-    ratio=findratio([originpcabands.shape[0],originpcabands.shape[1]],[850,850])
+    ratio=findratio([originpcabands.shape[0],originpcabands.shape[1]],[screenstd,screenstd])
     tempcolorimg=np.copy(displaylabels)
     colordivimg=np.zeros((displaylabels.shape[0],
                           displaylabels.shape[1]))
@@ -1964,10 +2096,13 @@ def showcounting(tup,number=True,frame=True,header=True,whext=False,blkext=False
     global recborder
     for uni in uniquelabels:
         if uni!=0:
+            uni=colortable[uni]
             pixelloc = np.where(labels == uni)
             try:
                 ulx = min(pixelloc[1])
             except:
+                print('no pixellloc[1] on uni=',uni)
+                print('pixelloc =',pixelloc)
                 continue
             uly = min(pixelloc[0])
             rlx = max(pixelloc[1])
@@ -2008,13 +2143,13 @@ def showcounting(tup,number=True,frame=True,header=True,whext=False,blkext=False
     #firstimg=Multigraybands[currentfilename]
     #height,width=firstimg.size
     height,width,channel=displaybandarray[filename]['LabOstu'].shape
-    ratio=findratio([height,width],[850,850])
+    ratio=findratio([height,width],[screenstd,screenstd])
     #if labels.shape[0]*labels.shape[1]<850*850:
     #    disimage=image.resize([int(labels.shape[1]*ratio),int(labels.shape[0]*ratio)],resample=Image.BILINEAR)
     #else:
     #    disimage=image.resize([int(labels.shape[1]/ratio),int(labels.shape[0]/ratio)],resample=Image.BILINEAR)
     print('show counting ratio',ratio)
-    if height*width<850*850:
+    if height*width<screenstd*screenstd:
         print('showcounting small')
         disimage=image.resize([int(width*ratio),int(height*ratio)],resample=Image.BILINEAR)
     else:
@@ -2084,6 +2219,7 @@ def export_ext(iterver,path,whext=False,blkext=False):
             print('pixelmmratio',pixelmmratio)
             for uni in uniquelabels:
                 if uni !=0:
+                    uni=colortable[uni]
                     pixelloc = np.where(labels == float(uni))
                     try:
                         ulx = min(pixelloc[1])
@@ -2255,6 +2391,7 @@ def export_result(iterver):
             print('pixelmmratio',pixelmmratio)
             for uni in uniquelabels:
                 if uni !=0:
+                    uni=colortable[uni]
                     pixelloc = np.where(labels == float(uni))
                     try:
                         ulx = min(pixelloc[1])
@@ -2407,10 +2544,23 @@ def export_result(iterver):
             pcabands=np.copy(displaypclabels)
             # pcabands=pcabands.reshape((originheight,originwidth))
             # pcabands=pcabands.reshape(displayfea_l,displayfea_w)
+
+            colorindices_cal(file)
+            colorindicekeys=list(colorindicearray[file].keys())
+            colorindicelist=[ 0 for i in range(len(colorindicekeys)*3)]
+
+
             datatable={}
             origindata={}
             for key in indicekeys:
                 data=originbandarray[file][key]
+                data=data.tolist()
+                tempdict={key:data}
+                origindata.update(tempdict)
+                print(key)
+
+            for key in colorindicekeys:
+                data=colorindicearray[file][key]
                 data=data.tolist()
                 tempdict={key:data}
                 origindata.update(tempdict)
@@ -2420,6 +2570,7 @@ def export_result(iterver):
             print('len uniquelabels',len(uniquelabels))
             for uni in uniquelabels:
                 print(uni,colortable[uni])
+                uni=colortable[uni]
                 uniloc=np.where(labels==float(uni))
                 if len(uniloc)==0 or len(uniloc[1])==0:
                     print('no uniloc\n')
@@ -2442,32 +2593,42 @@ def export_result(iterver):
                     continue
                 #templist=[amount,length,width]
                 templist=[amount,sizes[0],sizes[1],sizes[2],sizes[3],sizes[4]]
-                tempdict={colortable[uni]:templist+indeclist+pcalist}  #NIR,Redeyes,R,G,B,NDVI,area
+                # tempdict={colortable[uni]:templist+indeclist+colorindicelist+pcalist}  #NIR,Redeyes,R,G,B,NDVI,area
+                tempdict={uni:templist+indeclist+colorindicelist+pcalist}  #NIR,Redeyes,R,G,B,NDVI,area
                 print(tempdict)
+                indicekeys=list(origindata.keys())
                 for ki in range(len(indicekeys)):
                     originNDVI=origindata[indicekeys[ki]]
-                    print(len(originNDVI),len(originNDVI[0]))
+                    print('originNDVI size',len(originNDVI),len(originNDVI[0]))
                     pixellist=[]
                     for k in range(len(uniloc[0])):
                         #print(uniloc[0][k],uniloc[1][k])
                         try:
-                            tempdict[colortable[uni]][6+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
+                            # tempdict[colortable[uni]][6+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
+                            tempdict[uni][6+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
                         except IndexError:
                             print(uniloc[0][k],uniloc[1][k])
-                        tempdict[colortable[uni]][7+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
+                        # tempdict[colortable[uni]][7+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
+                        tempdict[uni][7+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
                         pixellist.append(originNDVI[uniloc[0][k]][uniloc[1][k]])
-                    tempdict[colortable[uni]][ki*3+6]=tempdict[colortable[uni]][ki*3+6]/amount
-                    tempdict[colortable[uni]][ki*3+8]=np.std(pixellist)
+                    # tempdict[colortable[uni]][ki*3+6]=tempdict[colortable[uni]][ki*3+6]/amount
+                    # tempdict[colortable[uni]][ki*3+8]=np.std(pixellist)
+                    tempdict[uni][ki*3+6]=tempdict[uni][ki*3+6]/amount
+                    tempdict[uni][ki*3+8]=np.std(pixellist)
                 pixellist=[]
                 for k in range(len(uniloc[0])):
                     try:
-                        tempdict[colortable[uni]][-2]+=pcabands[uniloc[0][k]][uniloc[1][k]]
+                        # tempdict[colortable[uni]][-2]+=pcabands[uniloc[0][k]][uniloc[1][k]]
+                        tempdict[uni][-2]+=pcabands[uniloc[0][k]][uniloc[1][k]]
                     except IndexError:
                         print(uniloc[0][k],uniloc[1][k])
-                    tempdict[colortable[uni]][-3]+=pcabands[uniloc[0][k]][uniloc[1][k]]
+                    # tempdict[colortable[uni]][-3]+=pcabands[uniloc[0][k]][uniloc[1][k]]
+                    tempdict[uni][-3]+=pcabands[uniloc[0][k]][uniloc[1][k]]
                     pixellist.append(pcabands[uniloc[0][k]][uniloc[1][k]])
-                    tempdict[colortable[uni]][-3]=tempdict[colortable[uni]][-3]/amount
-                    tempdict[colortable[uni]][-1]=np.std(pixellist)
+                    # tempdict[colortable[uni]][-3]=tempdict[colortable[uni]][-3]/amount
+                    # tempdict[colortable[uni]][-1]=np.std(pixellist)
+                    tempdict[uni][-3]=tempdict[uni][-3]/amount
+                    tempdict[uni][-1]=np.std(pixellist)
                 datatable.update(tempdict)
             filename=path+'/'+originfile+'-outputdata.csv'
             with open(filename,mode='w') as f:
@@ -2970,6 +3131,7 @@ def displayfig():
     unitable=[]
     for uni in uniquelabels:
         if uni!=0:
+            uni=colortable[uni]
             pixelloc = np.where(reseglabels == uni)
             try:
                 ulx = min(pixelloc[1])
@@ -3086,7 +3248,7 @@ def displayfig():
     pcasel=[]
     pcasel.append(pc_combine_up.get()-0.5)
     batch['PCweight']=pcasel.copy()
-    batch['PCsel']=[buttonvar.get()+2]
+    batch['PCsel']=[buttonvar.get()+1]
     batch['Kmeans']=[int(kmeans.get())]
     batch['Kmeans_sel']=kchoice.copy()
     print(batch)
@@ -3140,8 +3302,8 @@ def extraction():
     else:
         print('deal pixel',dealpixel)
         if dealpixel>512000:
-            if currentlabels.shape[0]*currentlabels.shape[1]>850*850:
-                segmentratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[850,850])
+            if currentlabels.shape[0]*currentlabels.shape[1]>screenstd*screenstd:
+                segmentratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[screenstd,screenstd])
                 if segmentratio<2:
                     segmentratio=2
                 workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/segmentratio),int(currentlabels.shape[0]/segmentratio)),interpolation=cv2.INTER_LINEAR)

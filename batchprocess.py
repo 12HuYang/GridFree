@@ -121,6 +121,15 @@ class batch_ser_func():
         self.fillbands(originbands,displays,self.RGB_vector,0,'Band1',Red)
         self.fillbands(originbands,displays,self.RGB_vector,1,'Band2',Green)
         self.fillbands(originbands,displays,self.RGB_vector,2,'Band3',Blue)
+
+        secondsmallest_R=np.partition(Red,1)[1][0]
+        secondsmallest_G=np.partition(Green,1)[1][0]
+        secondsmallest_B=np.partition(Blue,1)[1][0]
+
+        Red=Red+secondsmallest_R
+        Green=Green+secondsmallest_G
+        Blue=Blue+secondsmallest_B
+
         PAT_R=Red/(Red+Green)
         PAT_G=Green/(Green+Blue)
         PAT_B=Blue/(Blue+Red)
@@ -149,6 +158,24 @@ class batch_ser_func():
         self.fillbands(originbands,displays,self.colorindex_vector,9,'GLD_R',GLD_R)
         self.fillbands(originbands,displays,self.colorindex_vector,10,'GLD_G',GLD_G)
         self.fillbands(originbands,displays,self.colorindex_vector,11,'GLD_B',GLD_B)
+
+        NDI=128*((Green-Red)/(Green+Red)+1)
+        VEG=Green/(np.power(Red,0.667)*np.power(Blue,(1-0.667)))
+        Greenness=Green/(Green+Red+Blue)
+        CIVE=0.44*Red+0.811*Green+0.385*Blue+18.7845
+        MExG=1.262*Green-0.844*Red-0.311*Blue
+        NDRB=(Red-Blue)/(Red+Blue)
+        NGRDI=(Green-Red)/(Green+Red)
+
+        colorindex_vector=np.zeros((displayfea_l*displayfea_w,7))
+
+        self.fillbands(originbands,displays,colorindex_vector,0,'NDI',NDI)
+        self.fillbands(originbands,displays,colorindex_vector,1,'VEG',VEG)
+        self.fillbands(originbands,displays,colorindex_vector,2,'Greenness',Greenness)
+        self.fillbands(originbands,displays,colorindex_vector,3,'CIVE',CIVE)
+        self.fillbands(originbands,displays,colorindex_vector,4,'MExG',MExG)
+        self.fillbands(originbands,displays,colorindex_vector,5,'NDRB',NDRB)
+        self.fillbands(originbands,displays,colorindex_vector,6,'NGRDI',NGRDI)
 
         rgb_M=np.mean(self.RGB_vector.T,axis=1)
         colorindex_M=np.mean(self.colorindex_vector.T,axis=1)
@@ -1312,7 +1339,7 @@ def Open_batchfile():
                 setting=f.readlines()
                 # print(setting)
                 pcweight=float(setting[0].split(',')[1])
-                pcs=int(setting[1].split(',')[1])
+                pcs=int(setting[1].split(',')[1])+1
                 # print(pcs)
                 # for i in range(len(pcs)):
                 #     pcs[i]=int(pcs[i])
