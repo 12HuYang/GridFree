@@ -830,6 +830,10 @@ def singleband(file):
     Green=Green+secondsmallest_G
     Blue=Blue+secondsmallest_B
 
+    # Red=Red/255+1
+    # Green=Green/255+1
+    # Blue=Blue/255+1
+
     PAT_R=Red/(Red+Green)
     PAT_G=Green/(Green+Blue)
     PAT_B=Blue/(Blue+Red)
@@ -884,7 +888,7 @@ def singleband(file):
         rgbbands[:,i]=rgbbands[:,i]+pcnbands
     # plot3d(pcabands)
     # np.savetxt('rgb.csv',rgbbands,delimiter=',',fmt='%10.5f')
-    pcabands[:,1]=np.copy(pcabands[:,2])
+    pcabands[:,1]=np.copy(pcabands[:,1])
     pcabands[:,2]=pcabands[:,2]*0
     indexbands=np.zeros((colorindex_vector.shape[0],3))
     for i in range(2,featurechannel):
@@ -912,6 +916,17 @@ def singleband(file):
     tempdictdisplay={'LabOstu':pcabandsdisplay}
     displaybandarray.update({file:tempdictdisplay})
     originbandarray.update({file:originbands})
+
+    # Red=displays['Band1']
+    # Green=displays['Band2']
+    # Blue=displays['Band3']
+
+    # convimg=np.zeros((Red.shape[0],Red.shape[1],3))
+    # convimg[:,:,0]=Red
+    # convimg[:,:,1]=Green
+    # convimg[:,:,2]=Blue
+    # convimg=Image.fromarray(convimg.astype('uint8'))
+    # convimg.save('convimg.png','PNG')
 
     need_w=int(450/3)
     need_h=int(400/4)
@@ -2732,7 +2747,23 @@ def resegment():
     #     workingimg=cv2.resize(labels,(int(labels.shape[1]/segmentratio),int(labels.shape[0]/segmentratio)),interpolation=cv2.INTER_LINEAR)
     # else:
     #     workingimg=np.copy(labels)
-
+    if refarea is None:
+        retrivearea=np.where(labels==65535)
+        ulx,uly=min(retrivearea[1]),min(retrivearea[0])
+        rlx,rly=max(retrivearea[1]),max(retrivearea[0])
+        rtl=rly-uly
+        rtw=rlx-ulx
+        rtd=(rtl**2+rtw**2)**0.5
+        rtarea=len(retrivearea[0])
+        print('rtarea,rtl,rtw,rtd',rtarea,rtl,rtw,rtd)
+        if rtarea>maxthres:
+            maxthres=rtarea
+        if rtd>maxlw:
+            maxlw=rtd
+        if rtarea<minthres:
+            minthres=rtarea
+        if rtd<minlw:
+            minlw=rtd
     reseglabels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres,minlw,maxlw)
 
 
@@ -3227,7 +3258,7 @@ def displayfig():
     #    outputbutton.pack_forget()
     #    outputbutton.pack()
     refbutton.config(state=NORMAL)
-    refvar.set('0')
+    # refvar.set('0')
     for widget in refsubframe.winfo_children():
         #widget.config(state=DISABLED)
         widget.config(state=NORMAL)
@@ -4008,7 +4039,7 @@ def del_reflabel():
 def refchoice():
     #global coinsize,sizeentry,coinbox,panelA,boundaryarea,coindict,convband
     global sizeentry,coinbox,panelA,boundaryarea,coindict,convband
-    global refarea
+    global refarea,reseglabels
     #refsubframe.grid_forget()
     #for widget in refsubframe.winfo_children():
     #    widget.pack_forget()
@@ -4022,6 +4053,7 @@ def refchoice():
         print('refarea',len(refarea[0]))
         print('reflabel',reflabel)
     else:
+        reseglabels[refarea]=65535
         refarea=None
 
 def changekmeansbar(event):
@@ -4030,6 +4062,7 @@ def changekmeansbar(event):
 
 def changepcweight(event):
     global pcweightchanged,kmeanschanged
+    # print('pca weight',pc_combine_up.get())
     pcweightchanged=True
     if kmeans.get()>1:
         kmeanschanged=True
