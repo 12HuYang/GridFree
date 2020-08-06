@@ -822,13 +822,13 @@ def singleband(file):
     fillbands(originbands,displays,RGB_vector,1,'Band2',Green)
     fillbands(originbands,displays,RGB_vector,2,'Band3',Blue)
 
-    secondsmallest_R=np.partition(Red,1)[1][0]
-    secondsmallest_G=np.partition(Green,1)[1][0]
-    secondsmallest_B=np.partition(Blue,1)[1][0]
-
-    Red=Red+secondsmallest_R
-    Green=Green+secondsmallest_G
-    Blue=Blue+secondsmallest_B
+    # secondsmallest_R=np.partition(Red,1)[1][0]
+    # secondsmallest_G=np.partition(Green,1)[1][0]
+    # secondsmallest_B=np.partition(Blue,1)[1][0]
+    #
+    # Red=Red+secondsmallest_R
+    # Green=Green+secondsmallest_G
+    # Blue=Blue+secondsmallest_B
 
     # Red=Red/255+1
     # Green=Green/255+1
@@ -2112,7 +2112,10 @@ def showcounting(tup,number=True,frame=True,header=True,whext=False,blkext=False
     for uni in uniquelabels:
         if uni!=0:
             uni=colortable[uni]
-            pixelloc = np.where(labels == uni)
+            if uni=='Ref':
+                pixelloc = np.where(labels == 65535)
+            else:
+                pixelloc = np.where(labels == uni)
             try:
                 ulx = min(pixelloc[1])
             except:
@@ -2131,7 +2134,8 @@ def showcounting(tup,number=True,frame=True,header=True,whext=False,blkext=False
                 if uni in colortable:
                     canvastext = str(colortable[uni])
                 else:
-                    canvastext = 'No label'
+                    # canvastext = 'No label'
+                    canvastext=uni
                 if imgtypevar.get()=='0':
                     draw.text((midx-1, midy+1), text=canvastext, font=font, fill='white')
                     draw.text((midx+1, midy+1), text=canvastext, font=font, fill='white')
@@ -2235,7 +2239,10 @@ def export_ext(iterver,path,whext=False,blkext=False):
             for uni in uniquelabels:
                 if uni !=0:
                     uni=colortable[uni]
-                    pixelloc = np.where(labels == float(uni))
+                    if uni=='Ref':
+                        pixelloc=np.where(labels==65535)
+                    else:
+                        pixelloc = np.where(labels == float(uni))
                     try:
                         ulx = min(pixelloc[1])
                     except:
@@ -2324,7 +2331,7 @@ def export_ext(iterver,path,whext=False,blkext=False):
                     if uni in colortable:
                         canvastext = str(colortable[uni])
                     else:
-                        canvastext = 'No label'
+                        canvastext = uni
                     if imgtypevar.get()=='0':
                         draw.text((midx-1, midy+1), text=canvastext, font=smallfont, fill='white')
                         draw.text((midx+1, midy+1), text=canvastext, font=smallfont, fill='white')
@@ -2407,7 +2414,10 @@ def export_result(iterver):
             for uni in uniquelabels:
                 if uni !=0:
                     uni=colortable[uni]
-                    pixelloc = np.where(labels == float(uni))
+                    if uni=='Ref':
+                        pixelloc = np.where(labels == 65535)
+                    else:
+                        pixelloc = np.where(labels == float(uni))
                     try:
                         ulx = min(pixelloc[1])
                     except:
@@ -2496,7 +2506,8 @@ def export_result(iterver):
                     if uni in colortable:
                         canvastext = str(colortable[uni])
                     else:
-                        canvastext = 'No label'
+                        # canvastext = 'No label'
+                        canvastext = uni
                     if imgtypevar.get()=='0':
                         draw.text((midx-1, midy+1), text=canvastext, font=smallfont, fill='white')
                         draw.text((midx+1, midy+1), text=canvastext, font=smallfont, fill='white')
@@ -2586,12 +2597,17 @@ def export_result(iterver):
             for uni in uniquelabels:
                 print(uni,colortable[uni])
                 uni=colortable[uni]
-                uniloc=np.where(labels==float(uni))
+                if uni=='Ref':
+                    uniloc=np.where(labels==65535)
+                    smalluniloc=np.where(originrestoredband==65535)
+                else:
+                    uniloc=np.where(labels==float(uni))
+                    smalluniloc=np.where(originrestoredband==uni)
                 if len(uniloc)==0 or len(uniloc[1])==0:
                     print('no uniloc\n')
                     print(uniloc[0],uniloc[1])
                     continue
-                smalluniloc=np.where(originrestoredband==uni)
+
                 ulx,uly=min(smalluniloc[1]),min(smalluniloc[0])
                 rlx,rly=max(smalluniloc[1]),max(smalluniloc[0])
                 width=rlx-ulx
