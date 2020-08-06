@@ -2749,21 +2749,22 @@ def resegment():
     #     workingimg=np.copy(labels)
     if refarea is None:
         retrivearea=np.where(labels==65535)
-        ulx,uly=min(retrivearea[1]),min(retrivearea[0])
-        rlx,rly=max(retrivearea[1]),max(retrivearea[0])
-        rtl=rly-uly
-        rtw=rlx-ulx
-        rtd=(rtl**2+rtw**2)**0.5
-        rtarea=len(retrivearea[0])
-        print('rtarea,rtl,rtw,rtd',rtarea,rtl,rtw,rtd)
-        if rtarea>maxthres:
-            maxthres=rtarea
-        if rtd>maxlw:
-            maxlw=rtd
-        if rtarea<minthres:
-            minthres=rtarea
-        if rtd<minlw:
-            minlw=rtd
+        if len(retrivearea[1])>0:
+            ulx,uly=min(retrivearea[1]),min(retrivearea[0])
+            rlx,rly=max(retrivearea[1]),max(retrivearea[0])
+            rtl=rly-uly
+            rtw=rlx-ulx
+            rtd=(rtl**2+rtw**2)**0.5
+            rtarea=len(retrivearea[0])
+            print('rtarea,rtl,rtw,rtd',rtarea,rtl,rtw,rtd)
+            if rtarea>maxthres:
+                maxthres=rtarea
+            if rtd>maxlw:
+                maxlw=rtd
+            if rtarea<minthres:
+                minthres=rtarea
+            if rtd<minlw:
+                minlw=rtd
     reseglabels,border,colortable,labeldict=tkintercorestat.resegmentinput(labels,minthres,maxthres,minlw,maxlw)
 
 
