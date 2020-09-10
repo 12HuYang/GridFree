@@ -444,19 +444,20 @@ def label_boundary(res,areaboundary,arealabels):
                         area[li,lj]=uni
                         bindex=leftboundaryspots.index((li,lj))
                         leftboundaryspots.pop(bindex)
-    for loc in leftboundaryspots:
-        bi=loc[0]
-        bj=loc[1]
-        maxlabel=1
-        for k in range(len(y)):
-            ni=bi+y[k]
-            nj=bj+x[k]
-            if ni>=0 and ni<area.shape[0] and nj>=0 and nj<area.shape[1]:
-                if area[ni,nj]>maxlabel:
-                    maxlabel=area[ni,nj]
-        area[bi,bj]=maxlabel
-        #locindex=leftboundaryspots.index(loc)
-        leftboundaryspots.pop(0)
+    while len(leftboundaryspots)>0:
+        for loc in leftboundaryspots:
+            bi=loc[0]
+            bj=loc[1]
+            maxlabel=1
+            for k in range(len(y)):
+                ni=bi+y[k]
+                nj=bj+x[k]
+                if ni>=0 and ni<area.shape[0] and nj>=0 and nj<area.shape[1]:
+                    if area[ni,nj]>maxlabel:
+                        maxlabel=area[ni,nj]
+            area[bi,bj]=maxlabel
+            #locindex=leftboundaryspots.index(loc)
+            leftboundaryspots.pop(0)
     return area
 
 def boundarywatershed_origin(area,itertime=20):
@@ -513,7 +514,8 @@ def boundarywatershed(area,segbondtimes,boundarytype,itertime=20):   #area = 1's
     temparea=area-areaboundary
     arealabels=labelgapnp(temparea)
     unique, counts = numpy.unique(arealabels, return_counts=True)
-    if segbondtimes>=itertime:
+    #if(segbondtimes>=itertime) or len(unique)==1:
+    if len(unique)==1:
         return area
     if(len(unique)>2):
         res=arealabels+areaboundary
@@ -1613,6 +1615,7 @@ def firstprocess(input,validmap,avgarea,occupationratio):
         boundaryarea=boundarywatershed(band,1,'inner')
     labeldict={}
     boundaryarea=boundaryarea.astype(int)
+    unique, counts = numpy.unique(boundaryarea, return_counts=True)
     originmethod,misslabel,localcolortable=relabel(boundaryarea)
     labels=numpy.where(boundaryarea<1,0,boundaryarea)
     labels=renamelabels(labels)

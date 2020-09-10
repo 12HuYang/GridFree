@@ -2047,6 +2047,7 @@ def showcounting(tup,number=True,frame=True,header=True,whext=False,blkext=False
         colortable=tkintercorestat.get_mapcolortable(labels,elesize.copy(),labellist.copy())
     else:
         colortable=tup[2]
+        #colortable=labeldict[itervalue]['colortable']
     if type(refarea)!=type(None):
         colortable.update({65535:'Ref'})
         labels[refarea]=65535
@@ -2238,8 +2239,8 @@ def export_ext(iterver,path,whext=False,blkext=False):
             print('pixelmmratio',pixelmmratio)
             for uni in uniquelabels:
                 if uni !=0:
-                    uni=colortable[uni]
-                    if uni=='Ref':
+                    tempuni=colortable[uni]
+                    if tempuni=='Ref':
                         pixelloc=np.where(labels==65535)
                     else:
                         pixelloc = np.where(labels == float(uni))
@@ -2327,11 +2328,11 @@ def export_ext(iterver,path,whext=False,blkext=False):
                         print('kernelwidth='+str(width*pixelmmratio))
                         print('kernellength='+str(kernellength*pixelmmratio))
                         #print('kernelwidth='+str(kernelwidth*pixelmmratio))
-                        tempdict.update({uni:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
-                    if uni in colortable:
-                        canvastext = str(colortable[uni])
-                    else:
-                        canvastext = uni
+                        tempdict.update({colortable[uni]:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
+                    #if uni in colortable:
+                    canvastext = str(colortable[uni])
+                    #else:
+                    #    canvastext = uni
                     if imgtypevar.get()=='0':
                         draw.text((midx-1, midy+1), text=canvastext, font=smallfont, fill='white')
                         draw.text((midx+1, midy+1), text=canvastext, font=smallfont, fill='white')
@@ -2413,8 +2414,9 @@ def export_result(iterver):
             print('pixelmmratio',pixelmmratio)
             for uni in uniquelabels:
                 if uni !=0:
-                    uni=colortable[uni]
-                    if uni=='Ref':
+                    #uni=colortable[uni]
+                    tempuni=colortable[uni]
+                    if tempuni=='Ref':
                         pixelloc = np.where(labels == 65535)
                     else:
                         pixelloc = np.where(labels == float(uni))
@@ -2502,12 +2504,12 @@ def export_result(iterver):
                         print('kernelwidth='+str(width*pixelmmratio))
                         print('kernellength='+str(kernellength*pixelmmratio))
                         #print('kernelwidth='+str(kernelwidth*pixelmmratio))
-                        tempdict.update({uni:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
-                    if uni in colortable:
-                        canvastext = str(colortable[uni])
-                    else:
+                        tempdict.update({colortable[uni]:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
+                    #if uni in colortable:
+                    canvastext = str(colortable[uni])
+                   # else:
                         # canvastext = 'No label'
-                        canvastext = uni
+                    #    canvastext = uni
                     if imgtypevar.get()=='0':
                         draw.text((midx-1, midy+1), text=canvastext, font=smallfont, fill='white')
                         draw.text((midx+1, midy+1), text=canvastext, font=smallfont, fill='white')
