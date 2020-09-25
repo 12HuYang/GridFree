@@ -2273,7 +2273,7 @@ def export_ext(iterver,path,whext=False,blkext=False):
                     x1=currborder[1][j]
                     y1=currborder[0][j]
                     #slope=float((y0-y1)/(x0-x1))
-                    linepoints=[(currborder[1][i],currborder[0][i]),(currborder[1][j],currborder[0][j])]
+                    #linepoints=[(currborder[1][i],currborder[0][i]),(currborder[1][j],currborder[0][j])]
                     #draw.line(linepoints,fill='yellow')
                     #points=linepixels(currborder[1][i],currborder[0][i],currborder[1][j],currborder[0][j])
 
@@ -2281,54 +2281,130 @@ def export_ext(iterver,path,whext=False,blkext=False):
                     for point in lengthpoints:
                         if imgtypevar.get()=='0':
                             draw.point([int(point[0]),int(point[1])],fill='yellow')
-                    tengentaddpoints=cal_kernelsize.tengentadd(x0,y0,x1,y1,rlx,rly,labels,uni) #find tangent line above
-                    #for point in tengentaddpoints:
-                        #if int(point[0])>=ulx and int(point[0])<=rlx and int(point[1])>=uly and int(point[1])<=rly:
-                    #    draw.point([int(point[0]),int(point[1])],fill='green')
-                    tengentsubpoints=cal_kernelsize.tengentsub(x0,y0,x1,y1,ulx,uly,labels,uni) #find tangent line below
-                    #for point in tengentsubpoints:
-                    #    draw.point([int(point[0]),int(point[1])],fill='green')
-                    pointmatchdict={}
-                    for i in range(len(tengentaddpoints)):  #find the pixel pair with shortest distance
-                        width=kernellength
-                        pointmatch=[]
-                        point=tengentaddpoints[i]
-                        try:
-                            templabel=labels[int(point[1]),int(point[0])]
-                        except:
-                            continue
-                        if templabel==uni:
-                            for j in range(len(tengentsubpoints)):
-                                subpoint=tengentsubpoints[j]
-                                tempwidth=float(((point[0]-subpoint[0])**2+(point[1]-subpoint[1])**2)**0.5)
-                                if tempwidth<width:
-                                    pointmatch[:]=[]
-                                    pointmatch.append(point)
-                                    pointmatch.append(subpoint)
-                                    #print('tempwidth',width)
-                                    width=tempwidth
-                        if len(pointmatch)>0:
-                            #print('pointmatch',pointmatch)
-                            pointmatchdict.update({(pointmatch[0],pointmatch[1]):width})
-                    widthsort=sorted(pointmatchdict,key=pointmatchdict.get,reverse=True)
+                    # abovecenter=[]
+                    # lowercenter=[]
+                    # for i in range(len(currborder[0])):
+                    #     for j in range(len(lengthpoints)):
+                    #         if currborder[0][i]<lengthpoints[j][1]:
+                    #             lowercenter.append((currborder[1][i],currborder[0][i])) #append(x,y)
+                    #             break
+                    #     loc=(currborder[1][i],currborder[0][i])
+                    #     if loc not in abovecenter and loc not in lowercenter:
+                    #         abovecenter.append(loc)
+                    othodict={}
+                    # widthdict={}
+                    for i in range(len(currborder[0])):
+                        for j in range(i+1,len(currborder[0])):
+                            wx0=currborder[1][i]
+                            wy0=currborder[0][i]
+                            wx1=currborder[1][j]
+                            wy1=currborder[0][j]
+                            u1=x1-x0
+                            u2=y1-y0
+                            v1=wx1-wx0
+                            v2=wy1-wy0
+                            otho=abs(u1*v1+u2*v2)/(((u1**2+u2**2)**0.5)*(v1**2+v2**2)**0.5)
+                            wlength=float((wx0-wx1)**2+(wy0-wy1)**2)**0.5
+                            if otho<=0.13:
+                                othodict.update({(wx0,wy0,wx1,wy1):wlength})
+
+                    sortedwidth=sorted(othodict,key=othodict.get,reverse=True)
                     try:
-                        pointmatch=widthsort[0]
-                        print('final pointmatch',pointmatch)
+                        topwidth=sortedwidth[0]
                     except:
                         continue
-                    if len(pointmatch)>0:
-                        x0=int(pointmatch[0][0])
-                        y0=int(pointmatch[0][1])
-                        x1=int(pointmatch[1][0])
-                        y1=int(pointmatch[1][1])
+                    widepoints=cal_kernelsize.bresenhamline(topwidth[0],topwidth[1],topwidth[2],topwidth[3])
+                    for point in widepoints:
                         if imgtypevar.get()=='0':
-                            draw.line([(x0,y0),(x1,y1)],fill='yellow')
-                        width=float(((x0-x1)**2+(y0-y1)**2)**0.5)
-                        print('width',width,'length',kernellength)
-                        print('kernelwidth='+str(width*pixelmmratio))
-                        print('kernellength='+str(kernellength*pixelmmratio))
-                        #print('kernelwidth='+str(kernelwidth*pixelmmratio))
-                        tempdict.update({colortable[uni]:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
+                            draw.point([int(point[0]),int(point[1])],fill='black')
+                    width=othodict[topwidth]
+
+                    # for i in range(len(lengthpoints)):
+                    #     widex0=lengthpoints[i][0]
+                    #     widey0=lengthpoints[i][1]
+                    #     othodict={}
+                    #     for j in range(len(abovecenter)):
+                    #         widex1=abovecenter[j][0]
+                    #         widey1=abovecenter[j][1]
+                    #         if widex0==widex1 and widey0==widey1:
+                    #             continue
+                    #         u1=x1-x0
+                    #         u2=y1-y0
+                    #         v1=widex1-widex0
+                    #         v2=widey1-widey0
+                    #         otho=abs(u1*v1+u2*v2)
+                    #         othodict.update({(widex0,widey0,widex1,widey1):otho})
+                    #     sortedotho=sorted(othodict,key=othodict.get,reverse=False)
+                    #     smallotho=sortedotho[0]
+                    #     widex0=smallotho[0]
+                    #     widey0=smallotho[1]
+                    #     widex1=smallotho[2]
+                    #     widey1=smallotho[3]
+                    #     for j in range(len(lowercenter)):
+                    #         widex2=lowercenter[j][0]
+                    #         widey2=lowercenter[j][1]
+                    #         if widex0==widex2 and widey0==widey2:
+                    #             continue
+                    #         u1=x1-x0
+                    #         u2=y1-y0
+                    #         v1=widex2-widex0
+                    #         v2=widey2-widey0
+                    #         otho=abs(u1*v1+u2*v2)
+                    #         othodict.update({(widex0,widey0,widex2,widey2):otho})
+                    #     sortedotho=sorted(othodict,key=othodict.get,reverse=False)
+                    #     smallotho=sortedotho[0]
+                    #     widex2=smallotho[2]
+                    #     widey2=smallotho[3]
+                    #     widthpoints.update({(widex1,widey1,widex2,widey2):float((widex1-widex2)**2+(widey1-widey2)**2)**0.5})
+
+                    # tengentaddpoints=cal_kernelsize.tengentadd(x0,y0,x1,y1,rlx,rly,labels,uni) #find tangent line above
+                    # #for point in tengentaddpoints:
+                    #     #if int(point[0])>=ulx and int(point[0])<=rlx and int(point[1])>=uly and int(point[1])<=rly:
+                    # #    draw.point([int(point[0]),int(point[1])],fill='green')
+                    # tengentsubpoints=cal_kernelsize.tengentsub(x0,y0,x1,y1,ulx,uly,labels,uni) #find tangent line below
+                    # #for point in tengentsubpoints:
+                    # #    draw.point([int(point[0]),int(point[1])],fill='green')
+                    # pointmatchdict={}
+                    # for i in range(len(tengentaddpoints)):  #find the pixel pair with shortest distance
+                    #     width=kernellength
+                    #     pointmatch=[]
+                    #     point=tengentaddpoints[i]
+                    #     try:
+                    #         templabel=labels[int(point[1]),int(point[0])]
+                    #     except:
+                    #         continue
+                    #     if templabel==uni:
+                    #         for j in range(len(tengentsubpoints)):
+                    #             subpoint=tengentsubpoints[j]
+                    #             tempwidth=float(((point[0]-subpoint[0])**2+(point[1]-subpoint[1])**2)**0.5)
+                    #             if tempwidth<width:
+                    #                 pointmatch[:]=[]
+                    #                 pointmatch.append(point)
+                    #                 pointmatch.append(subpoint)
+                    #                 #print('tempwidth',width)
+                    #                 width=tempwidth
+                    #     if len(pointmatch)>0:
+                    #         #print('pointmatch',pointmatch)
+                    #         pointmatchdict.update({(pointmatch[0],pointmatch[1]):width})
+                    # widthsort=sorted(pointmatchdict,key=pointmatchdict.get,reverse=True)
+                    # try:
+                    #     pointmatch=widthsort[0]
+                    #     print('final pointmatch',pointmatch)
+                    # except:
+                    #     continue
+                    # if len(pointmatch)>0:
+                    #     x0=int(pointmatch[0][0])
+                    #     y0=int(pointmatch[0][1])
+                    #     x1=int(pointmatch[1][0])
+                    #     y1=int(pointmatch[1][1])
+                    #     if imgtypevar.get()=='0':
+                    #         draw.line([(x0,y0),(x1,y1)],fill='yellow')
+                    #     width=float(((x0-x1)**2+(y0-y1)**2)**0.5)
+                    print('width',width,'length',kernellength)
+                    print('kernelwidth='+str(width*pixelmmratio))
+                    print('kernellength='+str(kernellength*pixelmmratio))
+                    #print('kernelwidth='+str(kernelwidth*pixelmmratio))
+                    tempdict.update({colortable[uni]:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
                     #if uni in colortable:
                     canvastext = str(colortable[uni])
                     #else:
@@ -2457,54 +2533,122 @@ def export_result(iterver):
                     for point in lengthpoints:
                         if imgtypevar.get()=='0':
                             draw.point([int(point[0]),int(point[1])],fill='yellow')
-                    tengentaddpoints=cal_kernelsize.tengentadd(x0,y0,x1,y1,rlx,rly,labels,uni) #find tangent line above
-                    #for point in tengentaddpoints:
-                        #if int(point[0])>=ulx and int(point[0])<=rlx and int(point[1])>=uly and int(point[1])<=rly:
-                    #    draw.point([int(point[0]),int(point[1])],fill='green')
-                    tengentsubpoints=cal_kernelsize.tengentsub(x0,y0,x1,y1,ulx,uly,labels,uni) #find tangent line below
-                    #for point in tengentsubpoints:
-                    #    draw.point([int(point[0]),int(point[1])],fill='green')
-                    pointmatchdict={}
-                    for i in range(len(tengentaddpoints)):  #find the pixel pair with shortest distance
-                        width=kernellength
-                        pointmatch=[]
-                        point=tengentaddpoints[i]
-                        try:
-                            templabel=labels[int(point[1]),int(point[0])]
-                        except:
-                            continue
-                        if templabel==uni:
-                            for j in range(len(tengentsubpoints)):
-                                subpoint=tengentsubpoints[j]
-                                tempwidth=float(((point[0]-subpoint[0])**2+(point[1]-subpoint[1])**2)**0.5)
-                                if tempwidth<width:
-                                    pointmatch[:]=[]
-                                    pointmatch.append(point)
-                                    pointmatch.append(subpoint)
-                                    #print('tempwidth',width)
-                                    width=tempwidth
-                        if len(pointmatch)>0:
-                            #print('pointmatch',pointmatch)
-                            pointmatchdict.update({(pointmatch[0],pointmatch[1]):width})
-                    widthsort=sorted(pointmatchdict,key=pointmatchdict.get,reverse=True)
+                    othodict={}
+                    # widthdict={}
+                    for i in range(len(currborder[0])):
+                        for j in range(i+1,len(currborder[0])):
+                            wx0=currborder[1][i]
+                            wy0=currborder[0][i]
+                            wx1=currborder[1][j]
+                            wy1=currborder[0][j]
+                            u1=x1-x0
+                            u2=y1-y0
+                            v1=wx1-wx0
+                            v2=wy1-wy0
+                            otho=abs(u1*v1+u2*v2)/(((u1**2+u2**2)**0.5)*(v1**2+v2**2)**0.5)
+                            wlength=float((wx0-wx1)**2+(wy0-wy1)**2)**0.5
+                            if otho<=0.13:
+                                othodict.update({(wx0,wy0,wx1,wy1):wlength})
+
+                    sortedwidth=sorted(othodict,key=othodict.get,reverse=True)
                     try:
-                        pointmatch=widthsort[0]
-                        print('final pointmatch',pointmatch)
+                        topwidth=sortedwidth[0]
                     except:
                         continue
-                    if len(pointmatch)>0:
-                        x0=int(pointmatch[0][0])
-                        y0=int(pointmatch[0][1])
-                        x1=int(pointmatch[1][0])
-                        y1=int(pointmatch[1][1])
+                    widepoints=cal_kernelsize.bresenhamline(topwidth[0],topwidth[1],topwidth[2],topwidth[3])
+                    for point in widepoints:
                         if imgtypevar.get()=='0':
-                            draw.line([(x0,y0),(x1,y1)],fill='yellow')
-                        width=float(((x0-x1)**2+(y0-y1)**2)**0.5)
-                        print('width',width,'length',kernellength)
-                        print('kernelwidth='+str(width*pixelmmratio))
-                        print('kernellength='+str(kernellength*pixelmmratio))
-                        #print('kernelwidth='+str(kernelwidth*pixelmmratio))
-                        tempdict.update({colortable[uni]:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
+                            draw.point([int(point[0]),int(point[1])],fill='black')
+                    width=othodict[topwidth]
+                    # abovecenter=[]
+                    # lowercenter=[]
+                    # for i in range(len(currborder[0])):
+                    #     for j in range(len(lengthpoints)):
+                    #         if currborder[0][i]<lengthpoints[j][1]:
+                    #             lowercenter.append((currborder[1][i],currborder[0][i])) #append(x,y)
+                    #             break
+                    #     loc=(currborder[1][i],currborder[0][i])
+                    #     if loc not in abovecenter and loc not in lowercenter:
+                    #         abovecenter.append(loc)
+                    # widthpoints={}
+                    # for i in range(len(abovecenter)):
+                    #     widex0=abovecenter[i][0]
+                    #     widey0=abovecenter[i][1]
+                    #     othodict={}
+                    #     for j in range(len(lowercenter)):
+                    #         widex1=lowercenter[j][0]
+                    #         widey1=lowercenter[j][1]
+                    #         u1=x1-x0
+                    #         u2=y1-y0
+                    #         v1=widex1-widex0
+                    #         v2=widey1-widey0
+                    #         otho=abs(u1*v1+u2*v2)
+                    #         othodict.update({(widex0,widey0,widex1,widey1):otho})
+                    #     sortedotho=sorted(othodict,key=othodict.get,reverse=False)
+                    #     smallotho=sortedotho[0]
+                    #     widex0=smallotho[0]
+                    #     widey0=smallotho[1]
+                    #     widex1=smallotho[2]
+                    #     widey1=smallotho[3]
+                    #     widthpoints.update({(widex0,widey0,widex1,widey1):float((widex1-widex0)**2+(widey1-widey0)**2)**0.5})
+                    # sortedwidth=sorted(widthpoints,key=widthpoints.get,reverse=True)
+                    # try:
+                    #     topwidth=sortedwidth[0]
+                    # except:
+                    #     continue
+                    # widepoints=cal_kernelsize.bresenhamline(topwidth[0],topwidth[1],topwidth[2],topwidth[3])
+                    # for point in widepoints:
+                    #     if imgtypevar.get()=='0':
+                    #         draw.point([int(point[0]),int(point[1])],fill='black')
+                    # width=widthpoints[topwidth]
+                    # tengentaddpoints=cal_kernelsize.tengentadd(x0,y0,x1,y1,rlx,rly,labels,uni) #find tangent line above
+                    # #for point in tengentaddpoints:
+                    #     #if int(point[0])>=ulx and int(point[0])<=rlx and int(point[1])>=uly and int(point[1])<=rly:
+                    # #    draw.point([int(point[0]),int(point[1])],fill='green')
+                    # tengentsubpoints=cal_kernelsize.tengentsub(x0,y0,x1,y1,ulx,uly,labels,uni) #find tangent line below
+                    # #for point in tengentsubpoints:
+                    # #    draw.point([int(point[0]),int(point[1])],fill='green')
+                    # pointmatchdict={}
+                    # for i in range(len(tengentaddpoints)):  #find the pixel pair with shortest distance
+                    #     width=kernellength
+                    #     pointmatch=[]
+                    #     point=tengentaddpoints[i]
+                    #     try:
+                    #         templabel=labels[int(point[1]),int(point[0])]
+                    #     except:
+                    #         continue
+                    #     if templabel==uni:
+                    #         for j in range(len(tengentsubpoints)):
+                    #             subpoint=tengentsubpoints[j]
+                    #             tempwidth=float(((point[0]-subpoint[0])**2+(point[1]-subpoint[1])**2)**0.5)
+                    #             if tempwidth<width:
+                    #                 pointmatch[:]=[]
+                    #                 pointmatch.append(point)
+                    #                 pointmatch.append(subpoint)
+                    #                 #print('tempwidth',width)
+                    #                 width=tempwidth
+                    #     if len(pointmatch)>0:
+                    #         #print('pointmatch',pointmatch)
+                    #         pointmatchdict.update({(pointmatch[0],pointmatch[1]):width})
+                    # widthsort=sorted(pointmatchdict,key=pointmatchdict.get,reverse=True)
+                    # try:
+                    #     pointmatch=widthsort[0]
+                    #     print('final pointmatch',pointmatch)
+                    # except:
+                    #     continue
+                    # if len(pointmatch)>0:
+                    #     x0=int(pointmatch[0][0])
+                    #     y0=int(pointmatch[0][1])
+                    #     x1=int(pointmatch[1][0])
+                    #     y1=int(pointmatch[1][1])
+                    #     if imgtypevar.get()=='0':
+                    #         draw.line([(x0,y0),(x1,y1)],fill='yellow')
+                    #     width=float(((x0-x1)**2+(y0-y1)**2)**0.5)
+                    print('width',width,'length',kernellength)
+                    print('kernelwidth='+str(width*pixelmmratio))
+                    print('kernellength='+str(kernellength*pixelmmratio))
+                    #print('kernelwidth='+str(kernelwidth*pixelmmratio))
+                    tempdict.update({colortable[uni]:[kernellength,width,pixelmmratio**2*len(pixelloc[0]),kernellength*pixelmmratio,width*pixelmmratio]})
                     #if uni in colortable:
                     canvastext = str(colortable[uni])
                    # else:
