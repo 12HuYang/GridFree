@@ -1,5 +1,5 @@
-from tkinter import *
-from tkinter import ttk
+#from tkinter import *
+#from tkinter import ttk
 import tkinter.filedialog as filedialog
 from tkinter import messagebox
 
@@ -20,7 +20,7 @@ import csv
 import scipy.linalg as la
 import multiprocessing
 import time
-from multiprocessing import Process
+#from multiprocessing import Process
 
 batch_colorbandtable=np.array([[255,0,0],[255,127,0],[255,255,0],[127,255,0],[0,255,255],[0,127,255],[0,0,255],[127,0,255],[75,0,130],[255,0,255]],'uint8')
 
@@ -122,13 +122,13 @@ class batch_ser_func():
         self.fillbands(originbands,displays,self.RGB_vector,1,'Band2',Green)
         self.fillbands(originbands,displays,self.RGB_vector,2,'Band3',Blue)
 
-        secondsmallest_R=np.partition(Red,1)[1][0]
-        secondsmallest_G=np.partition(Green,1)[1][0]
-        secondsmallest_B=np.partition(Blue,1)[1][0]
+        #secondsmallest_R=np.partition(Red,1)[1][0]
+        #secondsmallest_G=np.partition(Green,1)[1][0]
+        #secondsmallest_B=np.partition(Blue,1)[1][0]
 
-        Red=Red+secondsmallest_R
-        Green=Green+secondsmallest_G
-        Blue=Blue+secondsmallest_B
+        #Red=Red+secondsmallest_R
+        #Green=Green+secondsmallest_G
+        #Blue=Blue+secondsmallest_B
 
         PAT_R=Red/(Red+Green)
         PAT_G=Green/(Green+Blue)

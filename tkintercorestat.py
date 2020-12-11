@@ -1,4 +1,4 @@
-import numpy, os
+import numpy
 #import math
 #import gdal  #geospatial data abstraction
 #import osr
@@ -6,16 +6,16 @@ import numpy, os
 #from pyproj import Proj, transform
 #foldername='../drondata/alfalfa'
 import csv
-import time
+#import time
 from skimage.feature import corner_fast,corner_peaks,corner_harris,corner_shi_tomasi
 #import cv2
 #import matplotlib.pyplot as plt
 global lastlinecount,misslabel
 from sklearn.cluster import KMeans
-from sklearn.mixture import GaussianMixture as GMM
+#from sklearn.mixture import GaussianMixture as GMM
 from scipy.stats import shapiro
 from scipy import ndimage as ndi
-from skimage.morphology import watershed
+from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
 
 import lm_method
@@ -565,6 +565,7 @@ def manualboundarywatershed(area,avgarea):
     local_maxi=peak_local_max(distance,indices=False,footprint=numpy.ones((masklength,masklength)),labels=area)
     markers=ndi.label(local_maxi)[0]
     unique=numpy.unique(markers)
+    print(len(unique)-1)
     while(len(unique)-1>possiblecount):
         maskpara+=0.1
         masklength=int((avgarea*maskpara)**0.5)-1

@@ -9,29 +9,29 @@ import cv2
 from skimage import filters
 #import rasterio
 import matplotlib.pyplot as pyplt
-from matplotlib.figure import Figure
+#from matplotlib.figure import Figure
 
 import numpy as np
 import os
-import time
+#import time
 import csv
 import scipy.linalg as la
 from functools import partial
-import threading
-import sys
+#import threading
+#import sys
 
-import kplus
+#import kplus
 from sklearn.cluster import KMeans
 import tkintercorestat
-import tkintercorestat_plot
+#import tkintercorestat_plot
 import tkintercore
 import cal_kernelsize
-import histograms
-import createBins
+#import histograms
+#import createBins
 import axistest
-from multiprocessing import Pool
+#from multiprocessing import Pool
 import lm_method
-import batchprocess
+#import batchprocess
 
 class img():
     def __init__(self,size,bands):
@@ -2318,88 +2318,6 @@ def export_ext(iterver,path,whext=False,blkext=False):
                         if imgtypevar.get()=='0':
                             draw.point([int(point[0]),int(point[1])],fill='black')
                     width=othodict[topwidth]
-
-                    # for i in range(len(lengthpoints)):
-                    #     widex0=lengthpoints[i][0]
-                    #     widey0=lengthpoints[i][1]
-                    #     othodict={}
-                    #     for j in range(len(abovecenter)):
-                    #         widex1=abovecenter[j][0]
-                    #         widey1=abovecenter[j][1]
-                    #         if widex0==widex1 and widey0==widey1:
-                    #             continue
-                    #         u1=x1-x0
-                    #         u2=y1-y0
-                    #         v1=widex1-widex0
-                    #         v2=widey1-widey0
-                    #         otho=abs(u1*v1+u2*v2)
-                    #         othodict.update({(widex0,widey0,widex1,widey1):otho})
-                    #     sortedotho=sorted(othodict,key=othodict.get,reverse=False)
-                    #     smallotho=sortedotho[0]
-                    #     widex0=smallotho[0]
-                    #     widey0=smallotho[1]
-                    #     widex1=smallotho[2]
-                    #     widey1=smallotho[3]
-                    #     for j in range(len(lowercenter)):
-                    #         widex2=lowercenter[j][0]
-                    #         widey2=lowercenter[j][1]
-                    #         if widex0==widex2 and widey0==widey2:
-                    #             continue
-                    #         u1=x1-x0
-                    #         u2=y1-y0
-                    #         v1=widex2-widex0
-                    #         v2=widey2-widey0
-                    #         otho=abs(u1*v1+u2*v2)
-                    #         othodict.update({(widex0,widey0,widex2,widey2):otho})
-                    #     sortedotho=sorted(othodict,key=othodict.get,reverse=False)
-                    #     smallotho=sortedotho[0]
-                    #     widex2=smallotho[2]
-                    #     widey2=smallotho[3]
-                    #     widthpoints.update({(widex1,widey1,widex2,widey2):float((widex1-widex2)**2+(widey1-widey2)**2)**0.5})
-
-                    # tengentaddpoints=cal_kernelsize.tengentadd(x0,y0,x1,y1,rlx,rly,labels,uni) #find tangent line above
-                    # #for point in tengentaddpoints:
-                    #     #if int(point[0])>=ulx and int(point[0])<=rlx and int(point[1])>=uly and int(point[1])<=rly:
-                    # #    draw.point([int(point[0]),int(point[1])],fill='green')
-                    # tengentsubpoints=cal_kernelsize.tengentsub(x0,y0,x1,y1,ulx,uly,labels,uni) #find tangent line below
-                    # #for point in tengentsubpoints:
-                    # #    draw.point([int(point[0]),int(point[1])],fill='green')
-                    # pointmatchdict={}
-                    # for i in range(len(tengentaddpoints)):  #find the pixel pair with shortest distance
-                    #     width=kernellength
-                    #     pointmatch=[]
-                    #     point=tengentaddpoints[i]
-                    #     try:
-                    #         templabel=labels[int(point[1]),int(point[0])]
-                    #     except:
-                    #         continue
-                    #     if templabel==uni:
-                    #         for j in range(len(tengentsubpoints)):
-                    #             subpoint=tengentsubpoints[j]
-                    #             tempwidth=float(((point[0]-subpoint[0])**2+(point[1]-subpoint[1])**2)**0.5)
-                    #             if tempwidth<width:
-                    #                 pointmatch[:]=[]
-                    #                 pointmatch.append(point)
-                    #                 pointmatch.append(subpoint)
-                    #                 #print('tempwidth',width)
-                    #                 width=tempwidth
-                    #     if len(pointmatch)>0:
-                    #         #print('pointmatch',pointmatch)
-                    #         pointmatchdict.update({(pointmatch[0],pointmatch[1]):width})
-                    # widthsort=sorted(pointmatchdict,key=pointmatchdict.get,reverse=True)
-                    # try:
-                    #     pointmatch=widthsort[0]
-                    #     print('final pointmatch',pointmatch)
-                    # except:
-                    #     continue
-                    # if len(pointmatch)>0:
-                    #     x0=int(pointmatch[0][0])
-                    #     y0=int(pointmatch[0][1])
-                    #     x1=int(pointmatch[1][0])
-                    #     y1=int(pointmatch[1][1])
-                    #     if imgtypevar.get()=='0':
-                    #         draw.line([(x0,y0),(x1,y1)],fill='yellow')
-                    #     width=float(((x0-x1)**2+(y0-y1)**2)**0.5)
                     print('width',width,'length',kernellength)
                     print('kernelwidth='+str(width*pixelmmratio))
                     print('kernellength='+str(kernellength*pixelmmratio))
@@ -2473,6 +2391,55 @@ def export_result(iterver):
         #labels=cv2.resize(copylabels.astype('float32'),dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
         head_tail=os.path.split(file)
         originfile,extension=os.path.splitext(head_tail[1])
+        originimg_crop=cv2.imread(file)
+        uniquelabels=list(colortable.keys())
+        originheight,originwidth=Multigraybands[file].size
+        ratio=int(findratio([512,512],[labels.shape[0],labels.shape[1]]))
+        if labels.shape[0]<512:
+            cache=(np.zeros((labels.shape[0]*ratio,labels.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
+            convband=tkintercorestat.pool_backward(labels,cache)
+        else:
+            if labels.shape[0]>512:
+                convband=cv2.resize(labels,(512,512),interpolation=cv2.INTER_LINEAR)
+            else:
+                if labels.shape[0]==512:
+                    convband=np.copy(labels)
+        locfilename=path+'/'+originfile+'-pixellocs.csv'
+        from spectral import imshow, view_cube
+        '''hyperspectral img process'''
+        # import spectral.io.envi as envi
+        lesszeroonefive=[]
+        # with open(locfilename,mode='w') as f:
+        #     csvwriter=csv.writer(f)
+        #     rowcontent=['id','locs']
+        #     csvwriter.writerow(rowcontent)
+        #     result_ref=envi.open(head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.hdr', head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.dat')
+        #     result_nparr=np.array(result_ref.load())
+        #     corrected_nparr=np.copy(result_nparr)
+        #     for uni in uniquelabels:
+        #         if uni!=0:
+        #             tempuni=colortable[uni]
+        #             if tempuni=='Ref':
+        #                 pixelloc = np.where(convband == 65535)
+        #             else:
+        #                 pixelloc = np.where(convband == float(uni))
+        #             kernelval=corrected_nparr[pixelloc]
+        #             nirs=np.mean(kernelval,axis=0)
+        #             print('nirs 170',nirs[170])
+        #             if nirs[170]<0.15:
+        #                 lesszeroonefive.append(uni)
+        #             rowcontent=[colortable[uni]]
+        #             rowcontent=rowcontent+list(pixelloc[0])
+        #             csvwriter.writerow(rowcontent)
+        #             rowcontent=[colortable[uni]]
+        #             rowcontent=rowcontent+list(pixelloc[1])
+        #             csvwriter.writerow(rowcontent)
+        #
+        #     f.close()
+        # print(lesszeroonefive)
+        '''end'''
+
+
         if len(path)>0:
             tup=(labels,counts,colortable,[],currentfilename)
             _band,segimg,small_segimg=showcounting(tup,False)
@@ -2560,90 +2527,7 @@ def export_result(iterver):
                         if imgtypevar.get()=='0':
                             draw.point([int(point[0]),int(point[1])],fill='black')
                     width=othodict[topwidth]
-                    # abovecenter=[]
-                    # lowercenter=[]
-                    # for i in range(len(currborder[0])):
-                    #     for j in range(len(lengthpoints)):
-                    #         if currborder[0][i]<lengthpoints[j][1]:
-                    #             lowercenter.append((currborder[1][i],currborder[0][i])) #append(x,y)
-                    #             break
-                    #     loc=(currborder[1][i],currborder[0][i])
-                    #     if loc not in abovecenter and loc not in lowercenter:
-                    #         abovecenter.append(loc)
-                    # widthpoints={}
-                    # for i in range(len(abovecenter)):
-                    #     widex0=abovecenter[i][0]
-                    #     widey0=abovecenter[i][1]
-                    #     othodict={}
-                    #     for j in range(len(lowercenter)):
-                    #         widex1=lowercenter[j][0]
-                    #         widey1=lowercenter[j][1]
-                    #         u1=x1-x0
-                    #         u2=y1-y0
-                    #         v1=widex1-widex0
-                    #         v2=widey1-widey0
-                    #         otho=abs(u1*v1+u2*v2)
-                    #         othodict.update({(widex0,widey0,widex1,widey1):otho})
-                    #     sortedotho=sorted(othodict,key=othodict.get,reverse=False)
-                    #     smallotho=sortedotho[0]
-                    #     widex0=smallotho[0]
-                    #     widey0=smallotho[1]
-                    #     widex1=smallotho[2]
-                    #     widey1=smallotho[3]
-                    #     widthpoints.update({(widex0,widey0,widex1,widey1):float((widex1-widex0)**2+(widey1-widey0)**2)**0.5})
-                    # sortedwidth=sorted(widthpoints,key=widthpoints.get,reverse=True)
-                    # try:
-                    #     topwidth=sortedwidth[0]
-                    # except:
-                    #     continue
-                    # widepoints=cal_kernelsize.bresenhamline(topwidth[0],topwidth[1],topwidth[2],topwidth[3])
-                    # for point in widepoints:
-                    #     if imgtypevar.get()=='0':
-                    #         draw.point([int(point[0]),int(point[1])],fill='black')
-                    # width=widthpoints[topwidth]
-                    # tengentaddpoints=cal_kernelsize.tengentadd(x0,y0,x1,y1,rlx,rly,labels,uni) #find tangent line above
-                    # #for point in tengentaddpoints:
-                    #     #if int(point[0])>=ulx and int(point[0])<=rlx and int(point[1])>=uly and int(point[1])<=rly:
-                    # #    draw.point([int(point[0]),int(point[1])],fill='green')
-                    # tengentsubpoints=cal_kernelsize.tengentsub(x0,y0,x1,y1,ulx,uly,labels,uni) #find tangent line below
-                    # #for point in tengentsubpoints:
-                    # #    draw.point([int(point[0]),int(point[1])],fill='green')
-                    # pointmatchdict={}
-                    # for i in range(len(tengentaddpoints)):  #find the pixel pair with shortest distance
-                    #     width=kernellength
-                    #     pointmatch=[]
-                    #     point=tengentaddpoints[i]
-                    #     try:
-                    #         templabel=labels[int(point[1]),int(point[0])]
-                    #     except:
-                    #         continue
-                    #     if templabel==uni:
-                    #         for j in range(len(tengentsubpoints)):
-                    #             subpoint=tengentsubpoints[j]
-                    #             tempwidth=float(((point[0]-subpoint[0])**2+(point[1]-subpoint[1])**2)**0.5)
-                    #             if tempwidth<width:
-                    #                 pointmatch[:]=[]
-                    #                 pointmatch.append(point)
-                    #                 pointmatch.append(subpoint)
-                    #                 #print('tempwidth',width)
-                    #                 width=tempwidth
-                    #     if len(pointmatch)>0:
-                    #         #print('pointmatch',pointmatch)
-                    #         pointmatchdict.update({(pointmatch[0],pointmatch[1]):width})
-                    # widthsort=sorted(pointmatchdict,key=pointmatchdict.get,reverse=True)
-                    # try:
-                    #     pointmatch=widthsort[0]
-                    #     print('final pointmatch',pointmatch)
-                    # except:
-                    #     continue
-                    # if len(pointmatch)>0:
-                    #     x0=int(pointmatch[0][0])
-                    #     y0=int(pointmatch[0][1])
-                    #     x1=int(pointmatch[1][0])
-                    #     y1=int(pointmatch[1][1])
-                    #     if imgtypevar.get()=='0':
-                    #         draw.line([(x0,y0),(x1,y1)],fill='yellow')
-                    #     width=float(((x0-x1)**2+(y0-y1)**2)**0.5)
+
                     print('width',width,'length',kernellength)
                     print('kernelwidth='+str(width*pixelmmratio))
                     print('kernellength='+str(kernellength*pixelmmratio))
@@ -2655,12 +2539,20 @@ def export_result(iterver):
                         # canvastext = 'No label'
                     #    canvastext = uni
                     if imgtypevar.get()=='0':
-                        draw.text((midx-1, midy+1), text=canvastext, font=smallfont, fill='white')
-                        draw.text((midx+1, midy+1), text=canvastext, font=smallfont, fill='white')
-                        draw.text((midx-1, midy-1), text=canvastext, font=smallfont, fill='white')
-                        draw.text((midx+1, midy-1), text=canvastext, font=smallfont, fill='white')
-                        #draw.text((midx,midy),text=canvastext,font=font,fill=(141,2,31,0))
-                        draw.text((midx,midy),text=canvastext,font=smallfont,fill='black')
+                        if uni in lesszeroonefive:
+                            draw.text((midx-1, midy+1), text=canvastext, font=smallfont, fill='white')
+                            draw.text((midx+1, midy+1), text=canvastext, font=smallfont, fill='white')
+                            draw.text((midx-1, midy-1), text=canvastext, font=smallfont, fill='white')
+                            draw.text((midx+1, midy-1), text=canvastext, font=smallfont, fill='white')
+                            #draw.text((midx,midy),text=canvastext,font=font,fill=(141,2,31,0))
+                            draw.text((midx,midy),text=canvastext,font=smallfont,fill='red')
+                        else:
+                            draw.text((midx-1, midy+1), text=canvastext, font=smallfont, fill='white')
+                            draw.text((midx+1, midy+1), text=canvastext, font=smallfont, fill='white')
+                            draw.text((midx-1, midy-1), text=canvastext, font=smallfont, fill='white')
+                            draw.text((midx+1, midy-1), text=canvastext, font=smallfont, fill='white')
+                            #draw.text((midx,midy),text=canvastext,font=font,fill=(141,2,31,0))
+                            draw.text((midx,midy),text=canvastext,font=smallfont,fill='black')
 
                     #print(event.x, event.y, labels[event.x, event.y], ulx, uly, rlx, rly)
 
@@ -2668,7 +2560,7 @@ def export_result(iterver):
                     #drawcontents.append(recborder)
 
             kernersizes.update({file:tempdict})
-            originheight,originwidth=Multigraybands[file].size
+
             image=imageband.resize([originwidth,originheight],resample=Image.BILINEAR)
             image.save(path+'/'+originfile+'-sizeresult'+'.png',"PNG")
             tup=(labels,counts,colortable,[],currentfilename)
@@ -2876,7 +2768,7 @@ def export_result(iterver):
 
 
 
-def resegment():
+def resegment(thresholds=[],lwthresholds=[]):
     global loccanvas,maxx,minx,maxy,miny,linelocs,bins,ybins,reseglabels,figcanvas,refvar,refsubframe,panelA
     global labelplotmap,figdotlist,multi_results
     global batch
@@ -2891,10 +2783,12 @@ def resegment():
     #refvar.set('0')
     #for widget in refsubframe.winfo_children():
     #    widget.config(state=DISABLED)
-    thresholds=[cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1])]
+    if len(thresholds)==0:
+        thresholds=[cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1])]
     minthres=min(thresholds)
     maxthres=max(thresholds)
-    lwthresholds=[cal_yvalue(linelocs[2]),cal_yvalue(linelocs[3])]
+    if len(lwthresholds)==0:
+        lwthresholds=[cal_yvalue(linelocs[2]),cal_yvalue(linelocs[3])]
     maxlw=max(lwthresholds)
     minlw=min(lwthresholds)
     print(minthres,maxthres)
@@ -4146,7 +4040,7 @@ def del_reflabel():
     gen_convband()
     panelA.delete(coinbox)
     reseglabels=tkintercorestat.renamelabels(reseglabels)
-    resegment()
+    resegment([maxx,minx],[maxy,miny])
     displayfig()
 
     # newcolortables=tkintercorestat.get_colortable(reseglabels)

@@ -1,7 +1,7 @@
-import numpy, os
+import numpy
 import csv
-import time
-from skimage.feature import corner_fast,corner_peaks,corner_harris,corner_shi_tomasi
+#import time
+#from skimage.feature import corner_fast,corner_peaks,corner_harris,corner_shi_tomasi
 global lastlinecount,misslabel
 from scipy.stats import shapiro
 from scipy import ndimage as ndi

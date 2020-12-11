@@ -1,8 +1,8 @@
 from sklearn import linear_model
 import numpy as np
-import csv
-import matplotlib.pyplot as plt
-from numpy import savetxt
+#import csv
+#import matplotlib.pyplot as plt
+#from numpy import savetxt
 
 # filename='spore balls-outputdata by PC3.csv'
 
