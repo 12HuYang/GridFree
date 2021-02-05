@@ -32,6 +32,7 @@ import axistest
 #from multiprocessing import Pool
 import lm_method
 #import batchprocess
+import sel_area
 
 class img():
     def __init__(self,size,bands):
@@ -105,6 +106,7 @@ print('screenheight',screenheight,'screenwidth',screenwidth)
 screenstd=min(screenheight-100,screenwidth-100,850)
 
 coinsize=StringVar()
+selarea=StringVar()
 refvar=StringVar()
 imgtypevar=StringVar()
 edge=StringVar()
@@ -655,6 +657,7 @@ def Open_Multifile():
     global displaylabels,displaypclabels
     global buttonvar
     global colorindicearray
+    global selareabutton,selarea
     MULTIFILES=filedialog.askopenfilenames()
     root.update()
     if len(MULTIFILES)>0:
@@ -688,6 +691,8 @@ def Open_Multifile():
         # if 'NDVI' in bandchoice:
         #     bandchoice['NDVI'].set('1')
         refbutton.config(state=DISABLED)
+        selareabutton.configure(state=DISABLED)
+        selarea.set('0')
         figcanvas.delete(ALL)
         #loccanvas=None
         for widget in refsubframe.winfo_children():
@@ -2409,33 +2414,33 @@ def export_result(iterver):
         '''hyperspectral img process'''
         # import spectral.io.envi as envi
         lesszeroonefive=[]
-        # with open(locfilename,mode='w') as f:
-        #     csvwriter=csv.writer(f)
-        #     rowcontent=['id','locs']
-        #     csvwriter.writerow(rowcontent)
+        with open(locfilename,mode='w') as f:
+            csvwriter=csv.writer(f)
+            rowcontent=['id','locs']
+            csvwriter.writerow(rowcontent)
         #     result_ref=envi.open(head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.hdr', head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.dat')
         #     result_nparr=np.array(result_ref.load())
         #     corrected_nparr=np.copy(result_nparr)
-        #     for uni in uniquelabels:
-        #         if uni!=0:
-        #             tempuni=colortable[uni]
-        #             if tempuni=='Ref':
-        #                 pixelloc = np.where(convband == 65535)
-        #             else:
-        #                 pixelloc = np.where(convband == float(uni))
-        #             kernelval=corrected_nparr[pixelloc]
-        #             nirs=np.mean(kernelval,axis=0)
+            for uni in uniquelabels:
+                if uni!=0:
+                    tempuni=colortable[uni]
+                    if tempuni=='Ref':
+                        pixelloc = np.where(convband == 65535)
+                    else:
+                        pixelloc = np.where(convband == float(uni))
+                    # kernelval=corrected_nparr[pixelloc]
+                    # nirs=np.mean(kernelval,axis=0)
         #             print('nirs 170',nirs[170])
         #             if nirs[170]<0.15:
         #                 lesszeroonefive.append(uni)
-        #             rowcontent=[colortable[uni]]
-        #             rowcontent=rowcontent+list(pixelloc[0])
-        #             csvwriter.writerow(rowcontent)
-        #             rowcontent=[colortable[uni]]
-        #             rowcontent=rowcontent+list(pixelloc[1])
-        #             csvwriter.writerow(rowcontent)
-        #
-        #     f.close()
+                    rowcontent=[colortable[uni]]
+                    rowcontent=rowcontent+list(pixelloc[0])
+                    csvwriter.writerow(rowcontent)
+                    rowcontent=[colortable[uni]]
+                    rowcontent=rowcontent+list(pixelloc[1])
+                    csvwriter.writerow(rowcontent)
+
+            f.close()
         # print(lesszeroonefive)
         '''end'''
 
@@ -3373,32 +3378,62 @@ def extraction():
         return
     rlx,rly=max(nonzeroloc[1]),max(nonzeroloc[0])
     nonzeroratio=float(nonzeros)/((rlx-ulx)*(rly-uly))
-    print(nonzeroratio)
+    print('nonzeroratio=',nonzeroratio)
     batch['nonzero']=[nonzeroratio]
     #nonzeroratio=float(nonzeros)/(currentlabels.shape[0]*currentlabels.shape[1])
     dealpixel=nonzeroratio*currentlabels.shape[0]*currentlabels.shape[1]
     ratio=1
-    if nonzeroratio<=0.2:# and nonzeroratio>=0.1:
-        ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1600,1600])
-        if currentlabels.shape[0]*currentlabels.shape[1]>1600*1600:
-            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-        else:
-            #ratio=1
-            #print('nonzeroratio',ratio)
-            workingimg=np.copy(currentlabels)
-        segmentratio=0
+    if selarea.get()=='1':
+        filter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+        selareapos=app.getinfo(rects[4])
+        start=list(selareapos)[:2]
+        end=list(selareapos)[2:]
+        lx,ly,rx,ry=int(min(start[0],end[0])),int(min(start[1],end[1])),int(max(start[0],end[0])),int(max(start[1],end[1]))
+        filter[:,lx:rx+1]=1
+        for i in range(0,ly):
+            filter[i,:]=0
+        for i in range(ry+1,displayimg['Origin']['Size'][0]):
+            filter[i,:]=0
+        print(filter)
+        filter=cv2.resize(filter,(currentlabels.shape[1],currentlabels.shape[0]),interpolation=cv2.INTER_LINEAR)
+
+    print('deal pixel',dealpixel)
+    if dealpixel<512000:
+        workingimg=np.copy(currentlabels)
+        if selarea.get()=='1':
+            workingimg=np.multiply(workingimg,filter)
     else:
-        print('deal pixel',dealpixel)
-        if dealpixel>512000:
+        if nonzeroratio<=0.2:# and nonzeroratio>=0.1:
+            ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1600,1600])
+            print('ratio to wkimg',ratio)
+            # if dealpixel<512000 or currentlabels.shape[0]*currentlabels.shape[1]<=1600*1600:
+            #     workingimg=np.copy(currentlabels)
+            # else:
+                # if currentlabels.shape[0]*currentlabels.shape[1]>1600*1600:
+            workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            if selarea.get()=='1':
+                filter=cv2.resize(filter,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                workingimg=np.multiply(workingimg,filter)
+                # else:
+                #     #ratio=1
+                #     #print('nonzeroratio',ratio)
+                #     workingimg=np.copy(currentlabels)
+            segmentratio=0
+        else:
+            # if dealpixel>512000:
             if currentlabels.shape[0]*currentlabels.shape[1]>screenstd*screenstd:
                 segmentratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[screenstd,screenstd])
                 if segmentratio<2:
                     segmentratio=2
                 workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/segmentratio),int(currentlabels.shape[0]/segmentratio)),interpolation=cv2.INTER_LINEAR)
-        else:
-            segmentratio=1
-            #print('ratio',ratio)
-            workingimg=np.copy(currentlabels)
+                if selarea.get()=='1':
+                    filter=cv2.resize(filter,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                    workingimg=np.multiply(workingimg,filter)
+
+            # else:
+            #     segmentratio=1
+            #     #print('ratio',ratio)
+            #     workingimg=np.copy(currentlabels)
     pixelmmratio=1.0
     coin=False
     print('nonzeroratio:',ratio,'segmentation ratio',segmentratio)
@@ -3461,144 +3496,7 @@ def extraction():
     linelocs=[minx,maxx]
     '''
 
-    # displayfig()
 
-    # global loccanvas,maxx,minx,maxy,miny,linelocs,bins,ybins,figcanvas
-    # global labelplotmap,resviewframe
-    # data=[]
-    # uniquelabels=list(colortable.keys())
-    # lenwid=[]
-    # lenlist=[]
-    # widlist=[]
-    # for widget in resviewframe.winfo_children():
-    #     widget.pack_forget()
-    # figcanvas.pack()
-    # figcanvas.delete(ALL)
-    # labelplotmap={}
-    #
-    # templabelplotmap={}
-    # unitable=[]
-    # for uni in uniquelabels:
-    #     if uni!=0:
-    #         pixelloc = np.where(originlabels == uni)
-    #         try:
-    #             ulx = min(pixelloc[1])
-    #         except:
-    #             continue
-    #         uly = min(pixelloc[0])
-    #         rlx = max(pixelloc[1])
-    #         rly = max(pixelloc[0])
-    #         length=rly-uly
-    #         width=rlx-ulx
-    #         lenwid.append((length+width))
-    #         lenlist.append(length)
-    #         widlist.append(width)
-    #         data.append(len(pixelloc[0]))
-    #         unitable.append(uni)
-    #         # templabelplotmap.update({(len(pixelloc[0]),length+width):uni})
-    # residual,area=lm_method.lm_method(lenlist,widlist,data)
-    # lenwid=list(residual)
-    # data=list(area)
-    # for i in range(len(unitable)):
-    #     templabelplotmap.update({(data[i],lenwid[i]):unitable[i]})
-    # miny=min(lenwid)
-    # maxy=max(lenwid)
-    # minx=min(data)
-    # maxx=max(data)
-    # binwidth=(maxx-minx)/10
-    # ybinwidth=(maxy-miny)/10
-    # bin_edges=[]
-    # y_bins=[]
-    # for i in range(0,11):
-    #     bin_edges.append(minx+i*binwidth)
-    # for i in range(0,11):
-    #     y_bins.append(miny+i*ybinwidth)
-    # #bin_edges.append(maxx)
-    # #bin_edges.append(maxx+binwidth)
-    # #y_bins.append(maxy)
-    # #y_bins.append(maxy+ybinwidth)
-    # plotdata=[]
-    # for i in range(len(data)):
-    #     plotdata.append((data[i],lenwid[i]))
-    # scaledDatalist=[]
-    # x_scalefactor=300/(maxx-minx)
-    # y_scalefactor=250/(maxy-miny)
-    # if maxx-minx==0:
-    #     maxx=minx+10
-    #     x_scalefactor=300/10
-    # if maxy-miny==0:
-    #     maxy=miny+10
-    #     y_scalefactor=250/10
-    # for (x,y) in plotdata:
-    #     xval=50+(x-minx)*x_scalefactor+50
-    #     yval=300-(y-miny)*y_scalefactor+25
-    #     scaledDatalist.append((int(xval),int(yval)))
-    # for key in templabelplotmap:
-    #     x=key[0]
-    #     y=key[1]
-    #     xval=50+(x-minx)*x_scalefactor+50
-    #     yval=300-(y-miny)*y_scalefactor+25
-    #     unilabel=templabelplotmap[key]
-    #     labelplotmap.update({(int(xval),int(yval)):unilabel})
-    #
-    # #print(labelplotmap)
-    # #print(scaledDatalist)
-    # figdotlist={}
-    # axistest.drawdots(25+50,325+25,375+50,25+25,bin_edges,y_bins,scaledDatalist,figcanvas,figdotlist)
-    #
-    #
-    # #loccanvas=figcanvas
-    # #minx=25
-    # #maxx=375
-    # #maxy=325
-    # #miny=25
-    # #[25,375,325,25]
-    # #linelocs=[25+12,375-12,25+12,325-12]
-    # linelocs=[75+12,425-12,350-12,50+12]
-    # #linelocs=[25+12,375-12,325-12,25+12]
-    # bins=bin_edges
-    # ybins=y_bins
-    #
-    # figcanvas.bind('<Any-Enter>',item_enter)
-    # figcanvas.bind('<Any-Leave>',item_leave)
-    # figcanvas.bind('<Button-1>',item_start_drag)
-    # figcanvas.bind('<B1-Motion>',item_drag)
-    # #figcanvas.bind('<Shift-Button-1>',item_multiselect)
-    # #reseg=Button(frame,text='Re-process',command=partial(resegment,labels,figcanvas),padx=5,pady=5)
-    # #reseg.pack()
-    #
-    # #if outputbutton is None:
-    # #    outputbutton=Button(control_fr,text='Export Results',command=partial(export_result,'0'),padx=5,pady=5)
-    # #    outputbutton.pack()
-    # #batchextraction()
-    # #else:
-    # #    outputbutton.pack_forget()
-    # #    outputbutton.pack()
-    # refbutton.config(state=NORMAL)
-    # refvar.set('0')
-    # for widget in refsubframe.winfo_children():
-    #     #widget.config(state=DISABLED)
-    #     widget.config(state=NORMAL)
-    # outputbutton.config(state=NORMAL)
-    # #resegbutton.config(state=NORMAL)
-    # pcasel=[]
-    # pcakeys=list(pcaboxdict.keys())
-    # for i in range(len(pcakeys)):
-    #     currvar=pcaboxdict[pcakeys[i]].get()
-    #     if currvar=='1':
-    #         pcasel.append(i+1)
-    # kchoice=[]
-    # kchoicekeys=list(checkboxdict.keys())
-    # for i in range(len(kchoicekeys)):
-    #     currvar=checkboxdict[kchoicekeys[i]].get()
-    #     if currvar=='1':
-    #         kchoice.append(i+1)
-    # batch['PCs']=pcasel.copy()
-    # batch['Kmeans']=[int(kmeans.get())]
-    # batch['Kmeans_sel']=kchoice.copy()
-    # print(batch)
-
-    pass
 
 def onFrameConfigure(inputcanvas):
     '''Reset the scroll region to encompass the inner frame'''
@@ -4090,6 +3988,17 @@ def del_reflabel():
 
 
 
+def selareachoice():
+    global panelA,rects,selareapos,app
+    app=sel_area.Application(panelA)
+    if selarea.get()=='1':
+        messagebox.showinfo('select AOI',message='Clike mouse at start point and drag on the image to define an area you want to segment.')
+        rects=app.start()
+    else:
+        selareapos=app.getinfo(rects[4])
+        app.end(rects)
+
+
 
 
 #def refchoice(refsubframe):
@@ -4380,6 +4289,11 @@ for (text,v1),(name,v2) in zip(disbuttonoption.items(),buttonname.items()):
     b.configure(state=DISABLED)
     if disbuttonoption[text]=='1':
         b.invoke()
+
+selareabutton=Checkbutton(buttondisplay,text='SelArea',variable=selarea,command=selareachoice)
+selarea.set('0')
+selareabutton.pack(side=LEFT)
+selareabutton.configure(state=DISABLED)
 
 refoption=[('Use Ref','1'),('No Ref','0')]
 refvar.set('0')
