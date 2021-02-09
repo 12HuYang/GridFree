@@ -1,7 +1,8 @@
 # https://stackoverflow.com/questions/55636313/selecting-an-area-of-an-image-with-a-mouse-and-recording-the-dimensions-of-the-s
 
 import tkinter as tk
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk,ImageDraw
+import numpy as np
 
 
 class MousePositionTracker(tk.Frame):
@@ -76,7 +77,8 @@ class SelectionObject:
         self.select_opts1 = select_opts
         self.width = self.canvas.cget('width')
         self.height = self.canvas.cget('height')
-
+        # self.npimg=np.zeros((self.canvas.cget('height'),self.canvas.cget('width')))
+        # self.img=img
 
         # Options for areas outside rectanglar selection.
         select_opts1 = self.select_opts1.copy()  # Avoid modifying passed argument.
@@ -91,15 +93,17 @@ class SelectionObject:
         self.rects = (
             # Area *outside* selection (inner) rectangle.
             self.canvas.create_rectangle(omin_x, omin_y,  omax_x, imin_y, **select_opts1),
-            self.canvas.create_rectangle(omin_x, imin_y,  imin_x, imax_y, **select_opts1),
-            self.canvas.create_rectangle(imax_x, imin_y,  omax_x, imax_y, **select_opts1),
-            self.canvas.create_rectangle(omin_x, imax_y,  omax_x, omax_y, **select_opts1),
+            # self.canvas.create_rectangle(omin_x, imin_y,  imin_x, imax_y, **select_opts1),
+            # self.canvas.create_rectangle(imax_x, imin_y,  omax_x, imax_y, **select_opts1),
+            # self.canvas.create_rectangle(omin_x, imax_y,  omax_x, omax_y, **select_opts1),
             # Inner rectangle.
-            self.canvas.create_rectangle(imin_x, imin_y,  imax_x, imax_y, **select_opts2)
+            # self.canvas.create_rectangle(imin_x, imin_y,  imax_x, imax_y, **select_opts2)
+            self.canvas.create_oval(imin_x, imin_y,  imax_x, imax_y, **select_opts2)
         )
 
         # self.startpx=(0,0)
         # self.endpx=(0,0)
+        print('end init selection area')
 
 
     def update(self, start, end):
@@ -109,10 +113,11 @@ class SelectionObject:
 
         # Update coords of all rectangles based on these extrema.
         self.canvas.coords(self.rects[0], omin_x, omin_y,  omax_x, imin_y),
-        self.canvas.coords(self.rects[1], omin_x, imin_y,  imin_x, imax_y),
-        self.canvas.coords(self.rects[2], imax_x, imin_y,  omax_x, imax_y),
-        self.canvas.coords(self.rects[3], omin_x, imax_y,  omax_x, omax_y),
-        self.canvas.coords(self.rects[4], imin_x, imin_y,  imax_x, imax_y),
+        # self.canvas.coords(self.rects[1], omin_x, imin_y,  imin_x, imax_y),
+        # self.canvas.coords(self.rects[2], imax_x, imin_y,  omax_x, imax_y),
+        # self.canvas.coords(self.rects[3], omin_x, imax_y,  omax_x, omax_y),
+        self.canvas.coords(self.rects[1], imin_x, imin_y,  imax_x, imax_y),
+
 
         for rect in self.rects:  # Make sure all are now visible.
             self.canvas.itemconfigure(rect, state=tk.NORMAL)
@@ -153,6 +158,9 @@ class Application(tk.Frame):
         # self.canvas.img = img  # Keep reference.
         # self.canvas=canvas
         self.canvas=parent
+        npimg=np.zeros((int(self.canvas.cget('height')),int(self.canvas.cget('width'))))
+        self.img=Image.fromarray(npimg)
+
         # Create selection object to show current selection boundaries.
         self.selection_obj = SelectionObject(self.canvas, self.SELECT_OPTS)
         self.posn_tracker = MousePositionTracker(self.canvas)
@@ -175,6 +183,10 @@ class Application(tk.Frame):
 
 
     def getinfo(self,rect):
+        # sizes=self.canvas.coords(rect)
+        # draw=ImageDraw.Draw(self.img)
+        # draw.ellipse([(sizes[0],sizes[1]),(sizes[2],sizes[3])],fill='red')
+        # self.img.save('selection_oval.tiff')
         return self.canvas.coords(rect)
 
 

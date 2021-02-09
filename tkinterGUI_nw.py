@@ -3384,17 +3384,24 @@ def extraction():
     dealpixel=nonzeroratio*currentlabels.shape[0]*currentlabels.shape[1]
     ratio=1
     if selarea.get()=='1':
-        filter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
-        selareapos=app.getinfo(rects[4])
-        start=list(selareapos)[:2]
-        end=list(selareapos)[2:]
-        lx,ly,rx,ry=int(min(start[0],end[0])),int(min(start[1],end[1])),int(max(start[0],end[0])),int(max(start[1],end[1]))
-        filter[:,lx:rx+1]=1
-        for i in range(0,ly):
-            filter[i,:]=0
-        for i in range(ry+1,displayimg['Origin']['Size'][0]):
-            filter[i,:]=0
-        print(filter)
+        selareapos=app.getinfo(rects[1])
+        npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+        filter=Image.fromarray(npfilter)
+        draw=ImageDraw.Draw(filter)
+        draw.ellipse(list(selareapos),fill='red')
+        filter=np.array(filter)
+
+
+        # start=list(selareapos)[:2]
+        # end=list(selareapos)[2:]
+        # lx,ly,rx,ry=int(min(start[0],end[0])),int(min(start[1],end[1])),int(max(start[0],end[0])),int(max(start[1],end[1]))
+        # filter[:,lx:rx+1]=1
+        # for i in range(0,ly):
+        #     filter[i,:]=0
+        # for i in range(ry+1,displayimg['Origin']['Size'][0]):
+        #     filter[i,:]=0
+        filter=np.divide(filter,np.max(filter))
+        # filter=np.where(filter==max(filter),1,0)
         filter=cv2.resize(filter,(currentlabels.shape[1],currentlabels.shape[0]),interpolation=cv2.INTER_LINEAR)
 
     print('deal pixel',dealpixel)
@@ -3995,7 +4002,7 @@ def selareachoice():
         messagebox.showinfo('select AOI',message='Clike mouse at start point and drag on the image to define an area you want to segment.')
         rects=app.start()
     else:
-        selareapos=app.getinfo(rects[4])
+        selareapos=app.getinfo(rects[1])
         app.end(rects)
 
 
