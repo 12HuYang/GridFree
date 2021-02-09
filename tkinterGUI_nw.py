@@ -317,6 +317,8 @@ def changedisplayimg(frame,text):
     widget.create_image(0,0,image=displayimg[text]['Image'],anchor=NW)
     widget.pack()
     widget.update()
+    global rects,selareapos,app
+    app=sel_area.Application(widget)
     if text=='Output':
         try:
             image=outputsegbands[currentfilename]['iter0']
@@ -331,13 +333,19 @@ def changedisplayimg(frame,text):
                 image=originsegbands['Origin']
                 widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,image))
                 widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
+
             except:
                 return
             for widget in resviewframe.winfo_children():
                 widget.pack_forget()
-
+            rects=app.start()
+            print(rects)
         else:
             widget.unbind('<Motion>')
+            selareadim=app.getinfo(rects[1])
+            if selareadim!=[]:
+                selareapos=selareadim
+            app.end(rects)
 
     if text=='PCs':
         PCbuttons(resviewframe,frame)
@@ -657,7 +665,7 @@ def Open_Multifile():
     global displaylabels,displaypclabels
     global buttonvar
     global colorindicearray
-    global selareabutton,selarea
+    global selarea
     MULTIFILES=filedialog.askopenfilenames()
     root.update()
     if len(MULTIFILES)>0:
@@ -691,7 +699,7 @@ def Open_Multifile():
         # if 'NDVI' in bandchoice:
         #     bandchoice['NDVI'].set('1')
         refbutton.config(state=DISABLED)
-        selareabutton.configure(state=DISABLED)
+        # selareabutton.configure(state=DISABLED)
         selarea.set('0')
         figcanvas.delete(ALL)
         #loccanvas=None
@@ -3383,12 +3391,17 @@ def extraction():
     #nonzeroratio=float(nonzeros)/(currentlabels.shape[0]*currentlabels.shape[1])
     dealpixel=nonzeroratio*currentlabels.shape[0]*currentlabels.shape[1]
     ratio=1
-    if selarea.get()=='1':
-        selareapos=app.getinfo(rects[1])
+    # if selarea.get()=='1':
+    selareadim=app.getinfo(rects[1])
+    global selareapos
+    if selareadim!=[0,0,1,1] and selareadim!=[] and selareadim!=selareapos:
+        selareapos=selareadim
+    if selareapos!=[0,0,1,1]:
+        # selareadim=app.getinfo(rects[1])
         npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
         filter=Image.fromarray(npfilter)
         draw=ImageDraw.Draw(filter)
-        draw.ellipse(list(selareapos),fill='red')
+        draw.ellipse(selareapos,fill='red')
         filter=np.array(filter)
 
 
@@ -3402,13 +3415,15 @@ def extraction():
         #     filter[i,:]=0
         filter=np.divide(filter,np.max(filter))
         # filter=np.where(filter==max(filter),1,0)
-        filter=cv2.resize(filter,(currentlabels.shape[1],currentlabels.shape[0]),interpolation=cv2.INTER_LINEAR)
+    else:
+        filter=np.ones((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+    filter=cv2.resize(filter,(currentlabels.shape[1],currentlabels.shape[0]),interpolation=cv2.INTER_LINEAR)
 
     print('deal pixel',dealpixel)
     if dealpixel<512000:
         workingimg=np.copy(currentlabels)
-        if selarea.get()=='1':
-            workingimg=np.multiply(workingimg,filter)
+        # if selarea.get()=='1':
+        workingimg=np.multiply(workingimg,filter)
     else:
         if nonzeroratio<=0.2:# and nonzeroratio>=0.1:
             ratio=findratio([currentlabels.shape[0],currentlabels.shape[1]],[1600,1600])
@@ -3418,9 +3433,9 @@ def extraction():
             # else:
                 # if currentlabels.shape[0]*currentlabels.shape[1]>1600*1600:
             workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            if selarea.get()=='1':
-                filter=cv2.resize(filter,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                workingimg=np.multiply(workingimg,filter)
+            # if selarea.get()=='1':
+            filter=cv2.resize(filter,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+            workingimg=np.multiply(workingimg,filter)
                 # else:
                 #     #ratio=1
                 #     #print('nonzeroratio',ratio)
@@ -3433,9 +3448,9 @@ def extraction():
                 if segmentratio<2:
                     segmentratio=2
                 workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/segmentratio),int(currentlabels.shape[0]/segmentratio)),interpolation=cv2.INTER_LINEAR)
-                if selarea.get()=='1':
-                    filter=cv2.resize(filter,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-                    workingimg=np.multiply(workingimg,filter)
+                # if selarea.get()=='1':
+                filter=cv2.resize(filter,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                workingimg=np.multiply(workingimg,filter)
 
             # else:
             #     segmentratio=1
@@ -3995,15 +4010,17 @@ def del_reflabel():
 
 
 
-def selareachoice():
-    global panelA,rects,selareapos,app
-    app=sel_area.Application(panelA)
-    if selarea.get()=='1':
-        messagebox.showinfo('select AOI',message='Clike mouse at start point and drag on the image to define an area you want to segment.')
-        rects=app.start()
-    else:
-        selareapos=app.getinfo(rects[1])
-        app.end(rects)
+# def selareachoice(widget):
+#     # global panelA,rects,selareapos,app
+#     global rects,selareapos,app
+#     app=sel_area.Application(widget)
+#     rects=app.start()
+#     # if selarea.get()=='1':
+#     #     messagebox.showinfo('select AOI',message='Clike mouse at start point and drag on the image to define an area you want to segment.')
+#     #     rects=app.start()
+#     # else:
+#     #     selareapos=app.getinfo(rects[1])
+#     #     app.end(rects)
 
 
 
@@ -4297,10 +4314,10 @@ for (text,v1),(name,v2) in zip(disbuttonoption.items(),buttonname.items()):
     if disbuttonoption[text]=='1':
         b.invoke()
 
-selareabutton=Checkbutton(buttondisplay,text='SelArea',variable=selarea,command=selareachoice)
-selarea.set('0')
-selareabutton.pack(side=LEFT)
-selareabutton.configure(state=DISABLED)
+# selareabutton=Checkbutton(buttondisplay,text='SelArea',variable=selarea,command=selareachoice)
+# selarea.set('0')
+# selareabutton.pack(side=LEFT)
+# selareabutton.configure(state=DISABLED)
 
 refoption=[('Use Ref','1'),('No Ref','0')]
 refvar.set('0')
