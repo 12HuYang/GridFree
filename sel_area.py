@@ -117,7 +117,7 @@ class SelectionObject:
         # self.canvas.coords(self.rects[2], imax_x, imin_y,  omax_x, imax_y),
         # self.canvas.coords(self.rects[3], omin_x, imax_y,  omax_x, omax_y),
         self.canvas.coords(self.rects[1], imin_x, imin_y,  imax_x, imax_y),
-
+        # print(self.rects[1],imin_x,imin_y,imax_x,imax_y)
 
         for rect in self.rects:  # Make sure all are now visible.
             self.canvas.itemconfigure(rect, state=tk.NORMAL)

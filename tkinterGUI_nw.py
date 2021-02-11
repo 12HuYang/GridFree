@@ -196,6 +196,9 @@ def findratio(originsize,objectsize):
             ratio=2
     return ratio
 
+def getkeys(dict):
+    return [*dict]
+
 def deletezoom(event,widget):
     print('leave widget')
     if len(zoombox)>0:
@@ -317,8 +320,9 @@ def changedisplayimg(frame,text):
     widget.create_image(0,0,image=displayimg[text]['Image'],anchor=NW)
     widget.pack()
     widget.update()
-    global rects,selareapos,app
+    global rects,selareapos,app,delapp,delrects,delselarea
     app=sel_area.Application(widget)
+    # delapp=sel_area.Application(widget)
     if text=='Output':
         try:
             image=outputsegbands[currentfilename]['iter0']
@@ -327,7 +331,16 @@ def changedisplayimg(frame,text):
             return
         widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,image))
         widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
+        delrects=app.start()
+        print('delrects',delrects)
     else:
+        try:
+            delelareadim=app.getinfo(delrects[1])
+            if delelareadim!=[]:
+                delselarea=delelareadim
+            app.end()
+        except:
+            pass
         if text=='Origin':
             try:
                 image=originsegbands['Origin']
@@ -3502,7 +3515,7 @@ def extraction():
     changeoutputimg(currentfilename,'1')
     processlabel=np.copy(reseglabels)
     tempband=np.copy(convband)
-    panelA.bind('<Button-1>',lambda event,arg=processlabel:customcoin(event,processlabel,tempband))
+    # panelA.bind('<Button-1>',lambda event,arg=processlabel:customcoin(event,processlabel,tempband))
     panelA.bind('<Shift-Button-1>',customcoin_multi)
     panelA.config(cursor='hand2')
     '''
@@ -3585,17 +3598,31 @@ def findtempbandgap(locs):
         last=i
     print('ygaps',gaps,'len',len(sortedy))
 
+
 def customcoin_multi(event):
     global panelA,multiselectitems
-    global coinbox_list,minflash
+    global coinbox_list,minflash,coinbox
     global dotflash,figcanvas
+
     x=event.x
     y=event.y
+    # multiselectitems=[]
+    if len(minflash)>0:
+        for i in range(len(minflash)):
+            panelA.delete(minflash.pop(0))
+    if len(dotflash)>0:
+        for i in range(len(dotflash)):
+            figcanvas.delete(dotflash.pop(0))
+    panelA.delete(coinbox)
     tempband=np.copy(convband)
     print(tempband.shape)
     coinlabel=tempband[y,x]
     print('coinlabel',coinlabel,'x',x,'y',y)
     if coinlabel==0:
+        multiselectitems=[]
+        if len(coinbox_list)>0:
+            for i in range(len(coinbox_list)):
+                panelA.delete(coinbox_list.pop(0))
         return
     else:
         multiselectitems.append(coinlabel)
@@ -3611,7 +3638,7 @@ def customcoin_multi(event):
         else:
             uly,rly=min(coinarea[0]),max(coinarea[0])
         a=panelA.create_rectangle(ulx,uly,rlx+1,rly+1,outline='yellow')
-        # coinbox_list.append(a)
+        coinbox_list.append(a)
         # plotcoinarea=np.where(reseglabels==coinlabel)
         # ulx,uly=min(plotcoinarea[1]),min(plotcoinarea[0])
         # rlx,rly=max(plotcoinarea[1]),max(plotcoinarea[0])
@@ -3628,14 +3655,17 @@ def customcoin_multi(event):
         # lw=rlx-ulx+rly-uly
         # area=len(plotcoinarea[0])
         # print('lw',lw,'area',area)
-        for k,v in labelplotmap:
-            templabel=labelplotmap[(k,v)]
-            if templabel==reflabel:
+        labelplotmapkeys=getkeys(labelplotmap)
+        for mapkey in labelplotmapkeys:
+            k=mapkey[0]
+            v=mapkey[1]
+            templabel=labelplotmap[mapkey]
+            if templabel in multiselectitems:
                 xval=k
                 yval=v
                 print('lw',yval,'area',xval)
                 plotflash(yval,xval,'Orange','Orange')
-                break
+                # break
 
 def customcoin(event,processlabels,tempband):
     global panelA#refarea,
@@ -3789,105 +3819,105 @@ def seedfigflash(topkey,multi=False):
 
 
 #def highlightcoin(processlabel,coindict,miniarea):
-def highlightcoin():
-    global coinbox,panelA #refarea,
-    global reflabel,minflash
-    global dotflash,figcanvas
-    if convband is None:
-        return
-    tempband=np.copy(convband)
-    #uniquel=np.unique(tempband)
-    #print(uniquel)
-    processlabel=np.copy(reseglabels)
-    coinarea=0
-    if len(minflash)>0:
-        for i in range(len(minflash)):
-            panelA.delete(minflash.pop(0))
-    if len(dotflash)>0:
-        for i in range(len(dotflash)):
-            figcanvas.delete(dotflash.pop(0))
-    panelA.delete(coinbox)
-    unique,counts=np.unique(processlabel,return_counts=True)
-    hist=dict(zip(unique[1:],counts[1:]))
-    sortedlist=sorted(hist,key=hist.get,reverse=True)
-    if coinsize.get()=='3':
-        panelA.bind('<Button-1>',lambda event,arg=processlabel:customcoin(event,processlabel,tempband))
-        panelA.config(cursor='hand2')
-        #panelA.bind('<Motion>',magnify)
-    else:
-        if coinsize.get()=='1':
-            topkey=sortedlist[0]
-        if coinsize.get()=='2':
-            topkey=sortedlist[-1]
-            coinarea=np.where(tempband==topkey)
-            i=2
-            while(len(coinarea[0])==0):
-                topkey=sortedlist[-i]
-                coinarea=np.where(tempband==topkey)
-                i+=1
-            #copyboundary=np.copy(processlabel)
-        reflabel=topkey
-        #refarea=np.where(processlabel==topkey)
-        print(topkey)
-        coinarea=np.where(tempband==topkey)
-        print(coinarea)
-        ulx,uly=min(coinarea[1]),min(coinarea[0])
-        rlx,rly=max(coinarea[1]),max(coinarea[0])
-        #copytempband=np.copy(tempband.astype('int64'))
-        #temparea=copytempband[uly:rly+1,ulx:rlx+1]
-        #copytempband[uly:rly+1,ulx:rlx+1]=tkintercorestat.tempbanddenoice(temparea,topkey,len(refarea[0])/(ratio**2))
-        #coinarea=np.where(copytempband==topkey)
-        '''
-        try:
-            ulx,uly=min(coinarea[1]),min(coinarea[0])
-            rlx,rly=max(coinarea[1]),max(coinarea[0])
-        except:
-            coinarea=np.where(tempband==topkey)
-            ulx,uly=min(coinarea[1]),min(coinarea[0])
-            rlx,rly=max(coinarea[1]),max(coinarea[0])
-        '''
-        unix=np.unique(coinarea[1]).tolist()
-        uniy=np.unique(coinarea[0]).tolist()
-        if len(unix)==1:
-            ulx,rlx=unix[0],unix[0]
-        else:
-            ulx,rlx=min(coinarea[1]),max(coinarea[1])
-        if len(uniy)==1:
-            uly,rly=uniy[0],uniy[0]
-        else:
-            uly,rly=min(coinarea[0]),max(coinarea[0])
-        coinbox=panelA.create_rectangle(ulx,uly,rlx+2,rly+2,outline='yellow')
-        print('coinbox',ulx,uly,rlx,rly)
-        if coinsize.get()=='2':
-            panelA.after(500,lambda :runflash(ulx,uly,rlx,rly,'red'))
-            panelA.after(1000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
-            panelA.after(1500,lambda :runflash(ulx,uly,rlx,rly,'red'))
-            panelA.after(2000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
-            panelA.after(2500,lambda :runflash(ulx,uly,rlx,rly,'red'))
-            panelA.after(3000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
-
-        plotcoinarea=np.where(reseglabels==topkey)
-        plotulx,plotuly=min(plotcoinarea[1]),min(plotcoinarea[0])
-        plotrlx,plotrly=max(plotcoinarea[1]),max(plotcoinarea[0])
-        unix=np.unique(plotcoinarea[1]).tolist()
-        uniy=np.unique(plotcoinarea[0]).tolist()
-        if len(unix)==1:
-            plotulx,plotrlx=unix[0],unix[0]
-        else:
-            plotulx,plotrlx=min(plotcoinarea[1]),max(plotcoinarea[1])
-        if len(uniy)==1:
-            plotuly,plotrly=uniy[0],uniy[0]
-        else:
-            plotuly,plotrly=min(plotcoinarea[0]),max(plotcoinarea[0])
-        lw=plotrlx-plotulx+plotrly-plotuly
-        area=len(plotcoinarea[0])
-        print('lw',lw,'area',area)
-        plotflash(lw,area,'Orange','Orange')
-        #figcanvas.after(1000,lambda :plotflash(lw,area,'black','SkyBlue'))
-        #figcanvas.after(1500,lambda :plotflash(lw,area,'yellow','yellow'))
-        #figcanvas.after(2000,lambda :plotflash(lw,area,'black','SkyBlue'))
-        #figcanvas.after(2500,lambda :plotflash(lw,area,'yellow','yellow'))
-        #figcanvas.after(3000,lambda :plotflash(lw,area,'black','SkyBlue'))
+# def highlightcoin():
+#     global coinbox,panelA #refarea,
+#     global reflabel,minflash
+#     global dotflash,figcanvas
+#     if convband is None:
+#         return
+#     tempband=np.copy(convband)
+#     #uniquel=np.unique(tempband)
+#     #print(uniquel)
+#     processlabel=np.copy(reseglabels)
+#     coinarea=0
+#     if len(minflash)>0:
+#         for i in range(len(minflash)):
+#             panelA.delete(minflash.pop(0))
+#     if len(dotflash)>0:
+#         for i in range(len(dotflash)):
+#             figcanvas.delete(dotflash.pop(0))
+#     panelA.delete(coinbox)
+#     unique,counts=np.unique(processlabel,return_counts=True)
+#     hist=dict(zip(unique[1:],counts[1:]))
+#     sortedlist=sorted(hist,key=hist.get,reverse=True)
+#     if coinsize.get()=='3':
+#         panelA.bind('<Button-1>',lambda event,arg=processlabel:customcoin(event,processlabel,tempband))
+#         panelA.config(cursor='hand2')
+#         #panelA.bind('<Motion>',magnify)
+#     else:
+#         if coinsize.get()=='1':
+#             topkey=sortedlist[0]
+#         if coinsize.get()=='2':
+#             topkey=sortedlist[-1]
+#             coinarea=np.where(tempband==topkey)
+#             i=2
+#             while(len(coinarea[0])==0):
+#                 topkey=sortedlist[-i]
+#                 coinarea=np.where(tempband==topkey)
+#                 i+=1
+#             #copyboundary=np.copy(processlabel)
+#         reflabel=topkey
+#         #refarea=np.where(processlabel==topkey)
+#         print(topkey)
+#         coinarea=np.where(tempband==topkey)
+#         print(coinarea)
+#         ulx,uly=min(coinarea[1]),min(coinarea[0])
+#         rlx,rly=max(coinarea[1]),max(coinarea[0])
+#         #copytempband=np.copy(tempband.astype('int64'))
+#         #temparea=copytempband[uly:rly+1,ulx:rlx+1]
+#         #copytempband[uly:rly+1,ulx:rlx+1]=tkintercorestat.tempbanddenoice(temparea,topkey,len(refarea[0])/(ratio**2))
+#         #coinarea=np.where(copytempband==topkey)
+#         '''
+#         try:
+#             ulx,uly=min(coinarea[1]),min(coinarea[0])
+#             rlx,rly=max(coinarea[1]),max(coinarea[0])
+#         except:
+#             coinarea=np.where(tempband==topkey)
+#             ulx,uly=min(coinarea[1]),min(coinarea[0])
+#             rlx,rly=max(coinarea[1]),max(coinarea[0])
+#         '''
+#         unix=np.unique(coinarea[1]).tolist()
+#         uniy=np.unique(coinarea[0]).tolist()
+#         if len(unix)==1:
+#             ulx,rlx=unix[0],unix[0]
+#         else:
+#             ulx,rlx=min(coinarea[1]),max(coinarea[1])
+#         if len(uniy)==1:
+#             uly,rly=uniy[0],uniy[0]
+#         else:
+#             uly,rly=min(coinarea[0]),max(coinarea[0])
+#         coinbox=panelA.create_rectangle(ulx,uly,rlx+2,rly+2,outline='yellow')
+#         print('coinbox',ulx,uly,rlx,rly)
+#         if coinsize.get()=='2':
+#             panelA.after(500,lambda :runflash(ulx,uly,rlx,rly,'red'))
+#             panelA.after(1000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
+#             panelA.after(1500,lambda :runflash(ulx,uly,rlx,rly,'red'))
+#             panelA.after(2000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
+#             panelA.after(2500,lambda :runflash(ulx,uly,rlx,rly,'red'))
+#             panelA.after(3000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
+#
+#         plotcoinarea=np.where(reseglabels==topkey)
+#         plotulx,plotuly=min(plotcoinarea[1]),min(plotcoinarea[0])
+#         plotrlx,plotrly=max(plotcoinarea[1]),max(plotcoinarea[0])
+#         unix=np.unique(plotcoinarea[1]).tolist()
+#         uniy=np.unique(plotcoinarea[0]).tolist()
+#         if len(unix)==1:
+#             plotulx,plotrlx=unix[0],unix[0]
+#         else:
+#             plotulx,plotrlx=min(plotcoinarea[1]),max(plotcoinarea[1])
+#         if len(uniy)==1:
+#             plotuly,plotrly=uniy[0],uniy[0]
+#         else:
+#             plotuly,plotrly=min(plotcoinarea[0]),max(plotcoinarea[0])
+#         lw=plotrlx-plotulx+plotrly-plotuly
+#         area=len(plotcoinarea[0])
+#         print('lw',lw,'area',area)
+#         plotflash(lw,area,'Orange','Orange')
+#         #figcanvas.after(1000,lambda :plotflash(lw,area,'black','SkyBlue'))
+#         #figcanvas.after(1500,lambda :plotflash(lw,area,'yellow','yellow'))
+#         #figcanvas.after(2000,lambda :plotflash(lw,area,'black','SkyBlue'))
+#         #figcanvas.after(2500,lambda :plotflash(lw,area,'yellow','yellow'))
+#         #figcanvas.after(3000,lambda :plotflash(lw,area,'black','SkyBlue'))
 
 def del_reflabel():
     global reseglabels,panelA,loccanvas,linelocs,bins,ybins,figcanvas,maxx,minx,maxy,miny,refvar,refsubframe
@@ -3895,6 +3925,21 @@ def del_reflabel():
     processlabel=np.copy(reseglabels)
     refarea=np.where(processlabel==reflabel)
     reseglabels[refarea]=0
+    delselarea=app.getinfo(delrects[1])
+    if delselarea!=[]:
+        print('delselarea',delrects[1],delselarea)
+        npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+        filter=Image.fromarray(npfilter)
+        draw=ImageDraw.Draw(filter)
+        draw.ellipse(delselarea,fill='red')
+        filter.save('deletefilter.tiff')
+        filter=np.array(filter)
+        filter=np.divide(filter,np.max(filter))
+        indices_one=np.where(filter==1)
+        filter=cv2.resize(filter,(reseglabels.shape[1],reseglabels.shape[0]),interpolation=cv2.INTER_LINEAR)
+        indices_one=np.where(filter==1)
+        reseglabels[indices_one]=0
+
     if len(minflash)>0:
         for i in range(len(minflash)):
             panelA.delete(minflash.pop(0))
@@ -3906,7 +3951,7 @@ def del_reflabel():
             panelA.delete(coinbox_list.pop(0))
     if len(multiselectitems)>0:
         for i in range(len(multiselectitems)):
-            refarea=np.where(processlabel==multiselectitems[i])
+            refarea=np.where(processlabel==multiselectitems.pop(0))
             reseglabels[refarea]=0
     thresholds=[cal_xvalue(linelocs[0]),cal_xvalue(linelocs[1])]
     minthres=min(thresholds)
