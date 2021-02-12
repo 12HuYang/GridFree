@@ -84,7 +84,7 @@ class SelectionObject:
         select_opts1 = self.select_opts1.copy()  # Avoid modifying passed argument.
         select_opts1.update(state=tk.HIDDEN)  # Hide initially.
         # Separate options for area inside rectanglar selection.
-        select_opts2 = dict(dash=(2, 2), fill='', outline='black', state=tk.HIDDEN)
+        select_opts2 = dict(dash=(2, 4), fill='', outline='orange', width=2,state=tk.HIDDEN)
 
         # Initial extrema of inner and outer rectangles.
         imin_x, imin_y,  imax_x, imax_y = 0, 0,  1, 1
