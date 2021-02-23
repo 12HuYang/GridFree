@@ -1,4 +1,5 @@
 # GridFree: A pixel-level label tools to segment high-throughput images
+#### Article link: https://www.biorxiv.org/content/10.1101/2020.07.31.231662v2
 ## Implement Python version >= 3.6.5
 * install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/FreeCADITS/master/Training_intro.png)-->
@@ -53,6 +54,9 @@ Modify matplotlibrc file ADD: ```backend: TkAgg```
 - [1] ImageJ https://imagej.nih.gov/ij/download.html
 - [2] SeedCounter https://www.frontiersin.org/articles/10.3389/fpls.2016.01990/full
 - [3] GrainScan https://plantmethods.biomedcentral.com/articles/10.1186/1746-4811-10-23-->
+#### Area selection segment and delet demo
+##### YouTube: https://youtu.be/oGYw1ZBcrhk
+
 #### Wheat segment demo
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/wheatdemo.gif)
 ##### YouTube: https://youtu.be/IxMBTT4fzr4
@@ -64,3 +68,5 @@ Modify matplotlibrc file ADD: ```backend: TkAgg```
 #### Corns segment demo
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/corns_demo.gif)
 ##### YouTube: https://youtu.be/1ngHQsUFWH4
+
+
