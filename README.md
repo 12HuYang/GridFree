@@ -7,7 +7,6 @@ Bib tex @article {Hu2020.07.31.231662,
 	year = {2020},
 	doi = {10.1101/2020.07.31.231662},
 	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2020/12/16/2020.07.31.231662},
 	journal = {bioRxiv}
 }
 ## Implement Python version >= 3.6.5
