@@ -1,5 +1,16 @@
 # GridFree: A pixel-level label tools to segment high-throughput images
 #### Article link: https://www.biorxiv.org/content/10.1101/2020.07.31.231662v2
+##### cite bib
+@article {Hu2020.07.31.231662,
+	author = {Hu, Yang and Zhang, Zhiwu},
+	title = {GridFree: A Python Package of Image Analysis for Interactive Grain Counting and Measuring},
+	elocation-id = {2020.07.31.231662},
+	year = {2020},
+	doi = {10.1101/2020.07.31.231662},
+	publisher = {Cold Spring Harbor Laboratory},
+	URL = {https://www.biorxiv.org/content/early/2020/12/16/2020.07.31.231662},
+	journal = {bioRxiv}
+}
 ## Implement Python version >= 3.6.5
 * install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/FreeCADITS/master/Training_intro.png)-->
