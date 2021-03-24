@@ -5,4 +5,4 @@ matplotlib
 scipy
 sklearn
 scikit-image
-
+spectral
