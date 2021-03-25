@@ -154,6 +154,7 @@ kmeanschanged=False
 pcweightchanged=False
 originbinaryimg=None
 clusterchanged=False
+originselarea=False
 
 maxx=0
 minx=0
@@ -320,7 +321,7 @@ def changedisplayimg(frame,text):
     widget.create_image(0,0,image=displayimg[text]['Image'],anchor=NW)
     widget.pack()
     widget.update()
-    global rects,selareapos,app,delapp,delrects,delselarea
+    global rects,selareapos,app,delapp,delrects,delselarea,originselarea
     app=sel_area.Application(widget)
     # delapp=sel_area.Application(widget)
     if text=='Output':
@@ -329,9 +330,9 @@ def changedisplayimg(frame,text):
             displayfig()
         except:
             return
-        widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,image))
-        widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
-        delrects=app.start()
+        zoomfnid_m=widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,image))
+        zoomfnid_l=widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
+        delrects=app.start(zoomfnid_m,zoomfnid_l)
         print('delrects',delrects)
     else:
         try:
@@ -353,6 +354,8 @@ def changedisplayimg(frame,text):
                 widget.pack_forget()
             rects=app.start()
             print(rects)
+            originselarea=True
+
         else:
             widget.unbind('<Motion>')
             selareadim=app.getinfo(rects[1])
@@ -361,6 +364,21 @@ def changedisplayimg(frame,text):
             app.end(rects)
 
     if text=='PCs':
+        selareadim=app.getinfo(rects[1])
+        if selareadim!=[0,0,1,1] and selareadim!=[] and selareadim!=selareapos:
+            selareapos=selareadim
+        if selareapos!=[0,0,1,1] and originselarea==True:
+            #need to redo PCA
+            npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+            filter=Image.fromarray(npfilter)
+            draw=ImageDraw.Draw(filter)
+            draw.ellipse(selareapos,fill='red')
+            filter=np.array(filter)
+            filter=np.divide(filter,np.max(filter))
+            filter=cv2.resize(filter,(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)
+            partialsingleband(filter)
+            originselarea=False
+            pass
         PCbuttons(resviewframe,frame)
         pass
 
@@ -770,15 +788,29 @@ def Open_Multifile():
         kmeansbar.state(["!disabled"])
         pccombinebar_up.state(["!disabled"])
 
-def fillbands(originbands,displaybands,vector,vectorindex,name,band):
+def fillpartialbands(vector,vectorindex,band,filter_vector):
+    nonzero=np.where(filter_vector!=0)
+    vector[nonzero,vectorindex]=vector[nonzero,vectorindex]+band
+
+def fillbands(originbands,displaybands,vector,vectorindex,name,band,filter=0):
     tempdict={name:band}
-    if name not in originbands:
-        originbands.update(tempdict)
-        image=cv2.resize(band,(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)
-        displaydict={name:image}
-        displaybands.update(displaydict)
-        fea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-        vector[:,vectorindex]=vector[:,vectorindex]+fea_bands
+    if isinstance(filter,int):
+        if name not in originbands:
+            originbands.update(tempdict)
+            image=cv2.resize(band,(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)
+            displaydict={name:image}
+            displaybands.update(displaydict)
+            fea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
+            vector[:,vectorindex]=vector[:,vectorindex]+fea_bands
+    else:
+        if name not in originbands:
+            originbands.update(tempdict)
+            image=cv2.resize(band,(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)
+            image=np.multiply(image,filter)
+            displaydict={name:image}
+            displaybands.update(displaydict)
+            fea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
+            vector[:,vectorindex]=vector[:,vectorindex]+fea_bands
     return
 
 def plot3d(pcas):
@@ -814,11 +846,149 @@ def plot3d(pcas):
     plt.savefig('3dplot_PC.png')
 
 
+def partialsingleband(filter):
+    global displaybandarray,originpcabands
+    global pcbuttons
+    global nonzero_vector,partialpca
+
+    partialpca=True
+    bands=Multiimagebands[currentfilename].bands
+    nonzero=np.where(filter!=0)
+    RGB_vector=np.zeros((displayfea_l*displayfea_w,3))
+    colorindex_vector=np.zeros((displayfea_l*displayfea_w,12))
+    filter_vector=filter.reshape((displayfea_l*displayfea_w),1)[:,0]
+    originbands={}
+    displays={}
+    Red=cv2.resize(bands[0,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+    Green=cv2.resize(bands[1,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+    Blue=cv2.resize(bands[2,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+    fillpartialbands(RGB_vector,0,Red,filter_vector)
+    fillpartialbands(RGB_vector,1,Green,filter_vector)
+    fillpartialbands(RGB_vector,2,Blue,filter_vector)
+
+    PAT_R=Red/(Red+Green)
+    PAT_G=Green/(Green+Blue)
+    PAT_B=Blue/(Blue+Red)
+
+    ROO_R=Red/Green
+    ROO_G=Green/Blue
+    ROO_B=Blue/Red
+
+    DIF_R=2*Red-Green-Blue
+    DIF_G=2*Green-Blue-Red
+    DIF_B=2*Blue-Red-Green
+
+    GLD_R=Red/(np.multiply(np.power(Blue,0.618),np.power(Green,0.382)))
+    GLD_G=Green/(np.multiply(np.power(Blue,0.618),np.power(Red,0.382)))
+    GLD_B=Blue/(np.multiply(np.power(Green,0.618),np.power(Red,0.382)))
+
+    fillpartialbands(colorindex_vector,0,PAT_R,filter_vector)
+    fillpartialbands(colorindex_vector,1,PAT_G,filter_vector)
+    fillpartialbands(colorindex_vector,2,PAT_B,filter_vector)
+    fillpartialbands(colorindex_vector,3,ROO_R,filter_vector)
+    fillpartialbands(colorindex_vector,4,ROO_G,filter_vector)
+    fillpartialbands(colorindex_vector,5,ROO_B,filter_vector)
+    fillpartialbands(colorindex_vector,6,DIF_R,filter_vector)
+    fillpartialbands(colorindex_vector,7,DIF_G,filter_vector)
+    fillpartialbands(colorindex_vector,8,DIF_B,filter_vector)
+    fillpartialbands(colorindex_vector,9,GLD_R,filter_vector)
+    fillpartialbands(colorindex_vector,10,GLD_G,filter_vector)
+    fillpartialbands(colorindex_vector,11,GLD_B,filter_vector)
+
+    nonzero_vector=np.where(filter_vector!=0)
+    rgb_M=np.mean(RGB_vector[nonzero_vector,:].T,axis=1)
+    colorindex_M=np.mean(colorindex_vector[nonzero_vector,:].T,axis=1)
+    print('rgb_M',rgb_M,'colorindex_M',colorindex_M)
+    rgb_C=RGB_vector[nonzero_vector,:][0]-rgb_M.T
+    colorindex_C=colorindex_vector[nonzero_vector,:][0]-colorindex_M.T
+    rgb_V=np.corrcoef(rgb_C.T)
+    color_V=np.corrcoef(colorindex_C.T)
+    rgb_std=rgb_C/(np.std(RGB_vector[nonzero_vector,:].T,axis=1)).T
+    color_std=colorindex_C/(np.std(colorindex_vector[nonzero_vector,:].T,axis=1)).T
+    rgb_eigval,rgb_eigvec=np.linalg.eig(rgb_V)
+    color_eigval,color_eigvec=np.linalg.eig(color_V)
+    print('rgb_eigvec',rgb_eigvec)
+    print('color_eigvec',color_eigvec)
+    featurechannel=14
+    pcabands=np.zeros((colorindex_vector.shape[0],featurechannel))
+    rgbbands=np.zeros((colorindex_vector.shape[0],3))
+    for i in range(3):
+        pcn=rgb_eigvec[:,i]
+        pcnbands=np.dot(rgb_std,pcn)
+        pcvar=np.var(pcnbands)
+        print('rgb pc',i+1,'var=',pcvar)
+        pcabands[nonzero_vector,i]=pcabands[nonzero_vector,i]+pcnbands
+        rgbbands[nonzero_vector,i]=rgbbands[nonzero_vector,i]+pcnbands
+    # plot3d(pcabands)
+    # np.savetxt('rgb.csv',rgbbands,delimiter=',',fmt='%10.5f')
+    pcabands[:,1]=np.copy(pcabands[:,1])
+    pcabands[:,2]=pcabands[:,2]*0
+    indexbands=np.zeros((colorindex_vector.shape[0],3))
+    for i in range(2,featurechannel):
+        pcn=color_eigvec[:,i-2]
+        pcnbands=np.dot(color_std,pcn)
+        pcvar=np.var(pcnbands)
+        print('color index pc',i-1,'var=',pcvar)
+        pcabands[nonzero_vector,i]=pcabands[nonzero_vector,i]+pcnbands
+        # if i<5:
+        #     indexbands[:,i-2]=indexbands[:,i-2]+pcnbands
+
+    '''save to csv'''
+    # indexbands[:,0]=indexbands[:,0]+pcabands[:,2]
+    # indexbands[:,1]=indexbands[:,1]+pcabands[:,3]
+    # indexbands[:,2]=indexbands[:,2]+pcabands[:,4]
+    # plot3d(indexbands)
+    # np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%10.5f')
+
+    displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%10.5f')
+
+    # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    originpcabands.update({currentfilename:displayfea_vector})
+    pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
+    tempdictdisplay={'LabOstu':pcabandsdisplay}
+    displaybandarray.update({currentfilename:tempdictdisplay})
+    # originbandarray.update({currentfilename:originbands})
+
+    # Red=displays['Band1']
+    # Green=displays['Band2']
+    # Blue=displays['Band3']
+
+    # convimg=np.zeros((Red.shape[0],Red.shape[1],3))
+    # convimg[:,:,0]=Red
+    # convimg[:,:,1]=Green
+    # convimg[:,:,2]=Blue
+    # convimg=Image.fromarray(convimg.astype('uint8'))
+    # convimg.save('convimg.png','PNG')
+
+    pcbuttons=[]
+    need_w=int(450/3)
+    need_h=int(400/4)
+    for i in range(2,featurechannel):
+        band=np.copy(pcabandsdisplay[:,:,i])
+        imgband=(band-band.min())*255/(band.max()-band.min())
+        pcimg=Image.fromarray(imgband.astype('uint8'),'L')
+        # pcimg.save('pc'+'_'+str(i)+'.png',"PNG")
+        pcimg.thumbnail((need_w,need_h),Image.ANTIALIAS)
+        # pcimg.save('pc'+'_'+str(i)+'.png',"PNG")
+        # ratio=max(displayfea_l/need_h,displayfea_w/need_w)
+        # print('origin band range',band.max(),band.min())
+        # # band,cache=tkintercorestat.pool_forward(band,{"f":int(ratio),"stride":int(ratio)})
+        # band=cv2.resize(band,(need_w,need_h),interpolation=cv2.INTER_LINEAR)
+        # bandrange=band.max()-band.min()
+        # print('band range',band.max(),band.min())
+        # band=(band-band.min())/bandrange*255
+        # print('button img range',band.max(),band.min())
+        # buttonimg=Image.fromarray(band.astype('uint8'),'L')
+        pcbuttons.append(ImageTk.PhotoImage(pcimg))
 
 
 def singleband(file):
     global displaybandarray,originbandarray,originpcabands,displayfea_l,displayfea_w
     global pcbuttons
+    global partialpca
+    partialpca=False
+
     try:
         bands=Multiimagebands[file].bands
     except:
@@ -1745,14 +1915,38 @@ def kmeansclassify():
             h,w,c=tempband.shape
             print('shape',tempband.shape)
             reshapedtif=tempband.reshape(tempband.shape[0]*tempband.shape[1],c)
-            # reshapedtif=cv2.resize(reshapedtif,(c,resizeshape[0]*resizeshape[1]),cv2.INTER_LINEAR)
-            print('reshape',reshapedtif.shape)
-            clf=KMeans(n_clusters=int(kmeans.get()),init='k-means++',n_init=10,random_state=0)
-            tempdisplayimg=clf.fit(reshapedtif)
-            # print('label=0',np.any(tempdisplayimg==0))
-            displaylabels=tempdisplayimg.labels_.reshape((displaybandarray[currentfilename]['LabOstu'].shape[0],
+            if partialpca==True:
+                partialshape=reshapedtif[nonzero_vector]
+                print('partial reshape',partialshape.shape)
+                clf=KMeans(n_clusters=int(kmeans.get()),init='k-means++',n_init=10,random_state=0)
+                tempdisplayimg=clf.fit(partialshape)
+                reshapedtif[nonzero_vector,0]=np.add(tempdisplayimg.labels_,1)
+                print(reshapedtif[nonzero_vector])
+                displaylabels=reshapedtif.reshape((displaybandarray[currentfilename]['LabOstu'].shape[0],
                                                   displaybandarray[currentfilename]['LabOstu'].shape[1]))
-            # displaylabels=tempdisplayimg.labels_.reshape((resizeshape[1],resizeshape[0]))
+            # reshapedtif=cv2.resize(reshapedtif,(c,resizeshape[0]*resizeshape[1]),cv2.INTER_LINEAR)
+                clusterdict={}
+                displaylabels=displaylabels+10
+                for i in range(int(kmeans.get())):
+                    locs=np.where(tempdisplayimg.labels_==i)
+                    maxval=partialshape[locs].max()
+                    print(maxval)
+                    clusterdict.update({maxval:i+11})
+                print(clusterdict)
+                sortcluster=list(sorted(clusterdict))
+                print(sortcluster)
+                for i in range(len(sortcluster)):
+                    cluster_num=clusterdict[sortcluster[i]]
+                    displaylabels=np.where(displaylabels==cluster_num,i,displaylabels)
+                return displaylabels
+            else:
+                print('reshape',reshapedtif.shape)
+                clf=KMeans(n_clusters=int(kmeans.get()),init='k-means++',n_init=10,random_state=0)
+                tempdisplayimg=clf.fit(reshapedtif)
+                # print('label=0',np.any(tempdisplayimg==0))
+                displaylabels=tempdisplayimg.labels_.reshape((displaybandarray[currentfilename]['LabOstu'].shape[0],
+                                                      displaybandarray[currentfilename]['LabOstu'].shape[1]))
+                    # displaylabels=tempdisplayimg.labels_.reshape((resizeshape[1],resizeshape[0]))
         clusterdict={}
         displaylabels=displaylabels+10
         for i in range(int(kmeans.get())):
@@ -2431,7 +2625,7 @@ def export_result(iterver):
                 if labels.shape[0]==512:
                     convband=np.copy(labels)
         locfilename=path+'/'+originfile+'-pixellocs.csv'
-        from spectral import imshow, view_cube
+        #from spectral import imshow, view_cube
         '''hyperspectral img process'''
         # import spectral.io.envi as envi
         lesszeroonefive=[]
@@ -3406,10 +3600,10 @@ def extraction():
     ratio=1
     # if selarea.get()=='1':
     selareadim=app.getinfo(rects[1])
-    global selareapos
+    global selareapos,originselarea
     if selareadim!=[0,0,1,1] and selareadim!=[] and selareadim!=selareapos:
         selareapos=selareadim
-    if selareapos!=[0,0,1,1]:
+    if selareapos!=[0,0,1,1] and originselarea==True:
         # selareadim=app.getinfo(rects[1])
         npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
         filter=Image.fromarray(npfilter)
@@ -3427,10 +3621,12 @@ def extraction():
         # for i in range(ry+1,displayimg['Origin']['Size'][0]):
         #     filter[i,:]=0
         filter=np.divide(filter,np.max(filter))
+        originselarea=False
         # filter=np.where(filter==max(filter),1,0)
     else:
         filter=np.ones((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
     filter=cv2.resize(filter,(currentlabels.shape[1],currentlabels.shape[0]),interpolation=cv2.INTER_LINEAR)
+    selareapos=[]
 
     print('deal pixel',dealpixel)
     if dealpixel<512000:

@@ -13,6 +13,11 @@ class MousePositionTracker(tk.Frame):
         self.canv_width = self.canvas.cget('width')
         self.canv_height = self.canvas.cget('height')
         self.reset()
+        self.begin_fnid=0
+        self.update_fnid=0
+        self.quit_fnid=0
+        self.fn_m=0
+        self.fn_l=0
 
         # Create canvas cross-hair lines.
         xhair_opts = dict(dash=(3, 2), fill='red', state=tk.HIDDEN)
@@ -24,6 +29,10 @@ class MousePositionTracker(tk.Frame):
 
     def begin(self, event):
         self.hide()
+        # if isinstance(self.fn_m,int)==False:
+        #     self.canvas.unbind('<Motion>',self.fn_m)
+        # if isinstance(self.fn_l,int)==False:
+        #     self.canvas.unbind('<Leave>',self.fn_l)
         self.start = (event.x, event.y)  # Remember position (no drawing).
 
     def update(self, event):
@@ -48,22 +57,30 @@ class MousePositionTracker(tk.Frame):
         self.canvas.itemconfigure(self.lines[0], state=tk.NORMAL)
         self.canvas.itemconfigure(self.lines[1], state=tk.NORMAL)
 
-    def autodraw(self, command=lambda *args: None):
+    def autodraw(self, fn_m,fn_l, command=lambda *args: None):
         """Setup automatic drawing; supports command option"""
         self.reset()
         self._command = command
-        self.canvas.bind("<Button-1>", self.begin)
-        self.canvas.bind("<B1-Motion>", self.update)
-        self.canvas.bind("<ButtonRelease-1>", self.quit)
+        self.fn_m=fn_m
+        self.fn_l=fn_l
+
+        self.begin_fnid=self.canvas.bind("<Button-1>", self.begin)
+        self.update_fnid=self.canvas.bind("<B1-Motion>", self.update)
+        self.quit_fnid=self.canvas.bind("<ButtonRelease-1>", self.quit)
 
     def quit(self, event):
         self.hide()  # Hide cross-hairs.
         self.reset()
+        # if isinstance(self.fn_m,int)==False:
+        #     self.canvas.bind('<Motion>',self.fn_m)
+        # if isinstance(self.fn_l,int)==False:
+        #     self.canvas.bind('<Leave>',self.fn_l)
 
     def disable(self):
-        self.canvas.unbind("<Button-1>")
-        self.canvas.unbind("<B1-Motion>")
-        self.canvas.unbind("<ButtonRelease-1>")
+        self.canvas.unbind("<Button-1>",self.begin_fnid)
+        self.canvas.unbind("<B1-Motion>",self.update_fnid)
+        self.canvas.unbind("<ButtonRelease-1>",self.quit_fnid)
+
 
 
 
@@ -165,20 +182,27 @@ class Application(tk.Frame):
         self.selection_obj = SelectionObject(self.canvas, self.SELECT_OPTS)
         self.posn_tracker = MousePositionTracker(self.canvas)
 
+        self.zoom_m=0
+        self.zoom_l=0
+
 
     def end(self,rects):
         self.posn_tracker.disable()
         self.selection_obj.delete(rects)
         self.canvas.update()
 
-    def start(self):
+    def start(self,fn_m=0,fn_l=0):
         # Callback function to update it given two points of its diagonal.
+        if isinstance(fn_m,int)==False:
+            self.zoom_m=fn_m
+        if isinstance(fn_l,int)==False:
+            self.zoom_l=fn_l
         def on_drag(start, end, **kwarg):  # Must accept these arguments.
             self.selection_obj.update(start, end)
 
 
                 # Create mouse position tracker that uses the function.
-        self.posn_tracker.autodraw(command=on_drag)  # Enable callbacks.
+        self.posn_tracker.autodraw(fn_m,fn_l,command=on_drag)  # Enable callbacks.
         return self.selection_obj.rects
 
 
