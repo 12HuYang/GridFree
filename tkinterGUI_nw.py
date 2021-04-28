@@ -155,6 +155,7 @@ pcweightchanged=False
 originbinaryimg=None
 clusterchanged=False
 originselarea=False
+zoomoff=False
 
 maxx=0
 minx=0
@@ -306,9 +307,22 @@ def displaypreview(text):
     figcanvas.create_image(0,0,image=previewimage,anchor=NW)
     figcanvas.update()
 
+def switchevent(event,widget,img):
+    global zoomoff,zoomfnid_m,zoomfnid_l,zoombox
+    zoomoff= not zoomoff
+    if zoomoff==True:
+        widget.unbind('<Motion>',zoomfnid_m)
+        widget.unbind('<Leave>',zoomfnid_l)
+        if len(zoombox)>0:
+            for i in range(len(zoombox)):
+                widget.delete(zoombox.pop(0))
+        widget.update()
+    else:
+        zoomfnid_m=widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,img))
+        zoomfnid_l=widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
 
 def changedisplayimg(frame,text):
-    global displaybut_var,figcanvas,resviewframe
+    global displaybut_var,figcanvas,resviewframe,reflabel
     displaybut_var.set(disbuttonoption[text])
     for widget in frame.winfo_children():
         widget.pack_forget()
@@ -322,6 +336,7 @@ def changedisplayimg(frame,text):
     widget.pack()
     widget.update()
     global rects,selareapos,app,delapp,delrects,delselarea,originselarea
+    global zoomfnid_m,zoomfnid_l
     app=sel_area.Application(widget)
     # delapp=sel_area.Application(widget)
     if text=='Output':
@@ -333,8 +348,11 @@ def changedisplayimg(frame,text):
         zoomfnid_m=widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,image))
         zoomfnid_l=widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
         delrects=app.start(zoomfnid_m,zoomfnid_l)
+        widget.bind('<Double-Button-1>',lambda event,arg=widget:switchevent(event,arg,image))
         print('delrects',delrects)
     else:
+        reflabel=0
+        print('reflabel=',reflabel)
         try:
             delelareadim=app.getinfo(delrects[1])
             if delelareadim!=[]:
@@ -345,11 +363,13 @@ def changedisplayimg(frame,text):
         if text=='Origin':
             try:
                 image=originsegbands['Origin']
-                widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,image))
-                widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
+                zoomfnid_m=widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,image))
+                zoomfnid_l=widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
 
             except:
                 return
+            widget.bind('<Double-Button-1>',lambda event,arg=widget:switchevent(event,arg,image))
+
             for widget in resviewframe.winfo_children():
                 widget.pack_forget()
             rects=app.start()
@@ -2997,7 +3017,7 @@ def resegment(thresholds=[],lwthresholds=[]):
     figcanvas.unbind('<Any-Leave>')
     figcanvas.unbind('<Button-1>')
     figcanvas.unbind('<B1-Motion>')
-    #figcanvas.unbind('<Shift-Button-1>')
+    figcanvas.unbind('<Shift-Button-1>')
     figcanvas.delete(ALL)
     #panelA.unbind('<Button-1>')
     #refvar.set('0')
@@ -3231,6 +3251,7 @@ def item_leave(event):
     pass
 
 def item_multiselect(event):
+    global dotflash
     print(event.type,'event item_multiselect')
     currx=event.x
     curry=event.y
@@ -3523,7 +3544,7 @@ def displayfig():
     figcanvas.bind('<Any-Leave>',item_leave)
     figcanvas.bind('<Button-1>',item_start_drag)
     figcanvas.bind('<B1-Motion>',item_drag)
-    #figcanvas.bind('<Shift-Button-1>',item_multiselect)
+    figcanvas.bind('<Shift-Button-1>',item_multiselect)
     #reseg=Button(frame,text='Re-process',command=partial(resegment,labels,figcanvas),padx=5,pady=5)
     #reseg.pack()
 
@@ -3712,7 +3733,7 @@ def extraction():
     processlabel=np.copy(reseglabels)
     tempband=np.copy(convband)
     # panelA.bind('<Button-1>',lambda event,arg=processlabel:customcoin(event,processlabel,tempband))
-    panelA.bind('<Shift-Button-1>',customcoin_multi)
+    # panelA.bind('<Shift-Button-1>',customcoin_multi)
     panelA.config(cursor='hand2')
     '''
     data=np.asarray(border[1:])
@@ -4010,142 +4031,30 @@ def seedfigflash(topkey,multi=False):
     panelA.after(1500,lambda :runflash(ulx,uly,rlx,rly,'red'))
     panelA.after(1800,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
 
-
-
-
-
-#def highlightcoin(processlabel,coindict,miniarea):
-# def highlightcoin():
-#     global coinbox,panelA #refarea,
-#     global reflabel,minflash
-#     global dotflash,figcanvas
-#     if convband is None:
-#         return
-#     tempband=np.copy(convband)
-#     #uniquel=np.unique(tempband)
-#     #print(uniquel)
-#     processlabel=np.copy(reseglabels)
-#     coinarea=0
-#     if len(minflash)>0:
-#         for i in range(len(minflash)):
-#             panelA.delete(minflash.pop(0))
-#     if len(dotflash)>0:
-#         for i in range(len(dotflash)):
-#             figcanvas.delete(dotflash.pop(0))
-#     panelA.delete(coinbox)
-#     unique,counts=np.unique(processlabel,return_counts=True)
-#     hist=dict(zip(unique[1:],counts[1:]))
-#     sortedlist=sorted(hist,key=hist.get,reverse=True)
-#     if coinsize.get()=='3':
-#         panelA.bind('<Button-1>',lambda event,arg=processlabel:customcoin(event,processlabel,tempband))
-#         panelA.config(cursor='hand2')
-#         #panelA.bind('<Motion>',magnify)
-#     else:
-#         if coinsize.get()=='1':
-#             topkey=sortedlist[0]
-#         if coinsize.get()=='2':
-#             topkey=sortedlist[-1]
-#             coinarea=np.where(tempband==topkey)
-#             i=2
-#             while(len(coinarea[0])==0):
-#                 topkey=sortedlist[-i]
-#                 coinarea=np.where(tempband==topkey)
-#                 i+=1
-#             #copyboundary=np.copy(processlabel)
-#         reflabel=topkey
-#         #refarea=np.where(processlabel==topkey)
-#         print(topkey)
-#         coinarea=np.where(tempband==topkey)
-#         print(coinarea)
-#         ulx,uly=min(coinarea[1]),min(coinarea[0])
-#         rlx,rly=max(coinarea[1]),max(coinarea[0])
-#         #copytempband=np.copy(tempband.astype('int64'))
-#         #temparea=copytempband[uly:rly+1,ulx:rlx+1]
-#         #copytempband[uly:rly+1,ulx:rlx+1]=tkintercorestat.tempbanddenoice(temparea,topkey,len(refarea[0])/(ratio**2))
-#         #coinarea=np.where(copytempband==topkey)
-#         '''
-#         try:
-#             ulx,uly=min(coinarea[1]),min(coinarea[0])
-#             rlx,rly=max(coinarea[1]),max(coinarea[0])
-#         except:
-#             coinarea=np.where(tempband==topkey)
-#             ulx,uly=min(coinarea[1]),min(coinarea[0])
-#             rlx,rly=max(coinarea[1]),max(coinarea[0])
-#         '''
-#         unix=np.unique(coinarea[1]).tolist()
-#         uniy=np.unique(coinarea[0]).tolist()
-#         if len(unix)==1:
-#             ulx,rlx=unix[0],unix[0]
-#         else:
-#             ulx,rlx=min(coinarea[1]),max(coinarea[1])
-#         if len(uniy)==1:
-#             uly,rly=uniy[0],uniy[0]
-#         else:
-#             uly,rly=min(coinarea[0]),max(coinarea[0])
-#         coinbox=panelA.create_rectangle(ulx,uly,rlx+2,rly+2,outline='yellow')
-#         print('coinbox',ulx,uly,rlx,rly)
-#         if coinsize.get()=='2':
-#             panelA.after(500,lambda :runflash(ulx,uly,rlx,rly,'red'))
-#             panelA.after(1000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
-#             panelA.after(1500,lambda :runflash(ulx,uly,rlx,rly,'red'))
-#             panelA.after(2000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
-#             panelA.after(2500,lambda :runflash(ulx,uly,rlx,rly,'red'))
-#             panelA.after(3000,lambda :runflash(ulx,uly,rlx,rly,'yellow'))
-#
-#         plotcoinarea=np.where(reseglabels==topkey)
-#         plotulx,plotuly=min(plotcoinarea[1]),min(plotcoinarea[0])
-#         plotrlx,plotrly=max(plotcoinarea[1]),max(plotcoinarea[0])
-#         unix=np.unique(plotcoinarea[1]).tolist()
-#         uniy=np.unique(plotcoinarea[0]).tolist()
-#         if len(unix)==1:
-#             plotulx,plotrlx=unix[0],unix[0]
-#         else:
-#             plotulx,plotrlx=min(plotcoinarea[1]),max(plotcoinarea[1])
-#         if len(uniy)==1:
-#             plotuly,plotrly=uniy[0],uniy[0]
-#         else:
-#             plotuly,plotrly=min(plotcoinarea[0]),max(plotcoinarea[0])
-#         lw=plotrlx-plotulx+plotrly-plotuly
-#         area=len(plotcoinarea[0])
-#         print('lw',lw,'area',area)
-#         plotflash(lw,area,'Orange','Orange')
-#         #figcanvas.after(1000,lambda :plotflash(lw,area,'black','SkyBlue'))
-#         #figcanvas.after(1500,lambda :plotflash(lw,area,'yellow','yellow'))
-#         #figcanvas.after(2000,lambda :plotflash(lw,area,'black','SkyBlue'))
-#         #figcanvas.after(2500,lambda :plotflash(lw,area,'yellow','yellow'))
-#         #figcanvas.after(3000,lambda :plotflash(lw,area,'black','SkyBlue'))
-
 def del_reflabel():
     global reseglabels,panelA,loccanvas,linelocs,bins,ybins,figcanvas,maxx,minx,maxy,miny,refvar,refsubframe
-    global labelplotmap,multiselectitems,dotflash,minflash,coinbox_list
+    global labelplotmap,multiselectitems,dotflash,minflash,coinbox_list,reflabel
     processlabel=np.copy(reseglabels)
     refarea=np.where(processlabel==reflabel)
+    print('reflabel to delete',reflabel)
     reseglabels[refarea]=0
+    reflabel=0
     delselarea=app.getinfo(delrects[1])
-    if delselarea!=[]:
-        print('delselarea',delrects[1],delselarea)
-        npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
-        filter=Image.fromarray(npfilter)
-        draw=ImageDraw.Draw(filter)
-        draw.ellipse(delselarea,fill='red')
-        filter.save('deletefilter.tiff')
-        filter=np.array(filter)
-        filter=np.divide(filter,np.max(filter))
-        indices_one=np.where(filter==1)
-        filter=cv2.resize(filter,(reseglabels.shape[1],reseglabels.shape[0]),interpolation=cv2.INTER_LINEAR)
-        indices_one=np.where(filter==1)
-        reseglabels[indices_one]=0
 
-    if len(minflash)>0:
-        for i in range(len(minflash)):
-            panelA.delete(minflash.pop(0))
-    if len(dotflash)>0:
-        for i in range(len(dotflash)):
-            figcanvas.delete(dotflash.pop(0))
-    if len(coinbox_list)>0:
-        for i in range(len(coinbox_list)):
-            panelA.delete(coinbox_list.pop(0))
+    # if len(minflash)>0:
+    #     print('delete minflash')
+    #     for i in range(len(minflash)):
+    #         panelA.delete(minflash.pop(0))
+    # if len(dotflash)>0:
+    #     print('delete dotflash')
+    #     for i in range(len(dotflash)):
+    #         figcanvas.delete(dotflash.pop(0))
+    # if len(coinbox_list)>0:
+    #     print('del coinbox_list')
+    #     for i in range(len(coinbox_list)):
+    #         panelA.delete(coinbox_list.pop(0))
     if len(multiselectitems)>0:
+        print('del multiselection items',len(multiselectitems))
         for i in range(len(multiselectitems)):
             refarea=np.where(processlabel==multiselectitems.pop(0))
             reseglabels[refarea]=0
@@ -4190,19 +4099,35 @@ def del_reflabel():
             outsizethreshold.append(unique[1:][i])
         if residual[i]<minlw:
             outsizethreshold.append(unique[1:][i])
+    if len(outsizethreshold)>0:
+        print('del outsizethreshold',len(outsizethreshold))
     for i in range(len(outsizethreshold)):
         deletlabel=outsizethreshold[i]
         refarea=np.where(processlabel==deletlabel)
         reseglabels[refarea]=0
 
+    if delselarea!=[]:
+        print('delselarea',delrects[1],delselarea)
+        npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+        filter=Image.fromarray(npfilter)
+        draw=ImageDraw.Draw(filter)
+        draw.ellipse(delselarea,fill='red')
+        # filter.save('deletefilter.tiff')
+        filter=np.array(filter)
+        filter=np.divide(filter,np.max(filter))
+        filter=cv2.resize(filter,(reseglabels.shape[1],reseglabels.shape[0]),interpolation=cv2.INTER_LINEAR)
+        indices_one=np.where(filter==1)
+        reseglabels[indices_one]=0
+
+    process()
 
 
 
-    gen_convband()
-    panelA.delete(coinbox)
-    reseglabels=tkintercorestat.renamelabels(reseglabels)
-    resegment([maxx,minx],[maxy,miny])
-    displayfig()
+    # gen_convband()
+    # panelA.delete(coinbox)
+    # reseglabels=tkintercorestat.renamelabels(reseglabels)
+    # resegment([maxx,minx],[maxy,miny])
+    # displayfig()
 
     # newcolortables=tkintercorestat.get_colortable(reseglabels)
     # newunique,newcounts=np.unique(reseglabels,return_counts=True)
