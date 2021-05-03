@@ -9,7 +9,7 @@ Bib tex @article {Hu2020.07.31.231662,
 	publisher = {Cold Spring Harbor Laboratory},
 	journal = {bioRxiv}
 }
-## Implement Python version >= 3.6.5
+## Implement Python version 3.6.5
 * install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/FreeCADITS/master/Training_intro.png)-->
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/compare.png)
