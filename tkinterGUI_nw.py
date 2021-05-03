@@ -3679,7 +3679,8 @@ def extraction():
                     segmentratio=2
                 workingimg=cv2.resize(currentlabels,(int(currentlabels.shape[1]/segmentratio),int(currentlabels.shape[0]/segmentratio)),interpolation=cv2.INTER_LINEAR)
                 # if selarea.get()=='1':
-                filter=cv2.resize(filter,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                # filter=cv2.resize(filter,(int(currentlabels.shape[1]/ratio),int(currentlabels.shape[0]/ratio)),interpolation=cv2.INTER_LINEAR)
+                filter=cv2.resize(filter,workingimg.shape[1],workingimg.shape[2],interpolation=cv2.INTER_LINEAR)
                 workingimg=np.multiply(workingimg,filter)
 
             # else:
