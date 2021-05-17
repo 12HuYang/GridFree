@@ -1,14 +1,18 @@
 # GridFree: A pixel-level label tools to segment high-throughput images
-#### Article link: https://www.biorxiv.org/content/10.1101/2020.07.31.231662v2
-Bib tex @article {Hu2020.07.31.231662,
-	author = {Hu, Yang and Zhang, Zhiwu},
-	title = {GridFree: A Python Package of Image Analysis for Interactive Grain Counting and Measuring},
-	elocation-id = {2020.07.31.231662},
-	year = {2020},
-	doi = {10.1101/2020.07.31.231662},
-	publisher = {Cold Spring Harbor Laboratory},
-	journal = {bioRxiv}
+#### Article link: https://academic.oup.com/plphys/advance-article/doi/10.1093/plphys/kiab226/6274909
+Bibtex @article{10.1093/plphys/kiab226,
+    author = {Hu, Yang and Zhang, Zhiwu},
+    title = "{GridFree: A Python Package of Image Analysis for Interactive Grain Counting and Measuring}",
+    journal = {Plant Physiology},
+    year = {2021},
+    month = {05},
+    issn = {0032-0889},
+    doi = {10.1093/plphys/kiab226},
+    url = {https://doi.org/10.1093/plphys/kiab226},
+    note = {kiab226},
+    eprint = {https://academic.oup.com/plphys/advance-article-pdf/doi/10.1093/plphys/kiab226/37929045/kiab226.pdf},
 }
+
 ## Implement Python version 3.6.5
 * install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/FreeCADITS/master/Training_intro.png)-->
