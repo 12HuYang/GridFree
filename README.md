@@ -22,14 +22,14 @@ Bibtex @article{10.1093/plphys/kiab226,
 #### Linux user may need to use ```sudo pip3 install plantlabeller``` or ```sudo python3 -m pip install plantlabeller```.-->
 #### MacOS
 ##### install
-* execute ```python3 -m pip install -r requirements.txt``` to install required packages
+* execute ```python3.6 -m pip install -r requirements.txt``` to install required packages
 <!--* execute ```brew install gdal``` to install required packages
 * execute ```python3 -m pip install rasterio``` to install required packages-->
 ##### run the software
 * execute ```./run``` on a terminal to run the software
 #### Linux OS
 #####  install
-* execute ```python3 -m pip install -r requirements.txt``` to install required packages
+* execute ```python3.6 -m pip install -r requirements.txt``` to install required packages
 <!--* execute ```sudo add-apt-repository ppa:ubuntugis/ppa```
 * execute ```sudo apt-get update```
 * execute ```sudo apt-get install python-numpy gdal-bin libgdal-dev```
