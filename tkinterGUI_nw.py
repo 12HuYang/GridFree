@@ -2608,8 +2608,8 @@ def export_result(iterver):
     files=multi_results.keys()
     path=filedialog.askdirectory()
     root.update()
-    export_ext(iterver,path,True,False)
-    export_ext(iterver,path,False,True)
+    # export_ext(iterver,path,True,False)
+    # export_ext(iterver,path,False,True)
     for file in files:
         labeldict=multi_results[file][0]
         totalitervalue=len(list(labeldict.keys()))
