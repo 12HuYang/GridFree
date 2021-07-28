@@ -684,7 +684,7 @@ def Open_Map():
         corlortable=tkintercorestat.get_colortable(reseglabels)
         tup=(reseglabels,[],corlortable,{},currentfilename)
         print(elesize)
-        mapdict,mapimage,smallset=showcounting(tup,True,True,False)
+        mapdict,mapimage,smallset=showcounting(tup,True,True,True)
         tempimgbands={}
         tempimgdict={}
         tempsmall={}
@@ -3078,7 +3078,7 @@ def resegment(thresholds=[],lwthresholds=[]):
     tempsmall={}
     for key in labeldict:
         tup=(labeldict[key]['labels'],labeldict[key]['counts'],labeldict[key]['colortable'],{},currentfilename)
-        outputdisplay,outputimg,small_seg=showcounting(tup,False,True,False)
+        outputdisplay,outputimg,small_seg=showcounting(tup,False,True,True)
         tempimgdict.update({key:outputdisplay})
         tempimgbands.update({key:outputimg})
         tempsmall.update({key:small_seg})
@@ -3719,7 +3719,7 @@ def extraction():
     tempsmall={}
     for key in labeldict:
         tup=(labeldict[key]['labels'],labeldict[key]['counts'],labeldict[key]['colortable'],{},currentfilename)
-        outputdisplay,outputimg,smallset=showcounting(tup,False,True,False)
+        outputdisplay,outputimg,smallset=showcounting(tup,False,True,True)
         tempimgdict.update({key:outputdisplay})
         tempimgbands.update({key:outputimg})
         tempsmall.update({key:smallset})
