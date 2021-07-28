@@ -2329,14 +2329,15 @@ def showcounting(tup,number=True,frame=True,header=True,whext=False,blkext=False
     draw=ImageDraw.Draw(image)
     #font=ImageFont.load_default()
     sizeuniq,sizecounts=np.unique(labels,return_counts=True)
-    minsize=min(sizecounts)
+    minsize=min(image.size[0],image.size[1])
     suggsize=int(minsize**0.5)
-    if suggsize>22:
-        suggsize=22
-    if suggsize<14:
-        suggsize=14
+    # if suggsize>22:
+    #     suggsize=22
+    # if suggsize<14:
+    #     suggsize=14
     #suggsize=8
     #print('fontsize',suggsize)
+    # suggsize=22
     font=ImageFont.truetype('cmb10.ttf',size=suggsize)
     #if labels.shape[1]<850:
     #    font=ImageFont.truetype('cmb10.ttf',size=16)
