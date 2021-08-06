@@ -37,7 +37,11 @@ Bibtex @article{10.1093/plphys/kiab226,
 ##### run the software
 * execute ```./run``` on a terminal to run the software
 #### Windows OS 
-##### install
+
+##### Windows 10 64bit (Download and run ```tkinterGUI_nw.exe``` in dist folder)
+* Download link: https://www.dropbox.com/s/nf6vsu1q5meb1ho/GridFree_winOS.zip?dl=0
+
+##### install (if Windows 10 64bit doesn't work for you)
 * run ```cmd``` go to the path you downloaded GridFree, you can execute ```cd``` space ```your download path```
 * execute ```python -m pip install -r requirements.txt``` to install required packages
 * execute ```python -m pip install opencv-python``` for opencv package
