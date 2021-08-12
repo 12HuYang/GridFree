@@ -13,7 +13,7 @@ Bibtex @article{10.1093/plphys/kiab226,
     eprint = {https://academic.oup.com/plphys/advance-article-pdf/doi/10.1093/plphys/kiab226/37929045/kiab226.pdf},
 }
 
-## Implement Python version 3.6.5
+## Implement Python version 3.6.5(Windows 10 64bit version is available, check the download link below)
 * install Python 3.6.5, download link: https://www.python.org/downloads/release/python-365/
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/FreeCADITS/master/Training_intro.png)-->
 <!--![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/compare.png)
