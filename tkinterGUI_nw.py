@@ -632,6 +632,8 @@ def Open_File(filename):   #add to multi-image,multi-gray  #call band calculatio
         for j in range(channel):
             band=RGBfile[:,:,j]
             band=np.where(band==0,1e-6,band)
+            nans=np.isnan(band)
+            band[nans]=1e-6
             #ostu=filters.threshold_otsu(band)
             #band=band/ostu
             RGBbands[j,:,:]=band
@@ -1086,8 +1088,12 @@ def singleband(file):
     colorindex_C=colorindex_vector-colorindex_M
     rgb_V=np.corrcoef(rgb_C.T)
     color_V=np.corrcoef(colorindex_C.T)
+    nans=np.isnan(color_V)
+    color_V[nans]=1e-6
     rgb_std=rgb_C/np.std(RGB_vector.T,axis=1)
     color_std=colorindex_C/np.std(colorindex_vector.T,axis=1)
+    nans=np.isnan(color_std)
+    color_std[nans]=1e-6
     rgb_eigval,rgb_eigvec=np.linalg.eig(rgb_V)
     color_eigval,color_eigvec=np.linalg.eig(color_V)
     print('rgb_eigvec',rgb_eigvec)
@@ -2378,6 +2384,7 @@ def showcounting(tup,number=True,frame=True,header=True,whext=False,blkext=False
                 else:
                     # canvastext = 'No label'
                     canvastext=uni
+                canvastext=str(canvastext)
                 if imgtypevar.get()=='0':
                     draw.text((midx-1, midy+1), text=canvastext, font=font, fill='white')
                     draw.text((midx+1, midy+1), text=canvastext, font=font, fill='white')
