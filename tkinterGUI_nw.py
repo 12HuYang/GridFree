@@ -925,8 +925,12 @@ def partialsingleband(filter):
     colorindex_C=colorindex_vector[nonzero_vector,:][0]-colorindex_M.T
     rgb_V=np.corrcoef(rgb_C.T)
     color_V=np.corrcoef(colorindex_C.T)
+    nans=np.isnan(color_V)
+    color_V[nans]=1e-6
     rgb_std=rgb_C/(np.std(RGB_vector[nonzero_vector,:].T,axis=1)).T
     color_std=colorindex_C/(np.std(colorindex_vector[nonzero_vector,:].T,axis=1)).T
+    nans=np.isnan(color_std)
+    color_std[nans]=1e-6
     rgb_eigval,rgb_eigvec=np.linalg.eig(rgb_V)
     color_eigval,color_eigvec=np.linalg.eig(color_V)
     print('rgb_eigvec',rgb_eigvec)
