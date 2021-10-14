@@ -616,13 +616,22 @@ def Open_File(filename):   #add to multi-image,multi-gray  #call band calculatio
     global Multiimage,Multigray,Multitype,Multiimagebands,Multigraybands,filenames
     try:
         Filersc=cv2.imread(filename,flags=cv2.IMREAD_ANYCOLOR)
-        height,width,channel=np.shape(Filersc)
+        ndim=np.ndim(Filersc)
+        if ndim==2:
+            height,width=np.shape(Filersc)
+            channel=1
+            Filersc.reshape((height,width,channel))
+        else:
+            height,width,channel=np.shape(Filersc)
         Filesize=(height,width)
         print('filesize:',height,width)
         RGBfile=cv2.cvtColor(Filersc,cv2.COLOR_BGR2RGB)
         Multiimage.update({filename:RGBfile})
-        Grayfile=cv2.cvtColor(Filersc,cv2.COLOR_BGR2Lab)
-        Grayfile=cv2.cvtColor(Grayfile,cv2.COLOR_BGR2GRAY)
+        if ndim==2:
+            Grayfile=np.copy(Filersc)
+        else:
+            Grayfile=cv2.cvtColor(Filersc,cv2.COLOR_BGR2Lab)
+            Grayfile=cv2.cvtColor(Grayfile,cv2.COLOR_BGR2GRAY)
         #Grayfile=cv2.GaussianBlur(Grayfile,(3,3),cv2.BORDER_DEFAULT)
         #ostu=filters.threshold_otsu(Grayfile)
         #Grayfile=Grayfile.astype('float32')
@@ -868,6 +877,114 @@ def plot3d(pcas):
     plt.savefig('3dplot_PC.png')
 
 
+def partialoneband(filter):
+    global displaybandarray,originpcabands
+    global pcbuttons
+    global nonzero_vector,partialpca
+
+    partialpca=True
+    bands=Multiimagebands[currentfilename].bands
+    channel,fea_l,fea_w=bands.shape
+    nonzero=np.where(filter!=0)
+    RGB_vector=np.zeros((displayfea_l*displayfea_w,3))
+    colorindex_vector=np.zeros((displayfea_l*displayfea_w,12))
+    filter_vector=filter.reshape((displayfea_l*displayfea_w),1)[:,0]
+    originbands={}
+    displays={}
+
+    Red=cv2.resize(bands[0,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+
+    Green=cv2.resize(bands[0,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+
+    # Red=cv2.adaptiveThreshold(Red,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,11,2)
+    # Green=cv2.adaptiveThreshold(Green,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+
+    Blue=cv2.resize(bands[0,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+    # Blue=cv2.threshold(Blue,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    fillpartialbands(RGB_vector,0,Red,filter_vector)
+    fillpartialbands(RGB_vector,1,Green,filter_vector)
+    fillpartialbands(RGB_vector,2,Blue,filter_vector)
+
+    PAT_R=Red
+    PAT_G=Red
+    PAT_B=Red
+
+    ROO_R=Red
+    ROO_G=Red
+    ROO_B=Red
+
+    DIF_R=Red
+    DIF_G=Red
+    DIF_B=Red
+
+    GLD_R=Red
+    GLD_G=Red
+    GLD_B=Red
+
+    fillpartialbands(colorindex_vector,0,PAT_R,filter_vector)
+    fillpartialbands(colorindex_vector,1,PAT_G,filter_vector)
+    fillpartialbands(colorindex_vector,2,PAT_B,filter_vector)
+    fillpartialbands(colorindex_vector,3,ROO_R,filter_vector)
+    fillpartialbands(colorindex_vector,4,ROO_G,filter_vector)
+    fillpartialbands(colorindex_vector,5,ROO_B,filter_vector)
+    fillpartialbands(colorindex_vector,6,DIF_R,filter_vector)
+    fillpartialbands(colorindex_vector,7,DIF_G,filter_vector)
+    fillpartialbands(colorindex_vector,8,DIF_B,filter_vector)
+    fillpartialbands(colorindex_vector,9,GLD_R,filter_vector)
+    fillpartialbands(colorindex_vector,10,GLD_G,filter_vector)
+    fillpartialbands(colorindex_vector,11,GLD_B,filter_vector)
+
+    nonzero_vector=np.where(filter_vector!=0)
+
+    displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+
+    featurechannel=14
+    # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%10.5f')
+
+    # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    originpcabands.update({currentfilename:displayfea_vector})
+    pcabandsdisplay=displayfea_vector[:,:14]
+    pcabandsdisplay=pcabandsdisplay.reshape(displayfea_l,displayfea_w,featurechannel)
+    tempdictdisplay={'LabOstu':pcabandsdisplay}
+    displaybandarray.update({currentfilename:tempdictdisplay})
+    # originbandarray.update({currentfilename:originbands})
+
+    # Red=displays['Band1']
+    # Green=displays['Band2']
+    # Blue=displays['Band3']
+
+    # convimg=np.zeros((Red.shape[0],Red.shape[1],3))
+    # convimg[:,:,0]=Red
+    # convimg[:,:,1]=Green
+    # convimg[:,:,2]=Blue
+    # convimg=Image.fromarray(convimg.astype('uint8'))
+    # convimg.save('convimg.png','PNG')
+
+    pcbuttons=[]
+    need_w=int(450/3)
+    need_h=int(400/4)
+    for i in range(2,3):
+        band=np.copy(pcabandsdisplay[:,:,i])
+        # imgband=(band-band.min())*255/(band.max()-band.min())
+        imgband=np.copy(band)
+        pcimg=Image.fromarray(imgband.astype('uint8'),'L')
+        # pcimg.save('pc'+'_'+str(i)+'.png',"PNG")
+        pcimg.thumbnail((need_w,need_h),Image.ANTIALIAS)
+        # pcimg.save('pc'+'_'+str(i)+'.png',"PNG")
+        # ratio=max(displayfea_l/need_h,displayfea_w/need_w)
+        # print('origin band range',band.max(),band.min())
+        # # band,cache=tkintercorestat.pool_forward(band,{"f":int(ratio),"stride":int(ratio)})
+        # band=cv2.resize(band,(need_w,need_h),interpolation=cv2.INTER_LINEAR)
+        # bandrange=band.max()-band.min()
+        # print('band range',band.max(),band.min())
+        # band=(band-band.min())/bandrange*255
+        # print('button img range',band.max(),band.min())
+        # buttonimg=Image.fromarray(band.astype('uint8'),'L')
+        pcbuttons.append(ImageTk.PhotoImage(pcimg))
+
+
+
 def partialsingleband(filter):
     global displaybandarray,originpcabands
     global pcbuttons
@@ -875,18 +992,29 @@ def partialsingleband(filter):
 
     partialpca=True
     bands=Multiimagebands[currentfilename].bands
+    channel,fea_l,fea_w=bands.shape
     nonzero=np.where(filter!=0)
     RGB_vector=np.zeros((displayfea_l*displayfea_w,3))
     colorindex_vector=np.zeros((displayfea_l*displayfea_w,12))
     filter_vector=filter.reshape((displayfea_l*displayfea_w),1)[:,0]
     originbands={}
     displays={}
-    Red=cv2.resize(bands[0,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
-    Green=cv2.resize(bands[1,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
-    Blue=cv2.resize(bands[2,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
-    fillpartialbands(RGB_vector,0,Red,filter_vector)
-    fillpartialbands(RGB_vector,1,Green,filter_vector)
-    fillpartialbands(RGB_vector,2,Blue,filter_vector)
+    if channel==1:
+        # Red=cv2.resize(bands[0,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+        # Green=cv2.resize(bands[0,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+        # Blue=cv2.resize(bands[0,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+        # fillpartialbands(RGB_vector,0,Red,filter_vector)
+        # fillpartialbands(RGB_vector,1,Green,filter_vector)
+        # fillpartialbands(RGB_vector,2,Blue,filter_vector)
+        partialoneband(filter)
+        return
+    else:
+        Red=cv2.resize(bands[0,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+        Green=cv2.resize(bands[1,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+        Blue=cv2.resize(bands[2,:,:],(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)[nonzero]
+        fillpartialbands(RGB_vector,0,Red,filter_vector)
+        fillpartialbands(RGB_vector,1,Green,filter_vector)
+        fillpartialbands(RGB_vector,2,Blue,filter_vector)
 
     PAT_R=Red/(Red+Green)
     PAT_G=Green/(Green+Blue)
@@ -1008,6 +1136,122 @@ def partialsingleband(filter):
         # buttonimg=Image.fromarray(band.astype('uint8'),'L')
         pcbuttons.append(ImageTk.PhotoImage(pcimg))
 
+def oneband(file):
+    global displaybandarray,originbandarray,originpcabands,displayfea_l,displayfea_w
+    global pcbuttons
+    global partialpca
+    partialpca=False
+
+    try:
+        bands=Multiimagebands[file].bands
+    except:
+        return
+    pcbuttons=[]
+    channel,fea_l,fea_w=bands.shape
+    print('bandsize',fea_l,fea_w)
+    if fea_l*fea_w>2000*2000:
+        ratio=findratio([fea_l,fea_w],[2000,2000])
+    else:
+        ratio=1
+    print('ratio',ratio)
+
+    originbands={}
+    displays={}
+    displaybands=cv2.resize(bands[0,:,:],(int(fea_w/ratio),int(fea_l/ratio)),interpolation=cv2.INTER_LINEAR)
+    displayfea_l,displayfea_w=displaybands.shape
+    RGB_vector=np.zeros((displayfea_l*displayfea_w,3))
+    colorindex_vector=np.zeros((displayfea_l*displayfea_w,12))
+    Red=bands[0,:,:].astype('uint8')
+    # _,Red=cv2.threshold(Red,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    Green=bands[0,:,:].astype('uint8')
+    # _,Green=cv2.threshold(Green,0,255,cv2.THRESH_OTSU)
+    Blue=bands[0,:,:].astype('uint8')
+    # _,Blue=cv2.threshold(Blue,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    fillbands(originbands,displays,RGB_vector,0,'Band1',Red)
+    fillbands(originbands,displays,RGB_vector,1,'Band2',Green)
+    fillbands(originbands,displays,RGB_vector,2,'Band3',Blue)
+
+    PAT_R=bands[0,:,:].astype('uint8')
+    # PAT_R=cv2.adaptiveThreshold(PAT_R,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+    PAT_G=bands[0,:,:]
+    # PAT_G=cv2.adaptiveThreshold(PAT_G,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,11,2)
+    PAT_B=bands[0,:,:]
+
+    ROO_R=bands[0,:,:]
+    ROO_G=bands[0,:,:]
+    ROO_B=bands[0,:,:]
+
+    DIF_R=bands[0,:,:]
+    DIF_G=bands[0,:,:]
+    DIF_B=bands[0,:,:]
+
+    GLD_R=bands[0,:,:]
+    GLD_G=bands[0,:,:]
+    GLD_B=bands[0,:,:]
+
+    fillbands(originbands,displays,colorindex_vector,0,'PAT_R',PAT_R)
+    fillbands(originbands,displays,colorindex_vector,1,'PAT_G',PAT_G)
+    fillbands(originbands,displays,colorindex_vector,2,'PAT_B',PAT_B)
+    fillbands(originbands,displays,colorindex_vector,3,'ROO_R',ROO_R)
+    fillbands(originbands,displays,colorindex_vector,4,'ROO_G',ROO_G)
+    fillbands(originbands,displays,colorindex_vector,5,'ROO_B',ROO_B)
+    fillbands(originbands,displays,colorindex_vector,6,'DIF_R',DIF_R)
+    fillbands(originbands,displays,colorindex_vector,7,'DIF_G',DIF_G)
+    fillbands(originbands,displays,colorindex_vector,8,'DIF_B',DIF_B)
+    fillbands(originbands,displays,colorindex_vector,9,'GLD_R',GLD_R)
+    fillbands(originbands,displays,colorindex_vector,10,'GLD_G',GLD_G)
+    fillbands(originbands,displays,colorindex_vector,11,'GLD_B',GLD_B)
+
+    displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%10.5f')
+    featurechannel=14
+
+
+    originpcabands.update({file:displayfea_vector})
+    # pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
+    # pcabandsdisplay=np.concatenate((RGB_vector,colorindex_vector),axis=2)
+    pcabandsdisplay=displayfea_vector[:,:14]
+    pcabandsdisplay=pcabandsdisplay.reshape(displayfea_l,displayfea_w,featurechannel)
+    tempdictdisplay={'LabOstu':pcabandsdisplay}
+    displaybandarray.update({file:tempdictdisplay})
+    originbandarray.update({file:originbands})
+
+    # Red=displays['Band1']
+    # Green=displays['Band2']
+    # Blue=displays['Band3']
+
+    # convimg=np.zeros((Red.shape[0],Red.shape[1],3))
+    # convimg[:,:,0]=Red
+    # convimg[:,:,1]=Green
+    # convimg[:,:,2]=Blue
+    # convimg=Image.fromarray(convimg.astype('uint8'))
+    # convimg.save('convimg.png','PNG')
+
+    need_w=int(450/3)
+    need_h=int(400/4)
+    for i in range(2,3):
+        band=np.copy(pcabandsdisplay[:,:,i])
+        # band=np.copy(Red)
+        # imgband=(band-band.min())*255/(band.max()-band.min())
+        imgband=np.copy(band)
+        pcimg=Image.fromarray(imgband.astype('uint8'),'L')
+        # pcimg.save('pc'+'_'+str(i)+'.png',"PNG")
+        pcimg.thumbnail((need_w,need_h),Image.ANTIALIAS)
+        # pcimg.save('pc'+'_'+str(i)+'.png',"PNG")
+        # ratio=max(displayfea_l/need_h,displayfea_w/need_w)
+        # print('origin band range',band.max(),band.min())
+        # # band,cache=tkintercorestat.pool_forward(band,{"f":int(ratio),"stride":int(ratio)})
+        # band=cv2.resize(band,(need_w,need_h),interpolation=cv2.INTER_LINEAR)
+        # bandrange=band.max()-band.min()
+        # print('band range',band.max(),band.min())
+        # band=(band-band.min())/bandrange*255
+        # print('button img range',band.max(),band.min())
+        # buttonimg=Image.fromarray(band.astype('uint8'),'L')
+        pcbuttons.append(ImageTk.PhotoImage(pcimg))
+
+
+
 
 def singleband(file):
     global displaybandarray,originbandarray,originpcabands,displayfea_l,displayfea_w
@@ -1037,9 +1281,16 @@ def singleband(file):
     print(displayfea_l,displayfea_w)
     RGB_vector=np.zeros((displayfea_l*displayfea_w,3))
     colorindex_vector=np.zeros((displayfea_l*displayfea_w,12))
-    Red=bands[0,:,:]
-    Green=bands[1,:,:]
-    Blue=bands[2,:,:]
+    if channel==1:
+        # Red=bands[0,:,:]
+        # Green=bands[0,:,:]
+        # Blue=bands[0,:,:]
+        oneband(file)
+        return
+    else:
+        Red=bands[0,:,:]
+        Green=bands[1,:,:]
+        Blue=bands[2,:,:]
     fillbands(originbands,displays,RGB_vector,0,'Band1',Red)
     fillbands(originbands,displays,RGB_vector,1,'Band2',Green)
     fillbands(originbands,displays,RGB_vector,2,'Band3',Blue)
@@ -1197,9 +1448,14 @@ def colorindices_cal(file):
     # displayfea_l,displayfea_w=fea_l,fea_w
     print(displayfea_l,displayfea_w)
     colorindex_vector=np.zeros((displayfea_l*displayfea_w,7))
-    Red=bands[0,:,:]
-    Green=bands[1,:,:]
-    Blue=bands[2,:,:]
+    if channel==1:
+        Red=bands[0,:,:]
+        Green=bands[0,:,:]
+        Blue=bands[0,:,:]
+    else:
+        Red=bands[0,:,:]
+        Green=bands[1,:,:]
+        Blue=bands[2,:,:]
 
     secondsmallest_R=np.partition(Red,1)[1][0]
     secondsmallest_G=np.partition(Green,1)[1][0]
@@ -1631,7 +1887,6 @@ def threedplot(area):
     pyplt.show()
 
 
-
 def changeimage(frame,filename):
     global clusterdisplay,currentfilename,resviewframe
     clusterdisplay={}
@@ -1959,7 +2214,12 @@ def kmeansclassify():
                 displaylabels=displaylabels+10
                 for i in range(int(kmeans.get())):
                     locs=np.where(tempdisplayimg.labels_==i)
-                    maxval=partialshape[locs].max()
+                    try:
+                        maxval=partialshape[locs].max()
+                    except:
+                        print('kmeans',i)
+                        messagebox.showerror('Cluster maximum value is ', i)
+                        return displaylabels
                     print(maxval)
                     clusterdict.update({maxval:i+11})
                 print(clusterdict)
