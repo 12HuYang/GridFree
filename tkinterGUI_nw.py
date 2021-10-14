@@ -1383,6 +1383,12 @@ def singleband(file):
     # indexbands[:,2]=indexbands[:,2]+pcabands[:,4]
     # plot3d(indexbands)
     # np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%10.5f')
+    meanpc=np.mean(pcabands)
+    stdpc=np.std(pcabands)
+    print('meanpc',meanpc,'stdpc',stdpc)
+    pcabands=pcabands-meanpc/stdpc
+
+
 
     displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
     # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%10.5f')
