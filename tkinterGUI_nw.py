@@ -1295,6 +1295,21 @@ def singleband(file):
     fillbands(originbands,displays,RGB_vector,1,'Band2',Green)
     fillbands(originbands,displays,RGB_vector,2,'Band3',Blue)
 
+    # import matplotlib.pyplot as plt
+    # fig,axs=plt.subplots(1,3)
+    # for i in range(3):
+    #     minpc2=np.min(RGB_vector[:,i])
+    #     maxpc2=np.max(RGB_vector[:,i])
+    #     print(minpc2,maxpc2)
+    #     bins=range(int(minpc2),int(maxpc2),10)
+    #     axs[i].hist(RGB_vector[:,i],bins,range=(minpc2,maxpc2))
+    #     axs[i].set_title('RGBband_'+str(i+1))
+    # # plt.hist(pcabands[:,13],bins,range=(minpc2,maxpc2))
+    # plt.show()
+
+
+
+
     # secondsmallest_R=np.partition(Red,1)[1][0]
     # secondsmallest_G=np.partition(Green,1)[1][0]
     # secondsmallest_B=np.partition(Blue,1)[1][0]
@@ -1311,17 +1326,17 @@ def singleband(file):
     PAT_G=Green/(Green+Blue)
     PAT_B=Blue/(Blue+Red)
 
-    ROO_R=Red/Green
-    ROO_G=Green/Blue
-    ROO_B=Blue/Red
+    ROO_R=Red/(Green+1e-6)
+    ROO_G=Green/(Blue+1e-6)
+    ROO_B=Blue/(Red+1e-6)
 
     DIF_R=2*Red-Green-Blue
     DIF_G=2*Green-Blue-Red
     DIF_B=2*Blue-Red-Green
 
-    GLD_R=Red/(np.multiply(np.power(Blue,0.618),np.power(Green,0.382)))
-    GLD_G=Green/(np.multiply(np.power(Blue,0.618),np.power(Red,0.382)))
-    GLD_B=Blue/(np.multiply(np.power(Green,0.618),np.power(Red,0.382)))
+    GLD_R=Red/(np.multiply(np.power(Blue,0.618),np.power(Green,0.382))+1e-6)
+    GLD_G=Green/(np.multiply(np.power(Blue,0.618),np.power(Red,0.382))+1e-6)
+    GLD_B=Blue/(np.multiply(np.power(Green,0.618),np.power(Red,0.382))+1e-6)
 
     fillbands(originbands,displays,colorindex_vector,0,'PAT_R',PAT_R)
     fillbands(originbands,displays,colorindex_vector,1,'PAT_G',PAT_G)
@@ -1335,6 +1350,29 @@ def singleband(file):
     fillbands(originbands,displays,colorindex_vector,9,'GLD_R',GLD_R)
     fillbands(originbands,displays,colorindex_vector,10,'GLD_G',GLD_G)
     fillbands(originbands,displays,colorindex_vector,11,'GLD_B',GLD_B)
+
+    for i in range(6):
+        colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+
+    for i in range(10,12):
+        colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+
+    # for i in range(3):
+    #     colorindex_vector[:i]=colorindex_vector[:i]*10
+
+    # import matplotlib.pyplot as plt
+    # fig,axs=plt.subplots(4,3)
+    # for i in range(12):
+    #     minpc2=np.min(colorindex_vector[:,i])
+    #     maxpc2=np.max(colorindex_vector[:,i])
+    #     print(minpc2,maxpc2)
+    #     # bins=range(int(minpc2),int(maxpc2)+1,10)
+    #     axs[int(i/3),i%3].hist(colorindex_vector[:,i],10,range=(minpc2,maxpc2))
+    #     axs[int(i/3),i%3].set_title('Colorindex_'+str(i+1))
+    #     # axs[i].hist(colorindex_vector[:,i],10,range=(minpc2,maxpc2))
+    #     # axs[i].set_title('Colorindex_'+str(i+1))
+    # # plt.hist(pcabands[:,13],bins,range=(minpc2,maxpc2))
+    # plt.show()
 
     rgb_M=np.mean(RGB_vector.T,axis=1)
     colorindex_M=np.mean(colorindex_vector.T,axis=1)
@@ -1383,10 +1421,20 @@ def singleband(file):
     # indexbands[:,2]=indexbands[:,2]+pcabands[:,4]
     # plot3d(indexbands)
     # np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%10.5f')
-    meanpc=np.mean(pcabands)
-    stdpc=np.std(pcabands)
-    print('meanpc',meanpc,'stdpc',stdpc)
-    pcabands=pcabands-meanpc/stdpc
+    # minpc=np.min(pcabands)
+    #
+    # meanpc=np.mean(pcabands)
+    # stdpc=np.std(pcabands)
+    # print('meanpc',meanpc,'stdpc',stdpc)
+    # pcabands=pcabands-meanpc/stdpc
+    # import matplotlib.pyplot as plt
+    # minpc2=np.min(pcabands[:,13])
+    # maxpc2=np.max(pcabands[:,13])
+    # print(minpc2,maxpc2)
+    # bins=range(int(minpc2),int(maxpc2),10)
+    # plt.hist(pcabands[:,13],bins,range=(minpc2,maxpc2))
+    # plt.show()
+    # np.savetxt('pcs.csv',pcabands[:,3],delimiter=',',fmt='%10.5f')
 
 
 
