@@ -1351,14 +1351,38 @@ def singleband(file):
     fillbands(originbands,displays,colorindex_vector,10,'GLD_G',GLD_G)
     fillbands(originbands,displays,colorindex_vector,11,'GLD_B',GLD_B)
 
-    for i in range(6):
-        colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+    # for i in [5,11]:
+    #     colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+    #     perc=np.percentile(colorindex_vector[:,i],99)
+    #     print('perc',perc)
+    #     colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
+    #
+    # for i in [0,1,3,4,9,10]:
+    #     colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+    #     perc=np.percentile(colorindex_vector[:,i],90)
+    #     print('perc',perc)
+    #     colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
 
-    for i in range(10,12):
+    for i in [5,11]:
         colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+        perc=np.percentile(colorindex_vector[:,i],99)
+        print('perc',perc)
+        colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
 
-    # for i in range(3):
-    #     colorindex_vector[:i]=colorindex_vector[:i]*10
+    for i in [3,4,9,10]:
+        colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+        perc=np.percentile(colorindex_vector[:,i],1)
+        print('perc',perc)
+        colorindex_vector[:,i]=np.where(colorindex_vector[:,i]<perc,perc,colorindex_vector[:,i])
+        perc=np.percentile(colorindex_vector[:,i],99)
+        print('perc',perc)
+        colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
+
+    for i in [0,1]:
+        colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+        perc=np.percentile(colorindex_vector[:,i],2)
+        print('perc',perc)
+        colorindex_vector[:,i]=np.where(colorindex_vector[:,i]<perc,perc,colorindex_vector[:,i])
 
     # import matplotlib.pyplot as plt
     # fig,axs=plt.subplots(4,3)
