@@ -1045,6 +1045,22 @@ def partialsingleband(filter):
     fillpartialbands(colorindex_vector,10,GLD_G,filter_vector)
     fillpartialbands(colorindex_vector,11,GLD_B,filter_vector)
 
+    for i in range(12):
+        perc=np.percentile(colorindex_vector[:,i],1)
+        print('perc',perc)
+        colorindex_vector[:,i]=np.where(colorindex_vector[:,i]<perc,perc,colorindex_vector[:,i])
+        perc=np.percentile(colorindex_vector[:,i],99)
+        print('perc',perc)
+        colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
+
+    for i in range(3):
+        perc=np.percentile(RGB_vector[:,i],1)
+        print('perc',perc)
+        RGB_vector[:,i]=np.where(RGB_vector[:,i]<perc,perc,RGB_vector[:,i])
+        perc=np.percentile(RGB_vector[:,i],99)
+        print('perc',perc)
+        RGB_vector[:,i]=np.where(RGB_vector[:,i]>perc,perc,RGB_vector[:,i])
+
     nonzero_vector=np.where(filter_vector!=0)
     rgb_M=np.mean(RGB_vector[nonzero_vector,:].T,axis=1)
     colorindex_M=np.mean(colorindex_vector[nonzero_vector,:].T,axis=1)
@@ -1086,6 +1102,14 @@ def partialsingleband(filter):
         pcabands[nonzero_vector,i]=pcabands[nonzero_vector,i]+pcnbands
         # if i<5:
         #     indexbands[:,i-2]=indexbands[:,i-2]+pcnbands
+
+    for i in range(14):
+        perc=np.percentile(pcabands[:,i],1)
+        print('perc',perc)
+        pcabands[:,i]=np.where(pcabands[:,i]<perc,perc,pcabands[:,i])
+        perc=np.percentile(pcabands[:,i],99)
+        print('perc',perc)
+        pcabands[:,i]=np.where(pcabands[:,i]>perc,perc,pcabands[:,i])
 
     '''save to csv'''
     # indexbands[:,0]=indexbands[:,0]+pcabands[:,2]
