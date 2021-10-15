@@ -1363,14 +1363,29 @@ def singleband(file):
     #     print('perc',perc)
     #     colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
 
-    for i in [5,11]:
-        colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
-        perc=np.percentile(colorindex_vector[:,i],99)
-        print('perc',perc)
-        colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
-
-    for i in [3,4,9,10]:
-        colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+    # for i in [5,11]:
+    #     colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+    #     perc=np.percentile(colorindex_vector[:,i],99)
+    #     print('perc',perc)
+    #     colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
+    #
+    # for i in [3,4,9,10]:
+    #     colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+    #     perc=np.percentile(colorindex_vector[:,i],1)
+    #     print('perc',perc)
+    #     colorindex_vector[:,i]=np.where(colorindex_vector[:,i]<perc,perc,colorindex_vector[:,i])
+    #     perc=np.percentile(colorindex_vector[:,i],99)
+    #     print('perc',perc)
+    #     colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
+    #
+    # for i in [0,1]:
+    #     colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+    #     perc=np.percentile(colorindex_vector[:,i],2)
+    #     print('perc',perc)
+    #     colorindex_vector[:,i]=np.where(colorindex_vector[:,i]<perc,perc,colorindex_vector[:,i])
+    # for i in [0,1,3,4,9,10]:
+    #     colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
+    for i in range(12):
         perc=np.percentile(colorindex_vector[:,i],1)
         print('perc',perc)
         colorindex_vector[:,i]=np.where(colorindex_vector[:,i]<perc,perc,colorindex_vector[:,i])
@@ -1378,11 +1393,13 @@ def singleband(file):
         print('perc',perc)
         colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
 
-    for i in [0,1]:
-        colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
-        perc=np.percentile(colorindex_vector[:,i],2)
+    for i in range(3):
+        perc=np.percentile(RGB_vector[:,i],1)
         print('perc',perc)
-        colorindex_vector[:,i]=np.where(colorindex_vector[:,i]<perc,perc,colorindex_vector[:,i])
+        RGB_vector[:,i]=np.where(RGB_vector[:,i]<perc,perc,RGB_vector[:,i])
+        perc=np.percentile(RGB_vector[:,i],99)
+        print('perc',perc)
+        RGB_vector[:,i]=np.where(RGB_vector[:,i]>perc,perc,RGB_vector[:,i])
 
     # import matplotlib.pyplot as plt
     # fig,axs=plt.subplots(4,3)
@@ -1459,6 +1476,27 @@ def singleband(file):
     # plt.hist(pcabands[:,13],bins,range=(minpc2,maxpc2))
     # plt.show()
     # np.savetxt('pcs.csv',pcabands[:,3],delimiter=',',fmt='%10.5f')
+    for i in range(14):
+        perc=np.percentile(pcabands[:,i],1)
+        print('perc',perc)
+        pcabands[:,i]=np.where(pcabands[:,i]<perc,perc,pcabands[:,i])
+        perc=np.percentile(pcabands[:,i],99)
+        print('perc',perc)
+        pcabands[:,i]=np.where(pcabands[:,i]>perc,perc,pcabands[:,i])
+
+    # import matplotlib.pyplot as plt
+    # fig,axs=plt.subplots(4,3)
+    # for i in range(2,14):
+    #     minpc2=np.min(pcabands[:,i])
+    #     maxpc2=np.max(pcabands[:,i])
+    #     print(minpc2,maxpc2)
+    #     # bins=range(int(minpc2),int(maxpc2)+1,10)
+    #     axs[int((i-2)/3),(i-2)%3].hist(pcabands[:,i],10,range=(minpc2,maxpc2))
+    #     axs[int((i-2)/3),(i-2)%3].set_title('PC_'+str(i-2+1))
+    #     # axs[i].hist(colorindex_vector[:,i],10,range=(minpc2,maxpc2))
+    #     # axs[i].set_title('Colorindex_'+str(i+1))
+    # # plt.hist(pcabands[:,13],bins,range=(minpc2,maxpc2))
+    # plt.show()
 
 
 
