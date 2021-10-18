@@ -1456,29 +1456,46 @@ def singleband(file):
     color_eigval,color_eigvec=np.linalg.eig(color_V)
     print('rgb_eigvec',rgb_eigvec)
     print('color_eigvec',color_eigvec)
-    featurechannel=14
+    featurechannel=12
     pcabands=np.zeros((colorindex_vector.shape[0],featurechannel))
     rgbbands=np.zeros((colorindex_vector.shape[0],3))
-    for i in range(3):
-        pcn=rgb_eigvec[:,i]
+
+    # plot3d(pcabands)
+    # np.savetxt('rgb.csv',rgbbands,delimiter=',',fmt='%10.5f')
+    # pcabands[:,1]=np.copy(pcabands[:,1])
+    # pcabands[:,2]=pcabands[:,2]*0
+    indexbands=np.zeros((colorindex_vector.shape[0],3))
+    # for i in range(3,featurechannel):
+    # csvpcabands=np.zeros((colorindex_vector.shape[0],15))
+
+    for i in range(0,9):
+        pcn=color_eigvec[:,i]
+        pcnbands=np.dot(color_std,pcn)
+        pcvar=np.var(pcnbands)
+        print('color index pc',i+1,'var=',pcvar)
+        pcabands[:,i]=pcabands[:,i]+pcnbands
+        # if i<5:
+        #     indexbands[:,i-2]=indexbands[:,i-2]+pcnbands
+    for i in range(9,12):
+        pcn=rgb_eigvec[:,i-9]
         pcnbands=np.dot(rgb_std,pcn)
         pcvar=np.var(pcnbands)
         print('rgb pc',i+1,'var=',pcvar)
         pcabands[:,i]=pcabands[:,i]+pcnbands
-        rgbbands[:,i]=rgbbands[:,i]+pcnbands
-    # plot3d(pcabands)
-    # np.savetxt('rgb.csv',rgbbands,delimiter=',',fmt='%10.5f')
-    pcabands[:,1]=np.copy(pcabands[:,1])
-    pcabands[:,2]=pcabands[:,2]*0
-    indexbands=np.zeros((colorindex_vector.shape[0],3))
-    for i in range(2,featurechannel):
-        pcn=color_eigvec[:,i-2]
-        pcnbands=np.dot(color_std,pcn)
-        pcvar=np.var(pcnbands)
-        print('color index pc',i-1,'var=',pcvar)
-        pcabands[:,i]=pcabands[:,i]+pcnbands
-        # if i<5:
-        #     indexbands[:,i-2]=indexbands[:,i-2]+pcnbands
+        rgbbands[:,i-9]=rgbbands[:,i-9]+pcnbands
+    # for i in range(0,12):
+    #     pcn=color_eigvec[:,i]
+    #     pcnbands=np.dot(color_std,pcn)
+    #     pcvar=np.var(pcnbands)
+    #     print('csv color index pc',i+1,'var=',pcvar)
+    #     csvpcabands[:,i]=csvpcabands[:,i]+pcnbands
+    # for i in range(12,15):
+    #     pcn=rgb_eigvec[:,i-12]
+    #     pcnbands=np.dot(rgb_std,pcn)
+    #     csvpcabands[:,i]=csvpcabands[:,i]+pcnbands
+
+    #
+
 
     '''save to csv'''
     # indexbands[:,0]=indexbands[:,0]+pcabands[:,2]
@@ -1500,7 +1517,7 @@ def singleband(file):
     # plt.hist(pcabands[:,13],bins,range=(minpc2,maxpc2))
     # plt.show()
     # np.savetxt('pcs.csv',pcabands[:,3],delimiter=',',fmt='%10.5f')
-    for i in range(14):
+    for i in range(12):
         perc=np.percentile(pcabands[:,i],1)
         print('perc',perc)
         pcabands[:,i]=np.where(pcabands[:,i]<perc,perc,pcabands[:,i])
@@ -1523,8 +1540,19 @@ def singleband(file):
     # plt.show()
 
 
-
+    header=['R','G','B',
+            'PAT_R','PAT_G','PAT_B',
+            'DIF_R','DIF_G','DIF_B',
+            'ROO_R','ROO_G','ROO_B',
+            'GLD_R','GLD_G','GLD_B',]
     displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    with open('color-index.csv','w') as f:
+        writer=csv.writer(f)
+        writer.writerow(header)
+        for i in range(displayfea_vector.shape[0]):
+            writer.writerow(list(displayfea_vector[i,:]))
+
+
     # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%10.5f')
 
     # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
@@ -1547,7 +1575,9 @@ def singleband(file):
 
     need_w=int(450/3)
     need_h=int(400/4)
-    for i in range(2,featurechannel):
+    # pcdisplay=[3,4,5,6,7,8,9,10,11,0,1,2]
+    # for i in range(2,featurechannel):
+    for i in range(featurechannel):
         band=np.copy(pcabandsdisplay[:,:,i])
         imgband=(band-band.min())*255/(band.max()-band.min())
         pcimg=Image.fromarray(imgband.astype('uint8'),'L')
@@ -2316,15 +2346,16 @@ def kmeansclassify():
     pcpara=pc_combine_up.get()
     print(pcpara,type(pcpara))
     tempband=np.zeros((pcah,pcaw,1))
-    pcsel=buttonvar.get()+2
+    # pcsel=buttonvar.get()+2
+    pcsel=buttonvar.get()
     pcweights=pc_combine_up.get()-0.5
     if pcweights==0.0:
         tempband[:,:,0]=tempband[:,:,0]+originpcabands[:,:,pcsel]
     else:
         if pcweights<0.0:  #RGBPC1
-            rgbpc=originpcabands[:,:,0]
+            rgbpc=originpcabands[:,:,9]
         else:
-            rgbpc=originpcabands[:,:,1]
+            rgbpc=originpcabands[:,:,10]
         rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
         firstterm=abs(pcweights)*2*rgbpc
         colorpc=originpcabands[:,:,pcsel]
@@ -2416,14 +2447,15 @@ def getPCs():
     pcah,pcaw,pcac=originpcabands.shape
     pcweights=pc_combine_up.get()-0.5
     tempband=np.zeros((pcah,pcaw))
-    pcsel=buttonvar.get()+2
+    # pcsel=buttonvar.get()+2
+    pcsel=buttonvar.get()
     if pcweights==0.0:
         tempband=tempband+originpcabands[:,:,pcsel]
     else:
         if pcweights<0.0:  #RGBPC1
-            rgbpc=originpcabands[:,:,0]
+            rgbpc=originpcabands[:,:,9]
         else:
-            rgbpc=originpcabands[:,:,1]
+            rgbpc=originpcabands[:,:,10]
         rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
         firstterm=abs(pcweights)*2*rgbpc
         colorpc=originpcabands[:,:,pcsel]
@@ -2535,14 +2567,15 @@ def savePCAimg(path,originfile,file):
     # pyplt.imsave('k=1.png',grayimg)
     pcweights=pc_combine_up.get()-0.5
     tempband=np.zeros((pcah,pcaw))
-    pcsel=buttonvar.get()+2
+    # pcsel=buttonvar.get()+2
+    pcsel=buttonvar.get()
     if pcweights==0.0:
         tempband=tempband+originpcabands[:,:,pcsel]
     else:
         if pcweights<0.0:  #RGBPC1
-            rgbpc=originpcabands[:,:,0]
+            rgbpc=originpcabands[:,:,9]
         else:
-            rgbpc=originpcabands[:,:,1]
+            rgbpc=originpcabands[:,:,10]
         rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
         firstterm=abs(pcweights)*2*rgbpc
         colorpc=originpcabands[:,:,pcsel]
@@ -2569,15 +2602,15 @@ def changecluster(event):
     pcah,pcaw,pcac=originpcabands.shape
     pcweights=pc_combine_up.get()-0.5
     tempband=np.zeros((pcah,pcaw,1))
-    pcsel=buttonvar.get()+2
-
+    # pcsel=buttonvar.get()+2
+    pcsel=buttonvar.get()
     if pcweights==0.0:
         tempband[:,:,0]=tempband[:,:,0]+originpcabands[:,:,pcsel]
     else:
         if pcweights<0.0:  #RGBPC1
-            rgbpc=originpcabands[:,:,0]
+            rgbpc=originpcabands[:,:,9]
         else:
-            rgbpc=originpcabands[:,:,1]
+            rgbpc=originpcabands[:,:,10]
         rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
         firstterm=abs(pcweights)*2*rgbpc
         colorpc=originpcabands[:,:,pcsel]
