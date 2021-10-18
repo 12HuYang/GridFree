@@ -1540,17 +1540,17 @@ def singleband(file):
     # plt.show()
 
 
-    header=['R','G','B',
-            'PAT_R','PAT_G','PAT_B',
-            'DIF_R','DIF_G','DIF_B',
-            'ROO_R','ROO_G','ROO_B',
-            'GLD_R','GLD_G','GLD_B',]
-    displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
-    with open('color-index.csv','w') as f:
-        writer=csv.writer(f)
-        writer.writerow(header)
-        for i in range(displayfea_vector.shape[0]):
-            writer.writerow(list(displayfea_vector[i,:]))
+    # header=['R','G','B',
+    #         'PAT_R','PAT_G','PAT_B',
+    #         'DIF_R','DIF_G','DIF_B',
+    #         'ROO_R','ROO_G','ROO_B',
+    #         'GLD_R','GLD_G','GLD_B',]
+    # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    # with open('color-index.csv','w') as f:
+    #     writer=csv.writer(f)
+    #     writer.writerow(header)
+    #     for i in range(displayfea_vector.shape[0]):
+    #         writer.writerow(list(displayfea_vector[i,:]))
 
 
     # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%10.5f')
