@@ -1079,31 +1079,33 @@ def partialsingleband(filter):
     color_eigval,color_eigvec=np.linalg.eig(color_V)
     print('rgb_eigvec',rgb_eigvec)
     print('color_eigvec',color_eigvec)
-    featurechannel=14
+    featurechannel=12
     pcabands=np.zeros((colorindex_vector.shape[0],featurechannel))
     rgbbands=np.zeros((colorindex_vector.shape[0],3))
-    for i in range(3):
-        pcn=rgb_eigvec[:,i]
-        pcnbands=np.dot(rgb_std,pcn)
-        pcvar=np.var(pcnbands)
-        print('rgb pc',i+1,'var=',pcvar)
-        pcabands[nonzero_vector,i]=pcabands[nonzero_vector,i]+pcnbands
-        rgbbands[nonzero_vector,i]=rgbbands[nonzero_vector,i]+pcnbands
-    # plot3d(pcabands)
-    # np.savetxt('rgb.csv',rgbbands,delimiter=',',fmt='%10.5f')
-    pcabands[:,1]=np.copy(pcabands[:,1])
-    pcabands[:,2]=pcabands[:,2]*0
-    indexbands=np.zeros((colorindex_vector.shape[0],3))
-    for i in range(2,featurechannel):
-        pcn=color_eigvec[:,i-2]
+    for i in range(0,9):
+        pcn=color_eigvec[:,i]
         pcnbands=np.dot(color_std,pcn)
         pcvar=np.var(pcnbands)
-        print('color index pc',i-1,'var=',pcvar)
+        print('color index pc',i+1,'var=',pcvar)
         pcabands[nonzero_vector,i]=pcabands[nonzero_vector,i]+pcnbands
+
+    for i in range(9,12):
+        pcn=rgb_eigvec[:,i-9]
+        pcnbands=np.dot(rgb_std,pcn)
+        pcvar=np.var(pcnbands)
+        print('rgb pc',i-9+1,'var=',pcvar)
+        pcabands[nonzero_vector,i]=pcabands[nonzero_vector,i]+pcnbands
+        rgbbands[nonzero_vector,i-9]=rgbbands[nonzero_vector,i-9]+pcnbands
+    # plot3d(pcabands)
+    # np.savetxt('rgb.csv',rgbbands,delimiter=',',fmt='%10.5f')
+    # pcabands[:,1]=np.copy(pcabands[:,1])
+    # pcabands[:,2]=pcabands[:,2]*0
+    # indexbands=np.zeros((colorindex_vector.shape[0],3))
+
         # if i<5:
         #     indexbands[:,i-2]=indexbands[:,i-2]+pcnbands
 
-    for i in range(14):
+    for i in range(12):
         perc=np.percentile(pcabands[:,i],1)
         print('perc',perc)
         pcabands[:,i]=np.where(pcabands[:,i]<perc,perc,pcabands[:,i])
@@ -1142,7 +1144,7 @@ def partialsingleband(filter):
     pcbuttons=[]
     need_w=int(450/3)
     need_h=int(400/4)
-    for i in range(2,featurechannel):
+    for i in range(12):
         band=np.copy(pcabandsdisplay[:,:,i])
         imgband=(band-band.min())*255/(band.max()-band.min())
         pcimg=Image.fromarray(imgband.astype('uint8'),'L')
@@ -1555,7 +1557,7 @@ def singleband(file):
 
     # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%10.5f')
 
-    # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
     originpcabands.update({file:displayfea_vector})
     pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
     tempdictdisplay={'LabOstu':pcabandsdisplay}
