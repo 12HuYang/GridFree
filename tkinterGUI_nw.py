@@ -52,9 +52,10 @@ previewimg={'Color Deviation':None,
 #cluster=['LabOstu','NDI','Greenness','VEG','CIVE','MExG','NDVI','NGRDI','HEIGHT','Band1','Band2','Band3']
 cluster=['PAT_R','PAT_G','PAT_B',
          'DIF_R','DIF_G','DIF_B',
-         'ROO_R','ROO_G','ROO_B',
          'GLD_R','GLD_G','GLD_B',
          'Band1','Band2','Band3']
+         # 'ROO_R','ROO_G','ROO_B',
+
 colorbandtable=np.array([[255,0,0],[255,127,0],[255,255,0],[127,255,0],[0,255,255],[0,127,255],[0,0,255],[127,0,255],[75,0,130],[255,0,255]],'uint8')
 #print('colortableshape',colortable.shape)
 filenames=[]
@@ -925,26 +926,30 @@ def partialoneband(filter):
     fillpartialbands(colorindex_vector,0,PAT_R,filter_vector)
     fillpartialbands(colorindex_vector,1,PAT_G,filter_vector)
     fillpartialbands(colorindex_vector,2,PAT_B,filter_vector)
-    fillpartialbands(colorindex_vector,3,ROO_R,filter_vector)
-    fillpartialbands(colorindex_vector,4,ROO_G,filter_vector)
-    fillpartialbands(colorindex_vector,5,ROO_B,filter_vector)
-    fillpartialbands(colorindex_vector,6,DIF_R,filter_vector)
-    fillpartialbands(colorindex_vector,7,DIF_G,filter_vector)
-    fillpartialbands(colorindex_vector,8,DIF_B,filter_vector)
-    fillpartialbands(colorindex_vector,9,GLD_R,filter_vector)
-    fillpartialbands(colorindex_vector,10,GLD_G,filter_vector)
-    fillpartialbands(colorindex_vector,11,GLD_B,filter_vector)
+    # fillpartialbands(colorindex_vector,3,ROO_R,filter_vector)
+    # fillpartialbands(colorindex_vector,4,ROO_G,filter_vector)
+    # fillpartialbands(colorindex_vector,5,ROO_B,filter_vector)
+    fillpartialbands(colorindex_vector,3,DIF_R,filter_vector)
+    fillpartialbands(colorindex_vector,4,DIF_G,filter_vector)
+    fillpartialbands(colorindex_vector,5,DIF_B,filter_vector)
+    fillpartialbands(colorindex_vector,6,GLD_R,filter_vector)
+    fillpartialbands(colorindex_vector,7,GLD_G,filter_vector)
+    fillpartialbands(colorindex_vector,8,GLD_B,filter_vector)
+    fillpartialbands(colorindex_vector,9,Red,filter_vector)
+    fillpartialbands(colorindex_vector,10,Green,filter_vector)
+    fillpartialbands(colorindex_vector,11,Blue,filter_vector)
 
     nonzero_vector=np.where(filter_vector!=0)
 
-    displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    displayfea_vector=np.copy(colorindex_vector)
 
-    featurechannel=14
+    featurechannel=12
     # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%10.5f')
 
     # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
     originpcabands.update({currentfilename:displayfea_vector})
-    pcabandsdisplay=displayfea_vector[:,:14]
+    pcabandsdisplay=displayfea_vector[:,:12]
     pcabandsdisplay=pcabandsdisplay.reshape(displayfea_l,displayfea_w,featurechannel)
     tempdictdisplay={'LabOstu':pcabandsdisplay}
     displaybandarray.update({currentfilename:tempdictdisplay})
@@ -1035,15 +1040,19 @@ def partialsingleband(filter):
     fillpartialbands(colorindex_vector,0,PAT_R,filter_vector)
     fillpartialbands(colorindex_vector,1,PAT_G,filter_vector)
     fillpartialbands(colorindex_vector,2,PAT_B,filter_vector)
-    fillpartialbands(colorindex_vector,3,ROO_R,filter_vector)
-    fillpartialbands(colorindex_vector,4,ROO_G,filter_vector)
-    fillpartialbands(colorindex_vector,5,ROO_B,filter_vector)
-    fillpartialbands(colorindex_vector,6,DIF_R,filter_vector)
-    fillpartialbands(colorindex_vector,7,DIF_G,filter_vector)
-    fillpartialbands(colorindex_vector,8,DIF_B,filter_vector)
-    fillpartialbands(colorindex_vector,9,GLD_R,filter_vector)
-    fillpartialbands(colorindex_vector,10,GLD_G,filter_vector)
-    fillpartialbands(colorindex_vector,11,GLD_B,filter_vector)
+    # fillpartialbands(colorindex_vector,3,ROO_R,filter_vector)
+    # fillpartialbands(colorindex_vector,4,ROO_G,filter_vector)
+    # fillpartialbands(colorindex_vector,5,ROO_B,filter_vector)
+    fillpartialbands(colorindex_vector,3,DIF_R,filter_vector)
+    fillpartialbands(colorindex_vector,4,DIF_G,filter_vector)
+    fillpartialbands(colorindex_vector,5,DIF_B,filter_vector)
+    fillpartialbands(colorindex_vector,6,GLD_R,filter_vector)
+    fillpartialbands(colorindex_vector,7,GLD_G,filter_vector)
+    fillpartialbands(colorindex_vector,8,GLD_B,filter_vector)
+    fillpartialbands(colorindex_vector,9,Red,filter_vector)
+    fillpartialbands(colorindex_vector,10,Green,filter_vector)
+    fillpartialbands(colorindex_vector,11,Blue,filter_vector)
+
 
     for i in range(12):
         perc=np.percentile(colorindex_vector[:,i],1)
@@ -1053,13 +1062,13 @@ def partialsingleband(filter):
         print('perc',perc)
         colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
 
-    for i in range(3):
-        perc=np.percentile(RGB_vector[:,i],1)
-        print('perc',perc)
-        RGB_vector[:,i]=np.where(RGB_vector[:,i]<perc,perc,RGB_vector[:,i])
-        perc=np.percentile(RGB_vector[:,i],99)
-        print('perc',perc)
-        RGB_vector[:,i]=np.where(RGB_vector[:,i]>perc,perc,RGB_vector[:,i])
+    # for i in range(3):
+    #     perc=np.percentile(RGB_vector[:,i],1)
+    #     print('perc',perc)
+    #     RGB_vector[:,i]=np.where(RGB_vector[:,i]<perc,perc,RGB_vector[:,i])
+    #     perc=np.percentile(RGB_vector[:,i],99)
+    #     print('perc',perc)
+    #     RGB_vector[:,i]=np.where(RGB_vector[:,i]>perc,perc,RGB_vector[:,i])
 
     nonzero_vector=np.where(filter_vector!=0)
     rgb_M=np.mean(RGB_vector[nonzero_vector,:].T,axis=1)
@@ -1082,20 +1091,20 @@ def partialsingleband(filter):
     featurechannel=12
     pcabands=np.zeros((colorindex_vector.shape[0],featurechannel))
     rgbbands=np.zeros((colorindex_vector.shape[0],3))
-    for i in range(0,9):
+    for i in range(0,featurechannel):
         pcn=color_eigvec[:,i]
         pcnbands=np.dot(color_std,pcn)
         pcvar=np.var(pcnbands)
         print('color index pc',i+1,'var=',pcvar)
         pcabands[nonzero_vector,i]=pcabands[nonzero_vector,i]+pcnbands
 
-    for i in range(9,12):
-        pcn=rgb_eigvec[:,i-9]
-        pcnbands=np.dot(rgb_std,pcn)
-        pcvar=np.var(pcnbands)
-        print('rgb pc',i-9+1,'var=',pcvar)
-        pcabands[nonzero_vector,i]=pcabands[nonzero_vector,i]+pcnbands
-        rgbbands[nonzero_vector,i-9]=rgbbands[nonzero_vector,i-9]+pcnbands
+    # for i in range(9,12):
+    #     pcn=rgb_eigvec[:,i-9]
+    #     pcnbands=np.dot(rgb_std,pcn)
+    #     pcvar=np.var(pcnbands)
+    #     print('rgb pc',i-9+1,'var=',pcvar)
+    #     pcabands[nonzero_vector,i]=pcabands[nonzero_vector,i]+pcnbands
+    #     rgbbands[nonzero_vector,i-9]=rgbbands[nonzero_vector,i-9]+pcnbands
     # plot3d(pcabands)
     # np.savetxt('rgb.csv',rgbbands,delimiter=',',fmt='%10.5f')
     # pcabands[:,1]=np.copy(pcabands[:,1])
@@ -1317,9 +1326,9 @@ def singleband(file):
         Red=bands[0,:,:]
         Green=bands[1,:,:]
         Blue=bands[2,:,:]
-    fillbands(originbands,displays,RGB_vector,0,'Band1',Red)
-    fillbands(originbands,displays,RGB_vector,1,'Band2',Green)
-    fillbands(originbands,displays,RGB_vector,2,'Band3',Blue)
+    # fillbands(originbands,displays,RGB_vector,0,'Band1',Red)
+    # fillbands(originbands,displays,RGB_vector,1,'Band2',Green)
+    # fillbands(originbands,displays,RGB_vector,2,'Band3',Blue)
 
     # import matplotlib.pyplot as plt
     # fig,axs=plt.subplots(1,3)
@@ -1348,6 +1357,7 @@ def singleband(file):
     # Green=Green/255+1
     # Blue=Blue/255+1
 
+
     PAT_R=Red/(Red+Green)
     PAT_G=Green/(Green+Blue)
     PAT_B=Blue/(Blue+Red)
@@ -1367,15 +1377,18 @@ def singleband(file):
     fillbands(originbands,displays,colorindex_vector,0,'PAT_R',PAT_R)
     fillbands(originbands,displays,colorindex_vector,1,'PAT_G',PAT_G)
     fillbands(originbands,displays,colorindex_vector,2,'PAT_B',PAT_B)
-    fillbands(originbands,displays,colorindex_vector,3,'ROO_R',ROO_R)
-    fillbands(originbands,displays,colorindex_vector,4,'ROO_G',ROO_G)
-    fillbands(originbands,displays,colorindex_vector,5,'ROO_B',ROO_B)
-    fillbands(originbands,displays,colorindex_vector,6,'DIF_R',DIF_R)
-    fillbands(originbands,displays,colorindex_vector,7,'DIF_G',DIF_G)
-    fillbands(originbands,displays,colorindex_vector,8,'DIF_B',DIF_B)
-    fillbands(originbands,displays,colorindex_vector,9,'GLD_R',GLD_R)
-    fillbands(originbands,displays,colorindex_vector,10,'GLD_G',GLD_G)
-    fillbands(originbands,displays,colorindex_vector,11,'GLD_B',GLD_B)
+    # fillbands(originbands,displays,colorindex_vector,3,'ROO_R',ROO_R)
+    # fillbands(originbands,displays,colorindex_vector,4,'ROO_G',ROO_G)
+    # fillbands(originbands,displays,colorindex_vector,5,'ROO_B',ROO_B)
+    fillbands(originbands,displays,colorindex_vector,3,'DIF_R',DIF_R)
+    fillbands(originbands,displays,colorindex_vector,4,'DIF_G',DIF_G)
+    fillbands(originbands,displays,colorindex_vector,5,'DIF_B',DIF_B)
+    fillbands(originbands,displays,colorindex_vector,6,'GLD_R',GLD_R)
+    fillbands(originbands,displays,colorindex_vector,7,'GLD_G',GLD_G)
+    fillbands(originbands,displays,colorindex_vector,8,'GLD_B',GLD_B)
+    fillbands(originbands,displays,colorindex_vector,9,'Band1',Red)
+    fillbands(originbands,displays,colorindex_vector,10,'Band2',Green)
+    fillbands(originbands,displays,colorindex_vector,11,'Band3',Blue)
 
     # for i in [5,11]:
     #     colorindex_vector[:,i]=np.log10(colorindex_vector[:,i])
@@ -1419,13 +1432,17 @@ def singleband(file):
         print('perc',perc)
         colorindex_vector[:,i]=np.where(colorindex_vector[:,i]>perc,perc,colorindex_vector[:,i])
 
-    for i in range(3):
-        perc=np.percentile(RGB_vector[:,i],1)
-        print('perc',perc)
-        RGB_vector[:,i]=np.where(RGB_vector[:,i]<perc,perc,RGB_vector[:,i])
-        perc=np.percentile(RGB_vector[:,i],99)
-        print('perc',perc)
-        RGB_vector[:,i]=np.where(RGB_vector[:,i]>perc,perc,RGB_vector[:,i])
+    # for i in [3,4,5]:
+    #     perc=np.percentile(colorindex_vector[:,i],10)
+    #     colorindex_vector[:,i]=np.where(colorindex_vector[:,i]<perc,perc,colorindex_vector[:,i])
+
+    # for i in range(3):
+    #     perc=np.percentile(RGB_vector[:,i],1)
+    #     print('perc',perc)
+    #     RGB_vector[:,i]=np.where(RGB_vector[:,i]<perc,perc,RGB_vector[:,i])
+    #     perc=np.percentile(RGB_vector[:,i],99)
+    #     print('perc',perc)
+    #     RGB_vector[:,i]=np.where(RGB_vector[:,i]>perc,perc,RGB_vector[:,i])
 
     # import matplotlib.pyplot as plt
     # fig,axs=plt.subplots(4,3)
@@ -1440,6 +1457,17 @@ def singleband(file):
     #     # axs[i].set_title('Colorindex_'+str(i+1))
     # # plt.hist(pcabands[:,13],bins,range=(minpc2,maxpc2))
     # plt.show()
+    # header=['PAT_R','PAT_G','PAT_B',
+    #         'DIF_R','DIF_G','DIF_B',
+    #         'GLD_R','GLD_G','GLD_B',
+    #         'R','G','B']
+    # # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    # displayfea_vector=np.copy(colorindex_vector)
+    # with open('color-index.csv','w') as f:
+    #     writer=csv.writer(f)
+    #     writer.writerow(header)
+    #     for i in range(displayfea_vector.shape[0]):
+    #         writer.writerow(list(displayfea_vector[i,:]))
 
     rgb_M=np.mean(RGB_vector.T,axis=1)
     colorindex_M=np.mean(colorindex_vector.T,axis=1)
@@ -1450,13 +1478,20 @@ def singleband(file):
     color_V=np.corrcoef(colorindex_C.T)
     nans=np.isnan(color_V)
     color_V[nans]=1e-6
-    rgb_std=rgb_C/np.std(RGB_vector.T,axis=1)
+    try:
+        rgb_std=rgb_C/np.std(RGB_vector.T,axis=1)
+    except:
+        pass
     color_std=colorindex_C/np.std(colorindex_vector.T,axis=1)
     nans=np.isnan(color_std)
     color_std[nans]=1e-6
-    rgb_eigval,rgb_eigvec=np.linalg.eig(rgb_V)
+    try:
+        rgb_eigval,rgb_eigvec=np.linalg.eig(rgb_V)
+        print('rgb_eigvec',rgb_eigvec)
+    except:
+        pass
     color_eigval,color_eigvec=np.linalg.eig(color_V)
-    print('rgb_eigvec',rgb_eigvec)
+
     print('color_eigvec',color_eigvec)
     featurechannel=12
     pcabands=np.zeros((colorindex_vector.shape[0],featurechannel))
@@ -1470,7 +1505,7 @@ def singleband(file):
     # for i in range(3,featurechannel):
     # csvpcabands=np.zeros((colorindex_vector.shape[0],15))
 
-    for i in range(0,9):
+    for i in range(12):
         pcn=color_eigvec[:,i]
         pcnbands=np.dot(color_std,pcn)
         pcvar=np.var(pcnbands)
@@ -1478,13 +1513,13 @@ def singleband(file):
         pcabands[:,i]=pcabands[:,i]+pcnbands
         # if i<5:
         #     indexbands[:,i-2]=indexbands[:,i-2]+pcnbands
-    for i in range(9,12):
-        pcn=rgb_eigvec[:,i-9]
-        pcnbands=np.dot(rgb_std,pcn)
-        pcvar=np.var(pcnbands)
-        print('rgb pc',i+1,'var=',pcvar)
-        pcabands[:,i]=pcabands[:,i]+pcnbands
-        rgbbands[:,i-9]=rgbbands[:,i-9]+pcnbands
+    # for i in range(9,12):
+    #     pcn=rgb_eigvec[:,i-9]
+    #     pcnbands=np.dot(rgb_std,pcn)
+    #     pcvar=np.var(pcnbands)
+    #     print('rgb pc',i+1,'var=',pcvar)
+    #     pcabands[:,i]=pcabands[:,i]+pcnbands
+    #     rgbbands[:,i-9]=rgbbands[:,i-9]+pcnbands
     # for i in range(0,12):
     #     pcn=color_eigvec[:,i]
     #     pcnbands=np.dot(color_std,pcn)
@@ -1519,6 +1554,18 @@ def singleband(file):
     # plt.hist(pcabands[:,13],bins,range=(minpc2,maxpc2))
     # plt.show()
     # np.savetxt('pcs.csv',pcabands[:,3],delimiter=',',fmt='%10.5f')
+    # header=['PC1','PC2','PC3',
+    #         'PC4','PC5','PC6',
+    #         'PC7','PC8','PC9',
+    #         'PC10','PC11','PC12']
+    # # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    # pcatalbe=np.copy(pcabands)
+    # with open('pcabands.csv','w') as f:
+    #     writer=csv.writer(f)
+    #     writer.writerow(header)
+    #     for i in range(pcatalbe.shape[0]):
+    #         writer.writerow(list(pcatalbe[i,:]))
+
     for i in range(12):
         perc=np.percentile(pcabands[:,i],1)
         print('perc',perc)
@@ -1542,12 +1589,12 @@ def singleband(file):
     # plt.show()
 
 
-    # header=['R','G','B',
-    #         'PAT_R','PAT_G','PAT_B',
+    # header=['PAT_R','PAT_G','PAT_B',
     #         'DIF_R','DIF_G','DIF_B',
-    #         'ROO_R','ROO_G','ROO_B',
-    #         'GLD_R','GLD_G','GLD_B',]
-    # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    #         'GLD_R','GLD_G','GLD_B',
+    #         'R','G','B']
+    # # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    # displayfea_vector=np.copy(colorindex_vector)
     # with open('color-index.csv','w') as f:
     #     writer=csv.writer(f)
     #     writer.writerow(header)
@@ -1557,7 +1604,8 @@ def singleband(file):
 
     # np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%10.5f')
 
-    displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    # displayfea_vector=np.concatenate((RGB_vector,colorindex_vector),axis=1)
+    displayfea_vector=np.copy(colorindex_vector)
     originpcabands.update({file:displayfea_vector})
     pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
     tempdictdisplay={'LabOstu':pcabandsdisplay}
