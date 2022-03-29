@@ -52,6 +52,7 @@ class batch_ser_func():
         self.RGB_vector=None
         self.colorindex_vector=None
         self.displaypclagels=None
+        self.needswitchkmeanssel=False
 
     def Open_batchimage(self):
         try:
@@ -142,22 +143,25 @@ class batch_ser_func():
         DIF_G=2*Green-Blue-Red
         DIF_B=2*Blue-Red-Green
 
-        GLD_R=Red/(np.multiply(np.power(Blue,0.618),np.power(Green,0.382)))
-        GLD_G=Green/(np.multiply(np.power(Blue,0.618),np.power(Red,0.382)))
-        GLD_B=Blue/(np.multiply(np.power(Green,0.618),np.power(Red,0.382)))
+        GLD_R=Red/(np.multiply(np.power(Blue,0.618),np.power(Green,0.382))+1e-6)
+        GLD_G=Green/(np.multiply(np.power(Blue,0.618),np.power(Red,0.382))+1e-6)
+        GLD_B=Blue/(np.multiply(np.power(Green,0.618),np.power(Red,0.382))+1e-6)
 
         self.fillbands(originbands,displays,self.colorindex_vector,0,'PAT_R',PAT_R)
         self.fillbands(originbands,displays,self.colorindex_vector,1,'PAT_G',PAT_G)
         self.fillbands(originbands,displays,self.colorindex_vector,2,'PAT_B',PAT_B)
-        self.fillbands(originbands,displays,self.colorindex_vector,3,'ROO_R',ROO_R)
-        self.fillbands(originbands,displays,self.colorindex_vector,4,'ROO_G',ROO_G)
-        self.fillbands(originbands,displays,self.colorindex_vector,5,'ROO_B',ROO_B)
-        self.fillbands(originbands,displays,self.colorindex_vector,6,'DIF_R',DIF_R)
-        self.fillbands(originbands,displays,self.colorindex_vector,7,'DIF_G',DIF_G)
-        self.fillbands(originbands,displays,self.colorindex_vector,8,'DIF_B',DIF_B)
-        self.fillbands(originbands,displays,self.colorindex_vector,9,'GLD_R',GLD_R)
-        self.fillbands(originbands,displays,self.colorindex_vector,10,'GLD_G',GLD_G)
-        self.fillbands(originbands,displays,self.colorindex_vector,11,'GLD_B',GLD_B)
+        # self.fillbands(originbands,displays,self.colorindex_vector,3,'ROO_R',ROO_R)
+        # self.fillbands(originbands,displays,self.colorindex_vector,4,'ROO_G',ROO_G)
+        # self.fillbands(originbands,displays,self.colorindex_vector,5,'ROO_B',ROO_B)
+        self.fillbands(originbands,displays,self.colorindex_vector,3,'DIF_R',DIF_R)
+        self.fillbands(originbands,displays,self.colorindex_vector,4,'DIF_G',DIF_G)
+        self.fillbands(originbands,displays,self.colorindex_vector,5,'DIF_B',DIF_B)
+        self.fillbands(originbands,displays,self.colorindex_vector,6,'GLD_R',GLD_R)
+        self.fillbands(originbands,displays,self.colorindex_vector,7,'GLD_G',GLD_G)
+        self.fillbands(originbands,displays,self.colorindex_vector,8,'GLD_B',GLD_B)
+        self.fillbands(originbands,displays,self.colorindex_vector,9,'Band1',Red)
+        self.fillbands(originbands,displays,self.colorindex_vector,10,'Band2',Green)
+        self.fillbands(originbands,displays,self.colorindex_vector,11,'Band3',Blue)
 
         NDI=128*((Green-Red)/(Green+Red)+1)
         VEG=Green/(np.power(Red,0.667)*np.power(Blue,(1-0.667)))
@@ -177,6 +181,14 @@ class batch_ser_func():
         self.fillbands(originbands,displays,colorindex_vector,5,'NDRB',NDRB)
         self.fillbands(originbands,displays,colorindex_vector,6,'NGRDI',NGRDI)
 
+        for i in range(12):
+            perc = np.percentile(self.colorindex_vector[:, i], 1)
+            print('perc', perc)
+            self.colorindex_vector[:, i] = np.where(self.colorindex_vector[:, i] < perc, perc, self.colorindex_vector[:, i])
+            perc = np.percentile(self.colorindex_vector[:, i], 99)
+            print('perc', perc)
+            self.colorindex_vector[:, i] = np.where(self.colorindex_vector[:, i] > perc, perc, self.colorindex_vector[:, i])
+
         rgb_M=np.mean(self.RGB_vector.T,axis=1)
         colorindex_M=np.mean(self.colorindex_vector.T,axis=1)
         print('rgb_M',rgb_M,'colorindex_M',colorindex_M)
@@ -184,30 +196,61 @@ class batch_ser_func():
         colorindex_C=self.colorindex_vector-colorindex_M
         rgb_V=np.corrcoef(rgb_C.T)
         color_V=np.corrcoef(colorindex_C.T)
-        rgb_std=rgb_C/np.std(self.RGB_vector.T,axis=1)
+        nans = np.isnan(color_V)
+        color_V[nans] = 1e-6
+        try:
+            rgb_std = rgb_C / np.std(RGB_vector.T, axis=1)
+        except:
+            pass
+        # rgb_std=rgb_C/np.std(self.RGB_vector.T,axis=1)
         color_std=colorindex_C/np.std(self.colorindex_vector.T,axis=1)
-        rgb_eigval,rgb_eigvec=np.linalg.eig(rgb_V)
+        nans = np.isnan(color_std)
+        color_std[nans] = 1e-6
+        try:
+            rgb_eigval, rgb_eigvec = np.linalg.eig(rgb_V)
+            print('rgb_eigvec', rgb_eigvec)
+        except:
+            pass
+        # rgb_eigval,rgb_eigvec=np.linalg.eig(rgb_V)
+        # color_V[~np.isfinite(color_V)]=1e-6
         color_eigval,color_eigvec=np.linalg.eig(color_V)
-        print('rgb_eigvec',rgb_eigvec)
+        # print('rgb_eigvec',rgb_eigvec)
         print('color_eigvec',color_eigvec)
-        featurechannel=14
+        featurechannel=12
         pcabands=np.zeros((self.colorindex_vector.shape[0],featurechannel))
-        for i in range(3):
-            pcn=rgb_eigvec[:,i]
-            pcnbands=np.dot(rgb_std,pcn)
-            pcvar=np.var(pcnbands)
-            print('rgb pc',i+1,'var=',pcvar)
-            pcabands[:,i]=pcabands[:,i]+pcnbands
-        pcabands[:,1]=np.copy(pcabands[:,2])
-        pcabands[:,2]=pcabands[:,2]*0
-        for i in range(2,featurechannel):
-            pcn=color_eigvec[:,i-2]
-            pcnbands=np.dot(color_std,pcn)
-            pcvar=np.var(pcnbands)
-            print('color index pc',i-1,'var=',pcvar)
-            pcabands[:,i]=pcabands[:,i]+pcnbands
 
-        displayfea_vector=np.concatenate((self.RGB_vector,self.colorindex_vector),axis=1)
+        # for i in range(3):
+        #     pcn=rgb_eigvec[:,i]
+        #     pcnbands=np.dot(rgb_std,pcn)
+        #     pcvar=np.var(pcnbands)
+        #     print('rgb pc',i+1,'var=',pcvar)
+        #     pcabands[:,i]=pcabands[:,i]+pcnbands
+        # pcabands[:,1]=np.copy(pcabands[:,2])
+        # pcabands[:,2]=pcabands[:,2]*0
+        # for i in range(2,featurechannel):
+        #     pcn=color_eigvec[:,i-2]
+        #     pcnbands=np.dot(color_std,pcn)
+        #     pcvar=np.var(pcnbands)
+        #     print('color index pc',i-1,'var=',pcvar)
+        #     pcabands[:,i]=pcabands[:,i]+pcnbands
+
+        for i in range(12):
+            pcn = color_eigvec[:, i]
+            pcnbands = np.dot(color_std, pcn)
+            pcvar = np.var(pcnbands)
+            print('color index pc', i + 1, 'var=', pcvar)
+            pcabands[:, i] = pcabands[:, i] + pcnbands
+
+        for i in range(12):
+            perc = np.percentile(pcabands[:, i], 1)
+            print('perc', perc)
+            pcabands[:, i] = np.where(pcabands[:, i] < perc, perc, pcabands[:, i])
+            perc = np.percentile(pcabands[:, i], 99)
+            print('perc', perc)
+            pcabands[:, i] = np.where(pcabands[:, i] > perc, perc, pcabands[:, i])
+
+        # displayfea_vector=np.concatenate((self.RGB_vector,self.colorindex_vector),axis=1)
+        displayfea_vector=np.copy(self.colorindex_vector)
         self.batch_originpcabands.update({self.file:displayfea_vector})
         pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
         tempdictdisplay={'LabOstu':pcabandsdisplay}
@@ -701,9 +744,10 @@ class batch_ser_func():
 
 
     def extraction(self,currentlabels):
+        #return -1: FAIL, return 0: needs to change something, return 1: pass
         if kmeans==1:
             messagebox.showerror('Invalid Class #',message='#Class = 1, try change it to 2 or more, and refresh Color-Index.')
-            return False
+            return -1
         nonzeros=np.count_nonzero(currentlabels)
         print('nonzero counts',nonzeros)
         nonzeroloc=np.where(currentlabels!=0)
@@ -711,12 +755,14 @@ class batch_ser_func():
             ulx,uly=min(nonzeroloc[1]),min(nonzeroloc[0])
         except:
             messagebox.showerror('Invalid Colorindices',message='Need to process colorindicies')
-            return False
+            return -1
         rlx,rly=max(nonzeroloc[1]),max(nonzeroloc[0])
         nonzeroratio=float(nonzeros)/((rlx-ulx)*(rly-uly))
         print(nonzeroratio)
         if nonzeroratio>std_nonzeroratio*2:
-            return False
+            if round(nonzeroratio+std_nonzeroratio,1) <=1.1:
+                self.needswitchkmeanssel=True
+                return 0
 
         dealpixel=nonzeroratio*currentlabels.shape[0]*currentlabels.shape[1]
         ratio=1
@@ -751,7 +797,7 @@ class batch_ser_func():
             originlabels,border,colortable,originlabeldict=tkintercorestat.init(workingimg,workingimg,'',workingimg,10,coin)
         self.reseglabels=originlabels
         self.batch_results.update({self.file:(originlabeldict,{})})
-        return True
+        return 1
 
     def savePCAimg(self,originfile):
         file=self.file
@@ -1243,12 +1289,18 @@ class batch_ser_func():
         self.singleband()
         colordicesband=self.kmeansclassify()
         if type(colordicesband)==type(None):
+            print("colordiceband return none\n")
             return
         self.batch_colordicesband.update({self.file:colordicesband})
         currentlabels,originbinaryimg=self.generateimgplant(colordicesband)
-        if self.extraction(currentlabels)==False:
+        if self.extraction(currentlabels)==-1:
+            print("extraction return false\n")
+            return
+        if self.extraction(currentlabels)==0:
+            print("need to switch pc sel in batch.txt\n")
             return
         if self.resegment()==False:
+            print("resegment return false\n")
             return
         self.export_result()
 
@@ -1556,6 +1608,7 @@ def batch_process():
     print('# of CPUs',cpunum)
     starttime=time.time()
     print('start time',starttime)
+    docneedskmeansadj=[]
     for file in batch_filenames:
         # batch_Multiimage={}
         # batch_Multigray={}
@@ -1579,9 +1632,16 @@ def batch_process():
         # batch_export_result(exportpath,file)
         procobj=batch_ser_func(file)
         procobj.process()
+        if procobj.needswitchkmeanssel==True:
+            docneedskmeansadj.append(file)
         del procobj
     # multi_pool=multiprocessing.Pool(int(cpunum/4))
     # multi_pool.map(batch_proc_func,batch_filenames)
+    if len(docneedskmeansadj)>0:
+        messagebox.showinfo('Image process area error',
+                            'The image process area density are much greater than the batch document,\n '
+                            'please adjust your cluster selection or use anoter batch file: \n'
+                            +'\n'.join(docneedskmeansadj))
     print('used time',time.time()-starttime)
 
 
