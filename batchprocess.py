@@ -83,15 +83,25 @@ class batch_ser_func():
             return False
         return True
 
-    def fillbands(self,originbands,displaybands,vector,vectorindex,name,band):
+    def fillbands(self,originbands,displaybands,vector,vectorindex,name,band,filter=0):
         tempdict={name:band}
-        if name not in originbands:
-            originbands.update(tempdict)
-            image=cv2.resize(band,(self.displayfea_w,self.displayfea_l),interpolation=cv2.INTER_LINEAR)
-            displaydict={name:image}
-            displaybands.update(displaydict)
-            fea_bands=image.reshape((self.displayfea_l*self.displayfea_w),1)[:,0]
-            vector[:,vectorindex]=vector[:,vectorindex]+fea_bands
+        if isinstance(filter, int):
+            if name not in originbands:
+                originbands.update(tempdict)
+                image = cv2.resize(band, (self.displayfea_w, self.displayfea_l), interpolation=cv2.INTER_LINEAR)
+                displaydict = {name: image}
+                displaybands.update(displaydict)
+                fea_bands = image.reshape((self.displayfea_l * self.displayfea_w), 1)[:, 0]
+                vector[:, vectorindex] = vector[:, vectorindex] + fea_bands
+        else:
+            if name not in originbands:
+                originbands.update(tempdict)
+                image = cv2.resize(band, (self.displayfea_w, self.displayfea_l), interpolation=cv2.INTER_LINEAR)
+                image = np.multiply(image, filter)
+                displaydict = {name: image}
+                displaybands.update(displaydict)
+                fea_bands = image.reshape((self.displayfea_l * self.displayfea_w), 1)[:, 0]
+                vector[:, vectorindex] = vector[:, vectorindex] + fea_bands
         return
 
     def singleband(self):
@@ -107,21 +117,21 @@ class batch_ser_func():
             ratio=1
         print('ratio',ratio)
 
+
         originbands={}
         displays={}
         displaybands=cv2.resize(bands[0,:,:],(int(fea_w/ratio),int(fea_l/ratio)),interpolation=cv2.INTER_LINEAR)
         displayfea_l,displayfea_w=displaybands.shape
+        print(displayfea_l, displayfea_w)
         self.RGB_vector=np.zeros((displayfea_l*displayfea_w,3))
         self.colorindex_vector=np.zeros((displayfea_l*displayfea_w,12))
         self.displayfea_l,self.displayfea_w=displaybands.shape
-        self.RGB_vectorr=np.zeros((displayfea_l*displayfea_w,3))
-        self.colorindex_vector=np.zeros((displayfea_l*displayfea_w,12))
         Red=bands[0,:,:]
         Green=bands[1,:,:]
         Blue=bands[2,:,:]
-        self.fillbands(originbands,displays,self.RGB_vector,0,'Band1',Red)
-        self.fillbands(originbands,displays,self.RGB_vector,1,'Band2',Green)
-        self.fillbands(originbands,displays,self.RGB_vector,2,'Band3',Blue)
+        # self.fillbands(originbands,displays,self.RGB_vector,0,'Band1',Red)
+        # self.fillbands(originbands,displays,self.RGB_vector,1,'Band2',Green)
+        # self.fillbands(originbands,displays,self.RGB_vector,2,'Band3',Blue)
 
         #secondsmallest_R=np.partition(Red,1)[1][0]
         #secondsmallest_G=np.partition(Green,1)[1][0]
@@ -135,9 +145,9 @@ class batch_ser_func():
         PAT_G=Green/(Green+Blue)
         PAT_B=Blue/(Blue+Red)
 
-        ROO_R=Red/Green
-        ROO_G=Green/Blue
-        ROO_B=Blue/Red
+        # ROO_R=Red/Green
+        # ROO_G=Green/Blue
+        # ROO_B=Blue/Red
 
         DIF_R=2*Red-Green-Blue
         DIF_G=2*Green-Blue-Red
@@ -198,10 +208,10 @@ class batch_ser_func():
         color_V=np.corrcoef(colorindex_C.T)
         nans = np.isnan(color_V)
         color_V[nans] = 1e-6
-        try:
-            rgb_std = rgb_C / np.std(RGB_vector.T, axis=1)
-        except:
-            pass
+        # try:
+        #     rgb_std = rgb_C / np.std(RGB_vector.T, axis=1)
+        # except:
+        #     pass
         # rgb_std=rgb_C/np.std(self.RGB_vector.T,axis=1)
         color_std=colorindex_C/np.std(self.colorindex_vector.T,axis=1)
         nans = np.isnan(color_std)
@@ -609,9 +619,9 @@ class batch_ser_func():
             tempband[:,:,0]=tempband[:,:,0]+originpcabands[:,:,pcs]
         else:
             if pcweight<0.0:
-                rgbpc=originpcabands[:,:,0]
+                rgbpc=originpcabands[:,:,9]
             else:
-                rgbpc=originpcabands[:,:,1]
+                rgbpc=originpcabands[:,:,10]
             rgbpc=(rgbpc-rgbpc.min())*255/(rgbpc.max()-rgbpc.min())
             firstterm=abs(pcweight)*2*rgbpc
             colorpc=originpcabands[:,:,pcs]
@@ -619,6 +629,7 @@ class batch_ser_func():
             secondterm=(1-abs(pcweight)*2)*colorpc
             tempband[:,:,0]=tempband[:,:,0]+firstterm+secondterm
         self.displaypclagels=np.copy(tempband[:,:,0])
+        print('origin pc range',tempband.max(),tempband.min())
         if kmeans==1:
             print('kmeans=1')
             displaylabels=np.mean(tempband,axis=2)
@@ -1135,6 +1146,72 @@ class batch_ser_func():
         colortable=labeldict[itervalue]['colortable']
         head_tail=os.path.split(self.file)
         originfile,extension=os.path.splitext(head_tail[1])
+
+        '''export cropped images'''
+        # if len(self.exportpath)>0:
+        #     originheight, originwidth = self.batch_Multigraybands[file].size
+        #     uniquelabels = list(colortable.keys())
+        #     cropratio = batch_findratio((originheight, originwidth), (labels.shape[0], labels.shape[1]))
+        #     if cropratio > 1:
+        #         cache = (np.zeros((originheight, originwidth)),
+        #                  {"f": int(cropratio), "stride": int(cropratio)})
+        #         originconvband = tkintercorestat.pool_backward(labels, cache)
+        #     else:
+        #         originconvband = np.copy(labels)
+        #     imgrsc = cv2.imread(os.path.join(FOLDER,file), flags=cv2.IMREAD_ANYCOLOR)
+        #     # cv2.imwrite(os.path.join(self.exportpath, originfile + '_before.png'), originconvband)
+        #     labelsegfile = os.path.join(self.exportpath, originfile + '_cropimage_label.csv')
+        #     with open(labelsegfile, mode='w') as f:
+        #         csvwriter = csv.writer(f)
+        #         # rowcontent=['id','locs']
+        #         rowcontent = ['index', 'i', 'j', 'filename', 'label']
+        #         csvwriter.writerow(rowcontent)
+        #         #     result_ref=envi.open(head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.hdr', head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.dat')
+        #         #     result_nparr=np.array(result_ref.load())
+        #         #     corrected_nparr=np.copy(result_nparr)
+        #         index = 1
+        #         for uni in uniquelabels:
+        #             if uni != 0:
+        #                 tempuni = colortable[uni]
+        #                 if tempuni == 'Ref':
+        #                     # pixelloc = np.where(convband == 65535)
+        #                     originpixelloc = np.where(originconvband == 65535)
+        #                 else:
+        #                     # pixelloc = np.where(convband == float(uni))
+        #                     originpixelloc = np.where(originconvband == float(uni))
+        #                 # kernelval=corrected_nparr[pixelloc]
+        #                 # nirs=np.mean(kernelval,axis=0)
+        #                 #             print('nirs 170',nirs[170])
+        #                 #             if nirs[170]<0.15:
+        #                 #                 lesszeroonefive.append(uni)
+        #                 try:
+        #                     # ulx = min(pixelloc[1])
+        #                     ulx = min(originpixelloc[1])
+        #                 except:
+        #                     print('no pixellloc[1] on uni=', uni)
+        #                     print('pixelloc =', originpixelloc)
+        #                     continue
+        #                 uly = min(originpixelloc[0])
+        #                 rlx = max(originpixelloc[1])
+        #                 rly = max(originpixelloc[0])
+        #                 cropimage = imgrsc[uly:rly, ulx:rlx]
+        #                 cv2.imwrite(os.path.join(self.exportpath, originfile + '_crop_' + str(int(uni)) + '.png'), cropimage)
+        #                 rowcontent = [index, 0, 0, originfile + '_crop_' + str(int(uni)) + '.png', 0]
+        #                 csvwriter.writerow(rowcontent)
+        #                 index += 1
+        #                 # rowcontent=[colortable[uni]]
+        #                 # rowcontent=rowcontent+list(pixelloc[0])
+        #                 # csvwriter.writerow(rowcontent)
+        #                 # rowcontent=[colortable[uni]]
+        #                 # rowcontent=rowcontent+list(pixelloc[1])
+        #                 # csvwriter.writerow(rowcontent)
+        #
+        #         f.close()
+        #     # print(lesszeroonefive)
+
+
+
+
         if len(self.exportpath)>0:
             tup=(labels,counts,colortable,[],self.file)
             _band,segimg,small_segimg=self.showcounting(tup,False)
@@ -1391,7 +1468,7 @@ def Open_batchfile():
                 setting=f.readlines()
                 # print(setting)
                 pcweight=float(setting[0].split(',')[1])
-                pcs=int(setting[1].split(',')[1])+1
+                pcs=int(setting[1].split(',')[1])-1
                 # print(pcs)
                 # for i in range(len(pcs)):
                 #     pcs[i]=int(pcs[i])
@@ -1413,7 +1490,7 @@ def Open_batchfile():
                 std_nonzeroratio=float(setting[8].split(',')[1])
                 for i in range(len(kmeans_sel)):
                     kmeans_sel[i]=int(kmeans_sel[i])
-                print('PCweight',pcweight,'PCsel',pcs,'KMeans',kmeans,'KMeans-Selection',kmeans_sel)
+                print('PCweight',pcweight,'PCsel',pcs+1,'KMeans',kmeans,'KMeans-Selection',kmeans_sel)
                 print('maxthres',maxthres,'minthres',minthres,'maxlw',maxlw,'minlw',minlw)
                 messagebox.showinfo('Batch settings','PCweight='+str(pcweight)+'\nPCsel='+str(pcs)+'\nKMeans='+str(kmeans)+
                                     '\nCluster selection'+str(kmeans_sel)+'\nMax area='+str(maxthres)+

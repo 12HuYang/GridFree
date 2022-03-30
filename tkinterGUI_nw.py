@@ -1310,9 +1310,7 @@ def singleband(file):
     originbands={}
     displays={}
     displaybands=cv2.resize(bands[0,:,:],(int(fea_w/ratio),int(fea_l/ratio)),interpolation=cv2.INTER_LINEAR)
-    # displaybands=np.copy(bands[0,:,:])
     displayfea_l,displayfea_w=displaybands.shape
-    # displayfea_l,displayfea_w=fea_l,fea_w
     print(displayfea_l,displayfea_w)
     RGB_vector=np.zeros((displayfea_l*displayfea_w,3))
     colorindex_vector=np.zeros((displayfea_l*displayfea_w,12))
@@ -1362,9 +1360,9 @@ def singleband(file):
     PAT_G=Green/(Green+Blue)
     PAT_B=Blue/(Blue+Red)
 
-    ROO_R=Red/(Green+1e-6)
-    ROO_G=Green/(Blue+1e-6)
-    ROO_B=Blue/(Red+1e-6)
+    # ROO_R=Red/(Green+1e-6)
+    # ROO_G=Green/(Blue+1e-6)
+    # ROO_B=Blue/(Red+1e-6)
 
     DIF_R=2*Red-Green-Blue
     DIF_G=2*Green-Blue-Red
@@ -2499,6 +2497,7 @@ def getPCs():
     tempband=np.zeros((pcah,pcaw))
     # pcsel=buttonvar.get()+2
     pcsel=buttonvar.get()
+    print("pcsel",pcsel)
     if pcweights==0.0:
         tempband=tempband+originpcabands[:,:,pcsel]
     else:
@@ -3143,35 +3142,77 @@ def export_result(iterver):
         #from spectral import imshow, view_cube
         '''hyperspectral img process'''
         # import spectral.io.envi as envi
+        '''For image crop version below'''
         lesszeroonefive=[]
-        with open(locfilename,mode='w') as f:
+        imgrsc = cv2.imread(file, flags=cv2.IMREAD_ANYCOLOR)
+        # imgrsc = cv2.cvtColor(imgrsc,cv2.COLOR_BGR2RGB)
+        # imgrsc = cv2.cvtColor(imgrsc, cv2.COLOR_BGR2RGB)
+        # imgrsc = cv2.resize(imgrsc, (labels.shape[1], labels.shape[0]), interpolation=cv2.INTER_LINEAR)
+        # image = Image.fromarray(imgrsc)
+        # image=Image.open(file)
+        # image=image.resize((convband.shape[1], convband.shape[0]),resample=Image.BILINEAR)
+
+        cropratio=findratio((originheight,originwidth),(labels.shape[0],labels.shape[1]))
+        if cropratio>1:
+            cache = (np.zeros((originheight,originwidth)),
+                 {"f": int(cropratio), "stride": int(cropratio)})
+            originconvband = tkintercorestat.pool_backward(labels, cache)
+        else:
+            originconvband=np.copy(labels)
+
+
+        # cv2.imwrite(os.path.join(path, originfile + '_before.png'), originconvband)
+        labelsegfile=os.path.join(path,originfile+'_cropimage_label.csv')
+        with open(labelsegfile,mode='w') as f:
             csvwriter=csv.writer(f)
-            rowcontent=['id','locs']
+            # rowcontent=['id','locs']
+            rowcontent=['index','i','j','filename','label']
             csvwriter.writerow(rowcontent)
         #     result_ref=envi.open(head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.hdr', head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.dat')
         #     result_nparr=np.array(result_ref.load())
         #     corrected_nparr=np.copy(result_nparr)
+            index=1
             for uni in uniquelabels:
                 if uni!=0:
                     tempuni=colortable[uni]
                     if tempuni=='Ref':
-                        pixelloc = np.where(convband == 65535)
+                        # pixelloc = np.where(convband == 65535)
+                        originpixelloc=np.where(originconvband == 65535)
                     else:
-                        pixelloc = np.where(convband == float(uni))
+                        # pixelloc = np.where(convband == float(uni))
+                        originpixelloc = np.where(originconvband == float(uni))
                     # kernelval=corrected_nparr[pixelloc]
                     # nirs=np.mean(kernelval,axis=0)
         #             print('nirs 170',nirs[170])
         #             if nirs[170]<0.15:
         #                 lesszeroonefive.append(uni)
-                    rowcontent=[colortable[uni]]
-                    rowcontent=rowcontent+list(pixelloc[0])
+                    try:
+                        # ulx = min(pixelloc[1])
+                        ulx = min(originpixelloc[1])
+                    except:
+                        print('no pixellloc[1] on uni=', uni)
+                        print('pixelloc =', originpixelloc)
+                        continue
+                    uly = min(originpixelloc[0])
+                    rlx = max(originpixelloc[1])
+                    rly = max(originpixelloc[0])
+                    cropimage=imgrsc[uly:rly,ulx:rlx]
+                    cv2.imwrite(os.path.join(path,originfile+'_crop_'+str(int(uni))+'.png'),cropimage)
+                    rowcontent=[index,0,0,originfile+'_crop_'+str(int(uni))+'.png',0]
                     csvwriter.writerow(rowcontent)
-                    rowcontent=[colortable[uni]]
-                    rowcontent=rowcontent+list(pixelloc[1])
-                    csvwriter.writerow(rowcontent)
+                    index+=1
+                    # rowcontent=[colortable[uni]]
+                    # rowcontent=rowcontent+list(pixelloc[0])
+                    # csvwriter.writerow(rowcontent)
+                    # rowcontent=[colortable[uni]]
+                    # rowcontent=rowcontent+list(pixelloc[1])
+                    # csvwriter.writerow(rowcontent)
+
+
+
 
             f.close()
-        # print(lesszeroonefive)
+        print(lesszeroonefive)
         '''end'''
 
 
