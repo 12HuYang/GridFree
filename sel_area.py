@@ -8,7 +8,7 @@ import numpy as np
 class MousePositionTracker(tk.Frame):
     """ Tkinter Canvas mouse position widget. """
 
-    def __init__(self, canvas):
+    def __init__(self, canvas,drawpolygon):
         self.canvas = canvas
         self.canv_width = self.canvas.cget('width')
         self.canv_height = self.canvas.cget('height')
@@ -18,6 +18,13 @@ class MousePositionTracker(tk.Frame):
         self.quit_fnid=0
         self.fn_m=0
         self.fn_l=0
+
+        self.begin_fnid_shift=0
+        self.update_fnid_shift=0
+        self.quite_fnid_shift=0
+
+        self.drawpolygon=drawpolygon
+        self.polygoncontainer=[]
 
         # Create canvas cross-hair lines.
         xhair_opts = dict(dash=(3, 2), fill='red', state=tk.HIDDEN)
@@ -35,7 +42,10 @@ class MousePositionTracker(tk.Frame):
         #     self.canvas.unbind('<Leave>',self.fn_l)
         self.start = (event.x, event.y)  # Remember position (no drawing).
 
+
     def update(self, event):
+        if self.drawpolygon==True:
+            return
         self.end = (event.x, event.y)
         self._update(event)
         self._command(self.start, (event.x, event.y))  # User callback.
@@ -68,7 +78,12 @@ class MousePositionTracker(tk.Frame):
         self.update_fnid=self.canvas.bind("<B1-Motion>", self.update)
         self.quit_fnid=self.canvas.bind("<ButtonRelease-1>", self.quit)
 
+
     def quit(self, event):
+        if self.drawpolygon==True:
+            self.end = (event.x, event.y)
+            self._update(event)
+            self._command(self.start, (event.x, event.y))
         self.hide()  # Hide cross-hairs.
         self.reset()
         # if isinstance(self.fn_m,int)==False:
@@ -88,12 +103,13 @@ class SelectionObject:
     """ Widget to display a rectangular area on given canvas defined by two points
         representing its diagonal.
     """
-    def __init__(self, canvas, select_opts):
+    def __init__(self, canvas, select_opts,drawpolygon):
         # Create attributes needed to display selection.
         self.canvas = canvas
         self.select_opts1 = select_opts
         self.width = self.canvas.cget('width')
         self.height = self.canvas.cget('height')
+        self.drawpolygon=drawpolygon
         # self.npimg=np.zeros((self.canvas.cget('height'),self.canvas.cget('width')))
         # self.img=img
 
@@ -101,22 +117,36 @@ class SelectionObject:
         select_opts1 = self.select_opts1.copy()  # Avoid modifying passed argument.
         select_opts1.update(state=tk.HIDDEN)  # Hide initially.
         # Separate options for area inside rectanglar selection.
-        select_opts2 = dict(dash=(2, 4), fill='', outline='orange', width=2,state=tk.HIDDEN)
+
 
         # Initial extrema of inner and outer rectangles.
         imin_x, imin_y,  imax_x, imax_y = 0, 0,  1, 1
         omin_x, omin_y,  omax_x, omax_y = 0, 0,  self.width, self.height
-
-        self.rects = (
-            # Area *outside* selection (inner) rectangle.
-            self.canvas.create_rectangle(omin_x, omin_y,  omax_x, imin_y, **select_opts1),
-            # self.canvas.create_rectangle(omin_x, imin_y,  imin_x, imax_y, **select_opts1),
-            # self.canvas.create_rectangle(imax_x, imin_y,  omax_x, imax_y, **select_opts1),
-            # self.canvas.create_rectangle(omin_x, imax_y,  omax_x, omax_y, **select_opts1),
-            # Inner rectangle.
-            # self.canvas.create_rectangle(imin_x, imin_y,  imax_x, imax_y, **select_opts2)
-            self.canvas.create_oval(imin_x, imin_y,  imax_x, imax_y, **select_opts2)
-        )
+        if self.drawpolygon==False:
+            select_opts2 = dict(dash=(2, 4), fill='', outline='orange', width=2, state=tk.HIDDEN)
+            self.rects = (
+                # Area *outside* selection (inner) rectangle.
+                self.canvas.create_rectangle(omin_x, omin_y,  omax_x, imin_y, **select_opts1),
+                # self.canvas.create_rectangle(omin_x, imin_y,  imin_x, imax_y, **select_opts1),
+                # self.canvas.create_rectangle(imax_x, imin_y,  omax_x, imax_y, **select_opts1),
+                # self.canvas.create_rectangle(omin_x, imax_y,  omax_x, omax_y, **select_opts1),
+                # Inner rectangle.
+                # self.canvas.create_rectangle(imin_x, imin_y,  imax_x, imax_y, **select_opts2)
+                self.canvas.create_oval(imin_x, imin_y,  imax_x, imax_y, **select_opts2)
+            )
+        else:
+            select_opts2 = dict(dash=(4, 2), fill='', outline='orange', width=2, state=tk.HIDDEN)
+            self.polygoncontainer=[imin_x, imin_y, imax_x, imax_y]
+            self.rects = (
+                # Area *outside* selection (inner) rectangle.
+                self.canvas.create_rectangle(omin_x, omin_y, omax_x, imin_y, **select_opts1),
+                # self.canvas.create_rectangle(omin_x, imin_y,  imin_x, imax_y, **select_opts1),
+                # self.canvas.create_rectangle(imax_x, imin_y,  omax_x, imax_y, **select_opts1),
+                # self.canvas.create_rectangle(omin_x, imax_y,  omax_x, omax_y, **select_opts1),
+                # Inner rectangle.
+                # self.canvas.create_rectangle(imin_x, imin_y,  imax_x, imax_y, **select_opts2)
+                self.canvas.create_polygon(self.polygoncontainer, **select_opts2)
+            )
 
         # self.startpx=(0,0)
         # self.endpx=(0,0)
@@ -127,14 +157,22 @@ class SelectionObject:
         # Current extrema of inner and outer rectangles.
         imin_x, imin_y,  imax_x, imax_y = self._get_coords(start, end)
         omin_x, omin_y,  omax_x, omax_y = 0, 0,  self.width, self.height
-
-        # Update coords of all rectangles based on these extrema.
-        self.canvas.coords(self.rects[0], omin_x, omin_y,  omax_x, imin_y),
-        # self.canvas.coords(self.rects[1], omin_x, imin_y,  imin_x, imax_y),
-        # self.canvas.coords(self.rects[2], imax_x, imin_y,  omax_x, imax_y),
-        # self.canvas.coords(self.rects[3], omin_x, imax_y,  omax_x, omax_y),
-        self.canvas.coords(self.rects[1], imin_x, imin_y,  imax_x, imax_y),
-        # print(self.rects[1],imin_x,imin_y,imax_x,imax_y)
+        if self.drawpolygon==False:
+            # Update coords of all rectangles based on these extrema.
+            self.canvas.coords(self.rects[0], omin_x, omin_y,  omax_x, imin_y),
+            # self.canvas.coords(self.rects[1], omin_x, imin_y,  imin_x, imax_y),
+            # self.canvas.coords(self.rects[2], imax_x, imin_y,  omax_x, imax_y),
+            # self.canvas.coords(self.rects[3], omin_x, imax_y,  omax_x, omax_y),
+            self.canvas.coords(self.rects[1], imin_x, imin_y,  imax_x, imax_y),
+            # print(self.rects[1],imin_x,imin_y,imax_x,imax_y)
+        else:
+            self.canvas.coords(self.rects[0], omin_x, omin_y, omax_x, imin_y),
+            if self.polygoncontainer==[0,0,1,1]:
+                self.polygoncontainer=[imin_x, imin_y,  imax_x, imax_y]
+            else:
+                self.polygoncontainer.append(imax_x)
+                self.polygoncontainer.append(imax_y)
+            self.canvas.coords(self.rects[1], self.polygoncontainer),
 
         for rect in self.rects:  # Make sure all are now visible.
             self.canvas.itemconfigure(rect, state=tk.NORMAL)
@@ -144,9 +182,11 @@ class SelectionObject:
         """ Determine coords of a polygon defined by the start and
             end points one of the diagonals of a rectangular area.
         """
-        return (min((start[0], end[0])), min((start[1], end[1])),
-                max((start[0], end[0])), max((start[1], end[1])))
-
+        try:
+            return (min((start[0], end[0])), min((start[1], end[1])),
+                    max((start[0], end[0])), max((start[1], end[1])))
+        except:
+            return (0,0,1,1)
     def hide(self):
         for rect in self.rects:
             self.canvas.itemconfigure(rect, state=tk.HIDDEN)
@@ -177,13 +217,17 @@ class Application(tk.Frame):
         self.canvas=parent
         npimg=np.zeros((int(self.canvas.cget('height')),int(self.canvas.cget('width'))))
         self.img=Image.fromarray(npimg)
+        self.drawpolygon = False
+        self.polygoncontainer=[]
 
         # Create selection object to show current selection boundaries.
-        self.selection_obj = SelectionObject(self.canvas, self.SELECT_OPTS)
-        self.posn_tracker = MousePositionTracker(self.canvas)
+        self.selection_obj = SelectionObject(self.canvas, self.SELECT_OPTS,self.drawpolygon)
+        self.posn_tracker = MousePositionTracker(self.canvas,self.drawpolygon)
 
         self.zoom_m=0
         self.zoom_l=0
+
+
 
 
     def end(self,rects):
@@ -191,18 +235,26 @@ class Application(tk.Frame):
         self.selection_obj.delete(rects)
         self.canvas.update()
 
-    def start(self,fn_m=0,fn_l=0):
+    def start(self,fn_m=0,fn_l=0,drawpolygon=False):
         # Callback function to update it given two points of its diagonal.
         if isinstance(fn_m,int)==False:
             self.zoom_m=fn_m
         if isinstance(fn_l,int)==False:
             self.zoom_l=fn_l
+        self.drawpolygon=drawpolygon
+        print("in app drawpolygon =",self.drawpolygon)
+        if self.drawpolygon==True:
+            self.selection_obj=SelectionObject(self.canvas, self.SELECT_OPTS,self.drawpolygon)
+            self.posn_tracker = MousePositionTracker(self.canvas, self.drawpolygon)
         def on_drag(start, end, **kwarg):  # Must accept these arguments.
             self.selection_obj.update(start, end)
+            # if self.drawpolygon==True:
+            #     self.polygoncontainer=self.selection_obj.polygoncontainer.copy()
 
+            # Create mouse position tracker that uses the function.
 
-                # Create mouse position tracker that uses the function.
-        self.posn_tracker.autodraw(fn_m,fn_l,command=on_drag)  # Enable callbacks.
+        self.posn_tracker.autodraw(fn_m, fn_l, command=on_drag)  # Enable callbacks.
+
         return self.selection_obj.rects
 
 
@@ -211,7 +263,10 @@ class Application(tk.Frame):
         # draw=ImageDraw.Draw(self.img)
         # draw.ellipse([(sizes[0],sizes[1]),(sizes[2],sizes[3])],fill='red')
         # self.img.save('selection_oval.tiff')
+        # if self.drawpolygon==True:
         return self.canvas.coords(rect)
+        # else:
+        #     return self.canvas.coords(rect),[]
 
 
 

@@ -53,6 +53,7 @@ class batch_ser_func():
         self.colorindex_vector=None
         self.displaypclagels=None
         self.needswitchkmeanssel=False
+        self.partialpca=False
 
     def Open_batchimage(self):
         try:
@@ -129,25 +130,10 @@ class batch_ser_func():
         Red=bands[0,:,:]
         Green=bands[1,:,:]
         Blue=bands[2,:,:]
-        # self.fillbands(originbands,displays,self.RGB_vector,0,'Band1',Red)
-        # self.fillbands(originbands,displays,self.RGB_vector,1,'Band2',Green)
-        # self.fillbands(originbands,displays,self.RGB_vector,2,'Band3',Blue)
-
-        #secondsmallest_R=np.partition(Red,1)[1][0]
-        #secondsmallest_G=np.partition(Green,1)[1][0]
-        #secondsmallest_B=np.partition(Blue,1)[1][0]
-
-        #Red=Red+secondsmallest_R
-        #Green=Green+secondsmallest_G
-        #Blue=Blue+secondsmallest_B
 
         PAT_R=Red/(Red+Green)
         PAT_G=Green/(Green+Blue)
         PAT_B=Blue/(Blue+Red)
-
-        # ROO_R=Red/Green
-        # ROO_G=Green/Blue
-        # ROO_B=Blue/Red
 
         DIF_R=2*Red-Green-Blue
         DIF_G=2*Green-Blue-Red
@@ -160,9 +146,6 @@ class batch_ser_func():
         self.fillbands(originbands,displays,self.colorindex_vector,0,'PAT_R',PAT_R)
         self.fillbands(originbands,displays,self.colorindex_vector,1,'PAT_G',PAT_G)
         self.fillbands(originbands,displays,self.colorindex_vector,2,'PAT_B',PAT_B)
-        # self.fillbands(originbands,displays,self.colorindex_vector,3,'ROO_R',ROO_R)
-        # self.fillbands(originbands,displays,self.colorindex_vector,4,'ROO_G',ROO_G)
-        # self.fillbands(originbands,displays,self.colorindex_vector,5,'ROO_B',ROO_B)
         self.fillbands(originbands,displays,self.colorindex_vector,3,'DIF_R',DIF_R)
         self.fillbands(originbands,displays,self.colorindex_vector,4,'DIF_G',DIF_G)
         self.fillbands(originbands,displays,self.colorindex_vector,5,'DIF_B',DIF_B)
@@ -229,21 +212,6 @@ class batch_ser_func():
         featurechannel=12
         pcabands=np.zeros((self.colorindex_vector.shape[0],featurechannel))
 
-        # for i in range(3):
-        #     pcn=rgb_eigvec[:,i]
-        #     pcnbands=np.dot(rgb_std,pcn)
-        #     pcvar=np.var(pcnbands)
-        #     print('rgb pc',i+1,'var=',pcvar)
-        #     pcabands[:,i]=pcabands[:,i]+pcnbands
-        # pcabands[:,1]=np.copy(pcabands[:,2])
-        # pcabands[:,2]=pcabands[:,2]*0
-        # for i in range(2,featurechannel):
-        #     pcn=color_eigvec[:,i-2]
-        #     pcnbands=np.dot(color_std,pcn)
-        #     pcvar=np.var(pcnbands)
-        #     print('color index pc',i-1,'var=',pcvar)
-        #     pcabands[:,i]=pcabands[:,i]+pcnbands
-
         for i in range(12):
             pcn = color_eigvec[:, i]
             pcnbands = np.dot(color_std, pcn)
@@ -267,345 +235,75 @@ class batch_ser_func():
         self.batch_displaybandarray.update({self.file:tempdictdisplay})
         self.batch_originbandarray.update({self.file:originbands})
 
-    def singleband_oldversion(self):
+    def fillpartialbands(self,vector, vectorindex, band, filter_vector):
+        nonzero = np.where(filter_vector != 0)
+        vector[nonzero, vectorindex] = vector[nonzero, vectorindex] + band
+
+    def partialsingleband(self,filter):
         try:
-            bands=self.batch_Multigraybands[self.file].bands
+            bands=self.batch_Multiimagebands[self.file].bands
         except:
             return
-        bandsize=self.batch_Multigraybands[self.file].size
-        print('bandsize',bandsize)
-        try:
-            channel,height,width=bands.shape
-        except:
-            channel=0
-        if channel>1:
-            bands=bands[0,:,:]
-
-        ostu=filters.threshold_otsu(bands)
-        bands=bands.astype('float32')
-        bands=bands/ostu
-
-        if bandsize[0]*bandsize[1]>2000*2000:
-            ratio=batch_findratio([bandsize[0],bandsize[1]],[2000,2000])
+        self.partialpca=True
+        channel, fea_l, fea_w = bands.shape
+        print('bandsize', fea_l, fea_w)
+        if fea_l*fea_w>2000*2000:
+            ratio=batch_findratio([fea_l,fea_w],[2000,2000])
         else:
             ratio=1
         print('ratio',ratio)
-        originbands={}
-        displays={}
-        fea_l,fea_w=bands.shape
-        # fea_vector=np.zeros((fea_l*fea_w,10))
-        # pyplt.imsave('batch_bands.png',bands)
-        displaybands=cv2.resize(bands,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-        # pyplt.imsave('batch_displaybands.png',displaybands)
-        displayfea_l,displayfea_w=displaybands.shape
-        self.displayfea_l,self.displayfea_w=displaybands.shape
-        fea_vector=np.zeros((displayfea_l*displayfea_w,3))
-        displayfea_vector=np.zeros((displayfea_l*displayfea_w,7))
-        colorfea_vector=np.zeros((displayfea_l*displayfea_w,7))
+        nonzero = np.where(filter != 0)
+        originbands = {}
+        displays = {}
+        displaybands = cv2.resize(bands[0, :, :], (int(fea_w / ratio), int(fea_l / ratio)),
+                                  interpolation=cv2.INTER_LINEAR)
+        displayfea_l, displayfea_w = displaybands.shape
+        print(displayfea_l, displayfea_w)
+        self.RGB_vector = np.zeros((displayfea_l * displayfea_w, 3))
+        self.colorindex_vector = np.zeros((displayfea_l * displayfea_w, 12))
+        self.displayfea_l, self.displayfea_w = displaybands.shape
+        filter_vector = filter.reshape((displayfea_l * displayfea_w), 1)[:, 0]
+        Red = cv2.resize(bands[0, :, :], (displayfea_w, displayfea_l), interpolation=cv2.INTER_LINEAR)[nonzero]
+        Green = cv2.resize(bands[1, :, :], (displayfea_w, displayfea_l), interpolation=cv2.INTER_LINEAR)[nonzero]
+        Blue = cv2.resize(bands[2, :, :], (displayfea_w, displayfea_l), interpolation=cv2.INTER_LINEAR)[nonzero]
+        PAT_R = Red / (Red + Green)
+        PAT_G = Green / (Green + Blue)
+        PAT_B = Blue / (Blue + Red)
 
-        if 'LabOstu' not in originbands:
-            originbands.update({'LabOstu':bands})
-            fea_bands=bands.reshape(fea_l*fea_w,1)[:,0]
-            displayfea_bands=displaybands.reshape((displayfea_l*displayfea_w),1)[:,0]
-            # fea_vector[:,9]=fea_vector[:,0]+fea_bands
-            displayfea_vector[:,6]=displayfea_vector[:,6]+displayfea_bands
-            minv=displayfea_bands.min()
-            maxv=displayfea_bands.max()
-            fearange=maxv-minv
-            colorfeabands=displayfea_bands-minv
-            colorfeabands=colorfeabands/fearange*255
-            colorfea_vector[:,6]=colorfea_vector[:,6]+colorfeabands
-            displays.update({'LabOstu':displaybands})
+        DIF_R = 2 * Red - Green - Blue
+        DIF_G = 2 * Green - Blue - Red
+        DIF_B = 2 * Blue - Red - Green
 
-        bands=self.batch_Multiimagebands[self.file].bands
+        GLD_R = Red / (np.multiply(np.power(Blue, 0.618), np.power(Green, 0.382)))
+        GLD_G = Green / (np.multiply(np.power(Blue, 0.618), np.power(Red, 0.382)))
+        GLD_B = Blue / (np.multiply(np.power(Green, 0.618), np.power(Red, 0.382)))
 
-        NDI=128*((bands[1,:,:]-bands[0,:,:])/(bands[1,:,:]+bands[0,:,:])+1)
-        tempdict={'NDI':NDI}
+        self.fillpartialbands(self.colorindex_vector, 0, PAT_R, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 1, PAT_G, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 2, PAT_B, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 3, DIF_R, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 4, DIF_G, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 5, DIF_B, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 6, GLD_R, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 7, GLD_G, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 8, GLD_B, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 9, Red, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 10, Green, filter_vector)
+        self.fillpartialbands(self.colorindex_vector, 11, Blue, filter_vector)
 
-        if 'NDI' not in originbands:
-            originbands.update(tempdict)
+        # Green=Green[np.where(filter_vector!=0)]
+        # Red=Red[np.where(filter_vector!=0)]
+        # Blue=Blue[np.where(filter_vector!=0)]
+        NDI = 128 * ((Green - Red) / (Green + Red) + 1)
+        VEG = Green / (np.power(Red, 0.667) * np.power(Blue, (1 - 0.667)))
+        Greenness = Green / (Green + Red + Blue)
+        CIVE = 0.44 * Red + 0.811 * Green + 0.385 * Blue + 18.7845
+        MExG = 1.262 * Green - 0.844 * Red - 0.311 * Blue
+        NDRB = (Red - Blue) / (Red + Blue)
+        NGRDI = (Green - Red) / (Green + Red)
 
-            displaybands=cv2.resize(NDI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            fea_bands=NDI.reshape(fea_l*fea_w,1)[:,0]
-            # originfea_vector[:,1]=originfea_vector[:,1]+fea_bands
-            displayfea_bands=displaybands.reshape((displayfea_l*displayfea_w),1)[:,0]
-            # fea_vector[:,1]=fea_vector[:,1]+fea_bands
-            displayfea_vector[:,1]=displayfea_vector[:,1]+displayfea_bands
-            minv=displayfea_bands.min()
-            maxv=displayfea_bands.max()
-            fearange=maxv-minv
-            colorfeabands=displayfea_bands-minv
-            colorfeabands=colorfeabands/fearange*255
-            colorfea_vector[:,6]=colorfea_vector[:,6]+colorfeabands
-            displaydict={'NDI':displaybands}
-            displays.update(displaydict)
+        colorindex_vector = np.zeros((displayfea_l * displayfea_w, 7))
 
-        Red=bands[0,:,:]
-        Green=bands[1,:,:]
-        Blue=bands[2,:,:]
-        tempdict={'Band1':Red}
-
-        if 'Band1' not in originbands:
-            originbands.update(tempdict)
-
-            image=cv2.resize(Red,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            displaydict={'Band1':image}
-            displays.update(displaydict)
-            fea_bands=Red.reshape(fea_l*fea_w,1)[:,0]
-            # originfea_vector[:,2]=originfea_vector[:,2]+fea_bands
-            displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,0]=fea_vector[:,0]+displayfea_bands
-            # displayfea_vector[:,2]=displayfea_vector[:,2]+displayfea_bands
-        tempdict={'Band2':Green}
-        if 'Band2' not in originbands:
-            originbands.update(tempdict)
-
-            image=cv2.resize(Green,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            displaydict={'Band2':image}
-            displays.update(displaydict)
-            fea_bands=Green.reshape(fea_l*fea_w,1)[:,0]
-            # originfea_vector[:,3]=originfea_vector[:,3]+fea_bands
-            displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,1]=fea_vector[:,1]+displayfea_bands
-            # displayfea_vector[:,3]=displayfea_vector[:,3]+displayfea_bands
-        tempdict={'Band3':Blue}
-        if 'Band3' not in originbands:
-            originbands.update(tempdict)
-            # originfea_vector[:,4]=originfea_vector[:,4]+Blue
-            image=cv2.resize(Blue,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            displaydict={'Band3':image}
-            displays.update(displaydict)
-            fea_bands=Blue.reshape(fea_l*fea_w,1)[:,0]
-            displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            fea_vector[:,2]=fea_vector[:,2]+displayfea_bands
-            # displayfea_vector[:,4]=displayfea_vector[:,4]+displayfea_bands
-        Greenness = bands[1, :, :] / (bands[0, :, :] + bands[1, :, :] + bands[2, :, :])
-        tempdict = {'Greenness': Greenness}
-        if 'Greenness' not in originbands:
-            originbands.update(tempdict)
-            # originfea_vector[:,5]=originfea_vector[:,5]+Greenness
-            image=cv2.resize(Greenness,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
-            displaydict={'Greenness':image}
-            #displaybandarray.update(worktempdict)
-            displays.update(displaydict)
-            fea_bands=Greenness.reshape(fea_l*fea_w,1)[:,0]
-            displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            # fea_vector[:,5]=fea_vector[:,5]+fea_bands
-            minv=displayfea_bands.min()
-            maxv=displayfea_bands.max()
-            fearange=maxv-minv
-            colorfeabands=displayfea_bands-minv
-            colorfeabands=colorfeabands/fearange*255
-            colorfea_vector[:,2]=colorfea_vector[:,2]+colorfeabands
-            displayfea_vector[:,2]=displayfea_vector[:,2]+displayfea_bands
-        VEG=bands[1,:,:]/(np.power(bands[0,:,:],0.667)*np.power(bands[2,:,:],(1-0.667)))
-        tempdict={'VEG':VEG}
-        if 'VEG' not in originbands:
-            originbands.update(tempdict)
-            # originfea_vector[:,6]=originfea_vector[:,6]+VEG
-            image=cv2.resize(VEG,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            kernel=np.ones((4,4),np.float32)/16
-            #displaybandarray.update({'LabOstu':})
-            #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
-            worktempdict={'VEG':cv2.filter2D(image,-1,kernel)}
-            displays.update(worktempdict)
-            fea_bands=VEG.reshape(fea_l*fea_w,1)[:,0]
-            displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            # fea_vector[:,6]=fea_vector[:,6]+fea_bands
-            minv=displayfea_bands.min()
-            maxv=displayfea_bands.max()
-            fearange=maxv-minv
-            colorfeabands=displayfea_bands-minv
-            colorfeabands=colorfeabands/fearange*255
-            colorfea_vector[:,3]=colorfea_vector[:,3]+colorfeabands
-            displayfea_vector[:,3]=displayfea_vector[:,3]+displayfea_bands
-        CIVE=0.441*bands[0,:,:]-0.811*bands[1,:,:]+0.385*bands[2,:,:]+18.78745
-        tempdict={'CIVE':CIVE}
-        if 'CIVE' not in originbands:
-            originbands.update(tempdict)
-            # originfea_vector[:,7]=originfea_vector[:,7]+CIVE
-            image=cv2.resize(CIVE,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
-            worktempdict={'CIVE':image}
-            displays.update(worktempdict)
-            fea_bands=CIVE.reshape(fea_l*fea_w,1)[:,0]
-            displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            # fea_vector[:,7]=fea_vector[:,7]+fea_bands
-            displayfea_vector[:,4]=displayfea_vector[:,4]+displayfea_bands
-            minv=displayfea_bands.min()
-            maxv=displayfea_bands.max()
-            fearange=maxv-minv
-            colorfeabands=displayfea_bands-minv
-            colorfeabands=colorfeabands/fearange*255
-            colorfea_vector[:,4]=colorfea_vector[:,4]+colorfeabands
-        MExG=1.262*bands[1,:,:]-0.884*bands[0,:,:]-0.311*bands[2,:,:]
-        tempdict={'MExG':MExG}
-        if 'MExG' not in originbands:
-            originbands.update(tempdict)
-            # originfea_vector[:,8]=originfea_vector[:,8]+MExG
-            image=cv2.resize(MExG,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
-            worktempdict={'MExG':image}
-            displays.update(worktempdict)
-            fea_bands=MExG.reshape(fea_l*fea_w,1)[:,0]
-            displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            # fea_vector[:,8]=fea_vector[:,8]+fea_bands
-            displayfea_vector[:,5]=displayfea_vector[:,5]+displayfea_bands
-            minv=displayfea_bands.min()
-            maxv=displayfea_bands.max()
-            fearange=maxv-minv
-            colorfeabands=displayfea_bands-minv
-            colorfeabands=colorfeabands/fearange*255
-            colorfea_vector[:,5]=colorfea_vector[:,5]+colorfeabands
-        NDVI=(bands[0,:,:]-bands[2,:,:])/(bands[0,:,:]+bands[2,:,:])
-        tempdict={'NDVI':NDVI}
-        if 'NDVI' not in originbands:
-            originbands.update(tempdict)
-            # originfea_vector[:,0]=originfea_vector[:,9]+NDVI
-            image=cv2.resize(NDVI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
-            worktempdict={'NDVI':image}
-            displays.update(worktempdict)
-            fea_bands=NDVI.reshape(fea_l*fea_w,1)[:,0]
-            displayfea_bands=image.reshape((displayfea_l*displayfea_w),1)[:,0]
-            # fea_vector[:,0]=fea_vector[:,9]+fea_bands
-            displayfea_vector[:,0]=displayfea_vector[:,0]+displayfea_bands
-            minv=displayfea_bands.min()
-            maxv=displayfea_bands.max()
-            fearange=maxv-minv
-            colorfeabands=displayfea_bands-minv
-            colorfeabands=colorfeabands/fearange*255
-            colorfea_vector[:,0]=colorfea_vector[:,0]+colorfeabands
-        NGRDI=(bands[1,:,:]-bands[0,:,:])/(bands[1,:,:]+bands[0,:,:])
-        tempdict={'NGRDI':NGRDI}
-        if 'NGRDI' not in originbands:
-            originbands.update(tempdict)
-            image=cv2.resize(NGRDI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
-            worktempdict={'NGRDI':image}
-            displays.update(worktempdict)
-        if channel>=1:
-            nirbands=self.batch_Multigraybands[self.file].bands
-            NDVI=(nirbands[0,:,:]-bands[1,:,:])/(nirbands[0,:,:]+bands[1,:,:])
-            tempdict={'NDVI':NDVI}
-            #if 'NDVI' not in originbandarray:
-            originbands.update(tempdict)
-            image=cv2.resize(NDVI,(int(bandsize[1]/ratio),int(bandsize[0]/ratio)),interpolation=cv2.INTER_LINEAR)
-            #image=image.reshape((int(bandsize[1]/ratio),int(bandsize[0]/ratio),3))
-            worktempdict={'NDVI':image}
-            displays.update(worktempdict)
-
-        '''PCA part'''
-        displayfea_vector=np.concatenate((fea_vector,displayfea_vector),axis=1)
-        M=np.mean(displayfea_vector.T,axis=1)
-        OM=np.mean(fea_vector.T,axis=1)
-        print('M',M,'M shape',M.shape, 'OM',OM,'OM Shape',OM.shape)
-        C=displayfea_vector-M
-        OC=fea_vector-OM
-        #max=np.max(C.T,axis=1)
-        #print('MAX',max)
-        #C=C/max
-        print('C',C,'OC',OC)
-        #V=np.cov(C.T)
-        V=np.corrcoef(C.T)
-        OV=np.corrcoef(OC.T)
-        std=np.std(displayfea_vector.T,axis=1)
-        O_std=np.std(fea_vector.T,axis=1)
-        print(std,O_std)
-        std_displayfea=C/std
-        O_stddisplayfea=OC/O_std
-        print(std_displayfea,O_stddisplayfea)
-        #eigvalues,eigvectors=np.linalg.eig(V)
-        #n,m=displayfea_vector.shape
-        #C=np.dot(displayfea_vector.T,displayfea_vector)/(n-1)
-        V_var=np.cov(std_displayfea.T)
-        print('COV',V_var)
-        print('COR',V)
-        eigvalues=la.eigvals(V_var)
-        #eigvalues=np.linalg.eigvals(C)
-        print('eigvalue',eigvalues)
-        idx=np.argsort(eigvalues)
-        print('idx',idx)
-        eigvalues,eigvectors=np.linalg.eig(V)
-        print('eigvalue',eigvalues)
-        print('eigvectors',eigvectors)
-        eigvalueperc={}
-        featurechannel=10
-        # for i in range(len(eigvalues)):
-        #     print('percentage',i,eigvalues[i]/sum(eigvalues))
-        #     eigvalueperc.update({i:eigvalues[i]/sum(eigvalues)})
-        #     #if eigvalues[i]>0:
-        #     featurechannel+=1
-        # o_eigenvalue,o_eigenvector=np.linalg.eig(OV)
-        pcabands=np.zeros((displayfea_vector.shape[0],featurechannel))
-        # o_pcabands=np.zeros((fea_vector.shape[0],featurechannel))
-        pcavar={}
-
-        #separate PCA
-        # for i in range(3):
-        #     pcn=o_eigenvector[:,i]
-        #     pcnbands=np.dot(O_stddisplayfea,pcn)
-        #     pcvar=np.var(pcnbands)
-        #     print('pc',i+1,' var=',pcvar)
-        #     pcabands[:,i]=pcabands[:,i]+pcnbands
-        # for i in range(7):
-        #     pcn=eigvectors[:,i]
-        #     # opcn=o_eigenvector[:,i]
-        #     #pcnbands=np.dot(displayfea_vector,pcn)
-        #     pcnbands=np.dot(std_displayfea,pcn)
-        #     # opcnbands=np.dot(O_stddisplayfea,opcn)
-        #     pcvar=np.var(pcnbands)
-        #     print('pc',i+1,' var=',pcvar)
-        #     temppcavar={i:pcvar}
-        #     pcavar.update(temppcavar)
-        #     # pcnbands=np.dot(C,pcn)
-        #     # opcnbands=np.dot(OC,opcn)
-        #     pcabands[:,i+3]=pcabands[:,i+3]+pcnbands
-
-        #combined PCa
-        for i in range(featurechannel):
-            pcn=eigvectors[:,i]
-            # pcnbands=np.dot(std_displayfea,pcn)
-            pcnbands=np.dot(C,pcn)
-            pcvar=np.var(pcnbands)
-            print('pc',i+1,' var=',pcvar)
-            temppcavar={i:pcvar}
-            pcavar.update(temppcavar)
-            pcabands[:,i]=pcabands[:,i]+pcnbands
-            # o_pcabands[:,i]=o_pcabands[:,i]+opcnbands
-
-        # sortvar=sorted(pcavar,key=pcavar.get)
-        # print(sortvar)
-        # for i in range(len(sortvar)):
-        #     pcn=eigvectors[:,sortvar[i]]
-        #     pcnbands=np.dot(displayfea_vector,pcn)
-        #     pcabands[:,i]=pcabands[:,i]+pcnbands
-        #np.savetxt('pcs.csv',pcabands,delimiter=',',fmt='%s')
-        #np.savetxt('color-index.csv',displayfea_vector,delimiter=',',fmt='%s')
-        #high,width=pcabands.shape
-        #fp=open('pcs.csv',w)
-        #fc=open('color-index.csv',w)
-        #head=['Otsu','NDI','R','G','B','Greenness','VEG','CIVE','MExG','NDVI']
-        #for i in range(high):
-
-        # '''No PCA'''
-        # colorfea_vector=np.concatenate((fea_vector,colorfea_vector),axis=1)
-        # displayfea_vector=np.concatenate((fea_vector,displayfea_vector),axis=1)
-        # M=np.mean(colorfea_vector.T,axis=1)
-        # print('colorfea_vector M',M)
-        # pcabands=np.copy(colorfea_vector)
-        # featurechannel=10
-
-        #threedplot(pcabands)
-        # self.batch_originpcabands.update({self.file:o_pcabands})
-        self.batch_originpcabands.update({self.file:displayfea_vector})
-        pcabandsdisplay=pcabands.reshape(displayfea_l,displayfea_w,featurechannel)
-        #originbands={'LabOstu':pcabandsdisplay}
-        tempdictdisplay={'LabOstu':pcabandsdisplay}
-        #displaybandarray.update({file:displays})
-        self.batch_displaybandarray.update({self.file:tempdictdisplay})
-        self.batch_originbandarray.update({self.file:originbands})
 
     def kmeansclassify(self):
         if kmeans==0:
@@ -1135,10 +833,11 @@ class batch_ser_func():
         suggsize=8
         smallfont=ImageFont.truetype('cmb10.ttf',size=suggsize)
         self.kernersizes={}
-        # path=filedialog.askdirectory()
-        self.export_ext(True,False)
-        self.export_ext(False,True)
-        # for file in batch_filenames:
+        '''background big img'''
+        if segmentoutputopt==True:
+            self.export_ext(True,False)
+            self.export_ext(False,True)
+        '''end background big img'''
         labeldict=self.batch_results[self.file][0]
         itervalue='iter0'
         labels=labeldict[itervalue]['labels']
@@ -1148,217 +847,226 @@ class batch_ser_func():
         originfile,extension=os.path.splitext(head_tail[1])
 
         '''export cropped images'''
-        # if len(self.exportpath)>0:
-        #     originheight, originwidth = self.batch_Multigraybands[file].size
-        #     uniquelabels = list(colortable.keys())
-        #     cropratio = batch_findratio((originheight, originwidth), (labels.shape[0], labels.shape[1]))
-        #     if cropratio > 1:
-        #         cache = (np.zeros((originheight, originwidth)),
-        #                  {"f": int(cropratio), "stride": int(cropratio)})
-        #         originconvband = tkintercorestat.pool_backward(labels, cache)
-        #     else:
-        #         originconvband = np.copy(labels)
-        #     imgrsc = cv2.imread(os.path.join(FOLDER,file), flags=cv2.IMREAD_ANYCOLOR)
-        #     # cv2.imwrite(os.path.join(self.exportpath, originfile + '_before.png'), originconvband)
-        #     labelsegfile = os.path.join(self.exportpath, originfile + '_cropimage_label.csv')
-        #     with open(labelsegfile, mode='w') as f:
-        #         csvwriter = csv.writer(f)
-        #         # rowcontent=['id','locs']
-        #         rowcontent = ['index', 'i', 'j', 'filename', 'label']
-        #         csvwriter.writerow(rowcontent)
-        #         #     result_ref=envi.open(head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.hdr', head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.dat')
-        #         #     result_nparr=np.array(result_ref.load())
-        #         #     corrected_nparr=np.copy(result_nparr)
-        #         index = 1
-        #         for uni in uniquelabels:
-        #             if uni != 0:
-        #                 tempuni = colortable[uni]
-        #                 if tempuni == 'Ref':
-        #                     # pixelloc = np.where(convband == 65535)
-        #                     originpixelloc = np.where(originconvband == 65535)
-        #                 else:
-        #                     # pixelloc = np.where(convband == float(uni))
-        #                     originpixelloc = np.where(originconvband == float(uni))
-        #                 # kernelval=corrected_nparr[pixelloc]
-        #                 # nirs=np.mean(kernelval,axis=0)
-        #                 #             print('nirs 170',nirs[170])
-        #                 #             if nirs[170]<0.15:
-        #                 #                 lesszeroonefive.append(uni)
-        #                 try:
-        #                     # ulx = min(pixelloc[1])
-        #                     ulx = min(originpixelloc[1])
-        #                 except:
-        #                     print('no pixellloc[1] on uni=', uni)
-        #                     print('pixelloc =', originpixelloc)
-        #                     continue
-        #                 uly = min(originpixelloc[0])
-        #                 rlx = max(originpixelloc[1])
-        #                 rly = max(originpixelloc[0])
-        #                 cropimage = imgrsc[uly:rly, ulx:rlx]
-        #                 cv2.imwrite(os.path.join(self.exportpath, originfile + '_crop_' + str(int(uni)) + '.png'), cropimage)
-        #                 rowcontent = [index, 0, 0, originfile + '_crop_' + str(int(uni)) + '.png', 0]
-        #                 csvwriter.writerow(rowcontent)
-        #                 index += 1
-        #                 # rowcontent=[colortable[uni]]
-        #                 # rowcontent=rowcontent+list(pixelloc[0])
-        #                 # csvwriter.writerow(rowcontent)
-        #                 # rowcontent=[colortable[uni]]
-        #                 # rowcontent=rowcontent+list(pixelloc[1])
-        #                 # csvwriter.writerow(rowcontent)
-        #
-        #         f.close()
-        #     # print(lesszeroonefive)
+        if cropimageopt==True:
+            if len(self.exportpath)>0:
+                originheight, originwidth = self.batch_Multigraybands[file].size
+                uniquelabels = list(colortable.keys())
+                cropratio = batch_findratio((originheight, originwidth), (labels.shape[0], labels.shape[1]))
+                if cropratio > 1:
+                    cache = (np.zeros((originheight, originwidth)),
+                             {"f": int(cropratio), "stride": int(cropratio)})
+                    originconvband = tkintercorestat.pool_backward(labels, cache)
+                else:
+                    originconvband = np.copy(labels)
+                imgrsc = cv2.imread(os.path.join(FOLDER,file), flags=cv2.IMREAD_ANYCOLOR)
+                # cv2.imwrite(os.path.join(self.exportpath, originfile + '_before.png'), originconvband)
+                labelsegfile = os.path.join(self.exportpath, originfile + '_cropimage_label.csv')
+                with open(labelsegfile, mode='w') as f:
+                    csvwriter = csv.writer(f)
+                    # rowcontent=['id','locs']
+                    rowcontent = ['index', 'i', 'j', 'filename', 'label']
+                    csvwriter.writerow(rowcontent)
+                    #     result_ref=envi.open(head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.hdr', head_tail[0]+'/'+originfile+'/results/REFLECTANCE_'+originfile+'.dat')
+                    #     result_nparr=np.array(result_ref.load())
+                    #     corrected_nparr=np.copy(result_nparr)
+                    index = 1
+                    for uni in uniquelabels:
+                        if uni != 0:
+                            tempuni = colortable[uni]
+                            if tempuni == 'Ref':
+                                # pixelloc = np.where(convband == 65535)
+                                originpixelloc = np.where(originconvband == 65535)
+                            else:
+                                # pixelloc = np.where(convband == float(uni))
+                                originpixelloc = np.where(originconvband == float(uni))
+                            # kernelval=corrected_nparr[pixelloc]
+                            # nirs=np.mean(kernelval,axis=0)
+                            #             print('nirs 170',nirs[170])
+                            #             if nirs[170]<0.15:
+                            #                 lesszeroonefive.append(uni)
+                            try:
+                                # ulx = min(pixelloc[1])
+                                ulx = min(originpixelloc[1])
+                            except:
+                                print('no pixellloc[1] on uni=', uni)
+                                print('pixelloc =', originpixelloc)
+                                continue
+                            uly = min(originpixelloc[0])
+                            rlx = max(originpixelloc[1])
+                            rly = max(originpixelloc[0])
+                            cropimage = imgrsc[uly:rly, ulx:rlx]
+                            cv2.imwrite(os.path.join(self.exportpath, originfile + '_crop_' + str(int(uni)) + '.png'), cropimage)
+                            rowcontent = [index, 0, 0, originfile + '_crop_' + str(int(uni)) + '.png', 0]
+                            csvwriter.writerow(rowcontent)
+                            index += 1
+                            # rowcontent=[colortable[uni]]
+                            # rowcontent=rowcontent+list(pixelloc[0])
+                            # csvwriter.writerow(rowcontent)
+                            # rowcontent=[colortable[uni]]
+                            # rowcontent=rowcontent+list(pixelloc[1])
+                            # csvwriter.writerow(rowcontent)
+
+                    f.close()
+                # print(lesszeroonefive)
 
 
 
+        if segmentoutputopt==True:
+            if len(self.exportpath)>0:
+                tup=(labels,counts,colortable,[],self.file)
+                _band,segimg,small_segimg=self.showcounting(tup,False)
+                #imageband=outputimgbands[file][itervalue]
+                imageband=segimg
+                # draw=ImageDraw.Draw(imageband)
+                uniquelabels=list(colortable.keys())
+                # tempdict={}
+                pixelmmratio=1.0
+                #print('coinsize',coinsize.get(),'pixelmmratio',pixelmmratio)
+                print('pixelmmratio',pixelmmratio)
+                originheight,originwidth=self.batch_Multigraybands[file].size
+                '''big output img'''
+                image=imageband.resize([originwidth,originheight],resample=Image.BILINEAR)
+                image.save(self.exportpath+'/'+originfile+'-sizeresult'+'.png',"PNG")
+                tup=(labels,counts,colortable,[],file)
+                _band,segimg,small_segimg=self.showcounting(tup,False)
+                segimage=segimg.resize([originwidth,originheight],resample=Image.BILINEAR)
+                segimage.save(self.exportpath+'/'+originfile+'-segmentresult'+'.png',"PNG")
+                _band,segimg,small_segimg=self.showcounting(tup,True)
+                segimage=segimg.resize([originwidth,originheight],resample=Image.BILINEAR)
+                segimage.save(self.exportpath+'/'+originfile+'-labelresult'+'.png',"PNG")
+                '''end big output img'''
+                originrestoredband=np.copy(labels)
+                restoredband=originrestoredband.astype('uint8')
+                colordicesband=self.batch_colordicesband[file]
+                colordiv=np.zeros((colordicesband.shape[0],colordicesband.shape[1],3))
+                self.savePCAimg(originfile)
 
-        if len(self.exportpath)>0:
-            tup=(labels,counts,colortable,[],self.file)
-            _band,segimg,small_segimg=self.showcounting(tup,False)
-            #imageband=outputimgbands[file][itervalue]
-            imageband=segimg
-            # draw=ImageDraw.Draw(imageband)
-            uniquelabels=list(colortable.keys())
-            # tempdict={}
-            pixelmmratio=1.0
-            #print('coinsize',coinsize.get(),'pixelmmratio',pixelmmratio)
-            print('pixelmmratio',pixelmmratio)
-            originheight,originwidth=self.batch_Multigraybands[file].size
-        image=imageband.resize([originwidth,originheight],resample=Image.BILINEAR)
-        image.save(self.exportpath+'/'+originfile+'-sizeresult'+'.png',"PNG")
-        tup=(labels,counts,colortable,[],file)
-        _band,segimg,small_segimg=self.showcounting(tup,False)
-        segimage=segimg.resize([originwidth,originheight],resample=Image.BILINEAR)
-        segimage.save(self.exportpath+'/'+originfile+'-segmentresult'+'.png',"PNG")
-        _band,segimg,small_segimg=self.showcounting(tup,True)
-        segimage=segimg.resize([originwidth,originheight],resample=Image.BILINEAR)
-        segimage.save(self.exportpath+'/'+originfile+'-labelresult'+'.png',"PNG")
-        originrestoredband=np.copy(labels)
-        restoredband=originrestoredband.astype('uint8')
-        colordicesband=self.batch_colordicesband[file]
-        colordiv=np.zeros((colordicesband.shape[0],colordicesband.shape[1],3))
-        self.savePCAimg(originfile)
+                # kvar=int(kmeans.get())
+                # print('kvar',kvar)
+                # for i in range(kvar):
+                #     locs=np.where(colordicesband==i)
+                #     colordiv[locs]=colorbandtable[i]
+                # colordivimg=Image.fromarray(colordiv.astype('uint8'))
+                # colordivimg.save(path+'/'+originfile+'-colordevice'+'.jpeg',"JPEG")
+                colordivimg=Image.open(file+'-allcolorindex.png')
+                copycolordiv=colordivimg.resize([originwidth,originheight],resample=Image.BILINEAR)
+                copycolordiv.save(self.exportpath+'/'+originfile+'-colordevice'+'.png',"PNG")
+                # pyplt.imsave(path+'/'+originfile+'-colordevice'+'.png',colordiv.astype('uint8'))
+                # copybinary=np.zeros((originbinaryimg.shape[0],originbinaryimg.shape[1],3),dtype='float')
+                # nonzeros=np.where(originbinaryimg==1)
+                # copybinary[nonzeros]=[255,255,0]
+                # binaryimg=Image.fromarray(copybinary.astype('uint8'))
+                binaryimg=Image.open(file+'-binaryimg.png')
+                copybinaryimg=binaryimg.resize([originwidth,originheight],resample=Image.BILINEAR)
+                copybinaryimg.save(self.exportpath+'/'+originfile+'-binaryimg'+'.png',"PNG")
+                # pyplt.imsave(path+'/'+originfile+'-binaryimg'+'.png',originbinaryimg.astype('uint8'))
 
-        # kvar=int(kmeans.get())
-        # print('kvar',kvar)
-        # for i in range(kvar):
-        #     locs=np.where(colordicesband==i)
-        #     colordiv[locs]=colorbandtable[i]
-        # colordivimg=Image.fromarray(colordiv.astype('uint8'))
-        # colordivimg.save(path+'/'+originfile+'-colordevice'+'.jpeg',"JPEG")
-        colordivimg=Image.open(file+'-allcolorindex.png')
-        copycolordiv=colordivimg.resize([originwidth,originheight],resample=Image.BILINEAR)
-        copycolordiv.save(self.exportpath+'/'+originfile+'-colordevice'+'.png',"PNG")
-        #pyplt.imsave(path+'/'+originfile+'-colordevice'+'.png',colordiv.astype('uint8'))
-        # copybinary=np.zeros((originbinaryimg.shape[0],originbinaryimg.shape[1],3),dtype='float')
-        # nonzeros=np.where(originbinaryimg==1)
-        # copybinary[nonzeros]=[255,255,0]
-        # binaryimg=Image.fromarray(copybinary.astype('uint8'))
-        binaryimg=Image.open(file+'-binaryimg.png')
-        copybinaryimg=binaryimg.resize([originwidth,originheight],resample=Image.BILINEAR)
-        copybinaryimg.save(self.exportpath+'/'+originfile+'-binaryimg'+'.png',"PNG")
-        # pyplt.imsave(path+'/'+originfile+'-binaryimg'+'.png',originbinaryimg.astype('uint8'))
+                #restoredband=cv2.resize(src=restoredband,dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
+                '''calculate output csv content'''
+                print(restoredband.shape)
+                currentsizes=self.kernersizes[self.file]
+                indicekeys=list(self.batch_originbandarray[self.file].keys())
+                indeclist=[ 0 for i in range(len(indicekeys)*3)]
+                pcalist=[0 for i in range(3)]
+                '''end'''
+                # temppcabands=np.zeros((self.batch_originpcabands[self.file].shape[0],len(pcs)))
+                # for i in range(len(pcs)):
+                #     temppcabands[:,i]=temppcabands[:,i]+self.batch_originpcabands[self.file][:,pcs[i]-1]
+                # pcabands=np.mean(temppcabands,axis=1)
+                # # pcabands=pcabands.reshape((originheight,originwidth))
+                # pcabands=pcabands.reshape((self.displayfea_l,self.displayfea_w))
+                '''calculate output csv'''
+                pcabands=np.copy(self.displaypclagels)
+                datatable={}
+                origindata={}
+                for key in indicekeys:
+                    data=self.batch_originbandarray[self.file][key]
+                    data=data.tolist()
+                    tempdict={key:data}
+                    origindata.update(tempdict)
+                    print(key)
+                # for uni in colortable:
+                print(uniquelabels)
+                print('len uniquelabels',len(uniquelabels))
 
-        #restoredband=cv2.resize(src=restoredband,dsize=(originwidth,originheight),interpolation=cv2.INTER_LINEAR)
-        print(restoredband.shape)
-        currentsizes=self.kernersizes[self.file]
-        indicekeys=list(self.batch_originbandarray[self.file].keys())
-        indeclist=[ 0 for i in range(len(indicekeys)*3)]
-        pcalist=[0 for i in range(3)]
-        # temppcabands=np.zeros((self.batch_originpcabands[self.file].shape[0],len(pcs)))
-        # for i in range(len(pcs)):
-        #     temppcabands[:,i]=temppcabands[:,i]+self.batch_originpcabands[self.file][:,pcs[i]-1]
-        # pcabands=np.mean(temppcabands,axis=1)
-        # # pcabands=pcabands.reshape((originheight,originwidth))
-        # pcabands=pcabands.reshape((self.displayfea_l,self.displayfea_w))
-        pcabands=np.copy(self.displaypclagels)
-        datatable={}
-        origindata={}
-        for key in indicekeys:
-            data=self.batch_originbandarray[self.file][key]
-            data=data.tolist()
-            tempdict={key:data}
-            origindata.update(tempdict)
-            print(key)
-        # for uni in colortable:
-        print(uniquelabels)
-        print('len uniquelabels',len(uniquelabels))
-        for uni in uniquelabels:
-            print(uni,colortable[uni])
-            uniloc=np.where(labels==float(uni))
-            if len(uniloc)==0 or len(uniloc[1])==0:
-                print('no uniloc\n')
-                print(uniloc[0],uniloc[1])
-                continue
-            smalluniloc=np.where(originrestoredband==uni)
-            ulx,uly=min(smalluniloc[1]),min(smalluniloc[0])
-            rlx,rly=max(smalluniloc[1]),max(smalluniloc[0])
-            width=rlx-ulx
-            length=rly-uly
-            print(width,length)
-            subarea=restoredband[uly:rly+1,ulx:rlx+1]
-            subarea=subarea.tolist()
-            amount=len(uniloc[0])
-            print(amount)
-            try:
-                sizes=currentsizes[uni]
-            except:
-                print('no sizes\n')
-                continue
-            #templist=[amount,length,width]
-            templist=[amount,sizes[0],sizes[1],sizes[2],sizes[3],sizes[4]]
-            tempdict={colortable[uni]:templist+indeclist+pcalist}  #NIR,Redeyes,R,G,B,NDVI,area
-            print(tempdict)
-            for ki in range(len(indicekeys)):
-                originNDVI=origindata[indicekeys[ki]]
-                print(len(originNDVI),len(originNDVI[0]))
-                pixellist=[]
-                for k in range(len(uniloc[0])):
-                    #print(uniloc[0][k],uniloc[1][k])
+                for uni in uniquelabels:
+                    print(uni,colortable[uni])
+                    uniloc=np.where(labels==float(uni))
+                    if len(uniloc)==0 or len(uniloc[1])==0:
+                        print('no uniloc\n')
+                        print(uniloc[0],uniloc[1])
+                        continue
+                    smalluniloc=np.where(originrestoredband==uni)
+                    ulx,uly=min(smalluniloc[1]),min(smalluniloc[0])
+                    rlx,rly=max(smalluniloc[1]),max(smalluniloc[0])
+                    width=rlx-ulx
+                    length=rly-uly
+                    print(width,length)
+                    subarea=restoredband[uly:rly+1,ulx:rlx+1]
+                    subarea=subarea.tolist()
+                    amount=len(uniloc[0])
+                    print(amount)
                     try:
-                        tempdict[colortable[uni]][6+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
-                    except IndexError:
-                        print(uniloc[0][k],uniloc[1][k])
-                    tempdict[colortable[uni]][7+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
-                    pixellist.append(originNDVI[uniloc[0][k]][uniloc[1][k]])
-                tempdict[colortable[uni]][ki*3+6]=tempdict[colortable[uni]][ki*3+6]/amount
-                tempdict[colortable[uni]][ki*3+8]=np.std(pixellist)
-            pixellist=[]
-            for k in range(len(uniloc[0])):
-                try:
-                    tempdict[colortable[uni]][-2]+=pcabands[uniloc[0][k]][uniloc[1][k]]
-                except IndexError:
-                    print(uniloc[0][k],uniloc[1][k])
-                tempdict[colortable[uni]][-3]+=pcabands[uniloc[0][k]][uniloc[1][k]]
-                pixellist.append(pcabands[uniloc[0][k]][uniloc[1][k]])
-                tempdict[colortable[uni]][-3]=tempdict[colortable[uni]][-3]/amount
-                tempdict[colortable[uni]][-1]=np.std(pixellist)
-            datatable.update(tempdict)
-        filename=self.exportpath+'/'+originfile+'-outputdata.csv'
-        with open(filename,mode='w') as f:
-            csvwriter=csv.writer(f)
-            rowcontent=['Index','Plot','Area(#pixel)','Length(#pixel)','Width(#pixel)','Area(mm2)','Length(mm)','Width(mm)']
-            for key in indicekeys:
-                rowcontent.append('avg-'+str(key))
-                rowcontent.append('sum-'+str(key))
-                rowcontent.append('std-'+str(key))
-            rowcontent.append('avg-PCA')
-            rowcontent.append('sum-PCA')
-            rowcontent.append('std-PCA')
-            #csvwriter.writerow(['ID','NIR','Red Edge','Red','Green','Blue','NIRv.s.Green','LabOstu','area(#of pixel)'])
-            #csvwriter.writerow(['Index','Plot','Area(#pixels)','avg-NDVI','sum-NDVI','std-NDVI','Length(#pixel)','Width(#pixel)'])#,'#holes'])
-            csvwriter.writerow(rowcontent)
-            i=1
-            for uni in datatable:
-                row=[i,uni]
-                for j in range(len(datatable[uni])):
-                    row.append(datatable[uni][j])
-                #row=[i,uni,datatable[uni][0],datatable[uni][1],datatable[uni][2],datatable[uni][5],datatable[uni][3],datatable[uni][4]]#,
-                     #datatable[uni][5]]
-                i+=1
-                print(row)
-                csvwriter.writerow(row)
-        print('total data length=',len(datatable))
+                        sizes=currentsizes[uni]
+                    except:
+                        print('no sizes\n')
+                        continue
+                    #templist=[amount,length,width]
+                    templist=[amount,sizes[0],sizes[1],sizes[2],sizes[3],sizes[4]]
+                    tempdict={colortable[uni]:templist+indeclist+pcalist}  #NIR,Redeyes,R,G,B,NDVI,area
+                    print(tempdict)
+                    for ki in range(len(indicekeys)):
+                        originNDVI=origindata[indicekeys[ki]]
+                        print(len(originNDVI),len(originNDVI[0]))
+                        pixellist=[]
+                        for k in range(len(uniloc[0])):
+                            #print(uniloc[0][k],uniloc[1][k])
+                            try:
+                                tempdict[colortable[uni]][6+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
+                            except IndexError:
+                                print(uniloc[0][k],uniloc[1][k])
+                            tempdict[colortable[uni]][7+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
+                            pixellist.append(originNDVI[uniloc[0][k]][uniloc[1][k]])
+                        tempdict[colortable[uni]][ki*3+6]=tempdict[colortable[uni]][ki*3+6]/amount
+                        tempdict[colortable[uni]][ki*3+8]=np.std(pixellist)
+                    pixellist=[]
+                    for k in range(len(uniloc[0])):
+                        try:
+                            tempdict[colortable[uni]][-2]+=pcabands[uniloc[0][k]][uniloc[1][k]]
+                        except IndexError:
+                            print(uniloc[0][k],uniloc[1][k])
+                        tempdict[colortable[uni]][-3]+=pcabands[uniloc[0][k]][uniloc[1][k]]
+                        pixellist.append(pcabands[uniloc[0][k]][uniloc[1][k]])
+                        tempdict[colortable[uni]][-3]=tempdict[colortable[uni]][-3]/amount
+                        tempdict[colortable[uni]][-1]=np.std(pixellist)
+                    datatable.update(tempdict)
+                filename=self.exportpath+'/'+originfile+'-outputdata.csv'
+                with open(filename,mode='w') as f:
+                    csvwriter=csv.writer(f)
+                    rowcontent=['Index','Plot','Area(#pixel)','Length(#pixel)','Width(#pixel)','Area(mm2)','Length(mm)','Width(mm)']
+                    for key in indicekeys:
+                        rowcontent.append('avg-'+str(key))
+                        rowcontent.append('sum-'+str(key))
+                        rowcontent.append('std-'+str(key))
+                    rowcontent.append('avg-PCA')
+                    rowcontent.append('sum-PCA')
+                    rowcontent.append('std-PCA')
+                    #csvwriter.writerow(['ID','NIR','Red Edge','Red','Green','Blue','NIRv.s.Green','LabOstu','area(#of pixel)'])
+                    #csvwriter.writerow(['Index','Plot','Area(#pixels)','avg-NDVI','sum-NDVI','std-NDVI','Length(#pixel)','Width(#pixel)'])#,'#holes'])
+                    csvwriter.writerow(rowcontent)
+                    i=1
+                    for uni in datatable:
+                        row=[i,uni]
+                        for j in range(len(datatable[uni])):
+                            row.append(datatable[uni][j])
+                        #row=[i,uni,datatable[uni][0],datatable[uni][1],datatable[uni][2],datatable[uni][5],datatable[uni][3],datatable[uni][4]]#,
+                             #datatable[uni][5]]
+                        i+=1
+                        print(row)
+                        csvwriter.writerow(row)
+
+                print('total data length=',len(datatable))
+                '''output csv output end'''
 
     def process(self):
         if self.Open_batchimage()==False:
@@ -1413,6 +1121,10 @@ minlw=0
 std_nonzeroratio=0
 FOLDER=''
 exportpath=''
+drawpolygon=False
+filtercoord=[]
+segmentoutputopt=False
+cropimageopt=False
 
 def batch_findratio(originsize,objectsize):
     oria=originsize[0]
@@ -1461,6 +1173,7 @@ def Open_batchimage(dir,filename):
 
 def Open_batchfile():
     global pcs,pcweight,kmeans,kmeans_sel,maxthres,minthres,maxlw,minlw,std_nonzeroratio
+    global drawpolygon,filtercoord,segmentoutputopt,cropimageopt
     btfile=filedialog.askopenfilename()
     if len(btfile)>0:
         if '.txt' in btfile:
@@ -1487,15 +1200,25 @@ def Open_batchfile():
                 maxlw=float(maxlw)
                 minlw=setting[7].split(',')[1]
                 minlw=float(minlw)
+                drawpolygon=setting[8].split(',')[1]
+                drawpolygon=bool(drawpolygon)
+                filtercoord=setting[9].split(',')[1:]
+                if len(filtercoord)>0:
+                    filtercoord=[float(ele) for ele in filtercoord]
+                segmentoutputopt=setting[10].split(',')[1]
+                segmentoutputopt=bool(segmentoutputopt)
+                cropimageopt=setting[11].split(',')[1]
+                cropimageopt=bool(cropimageopt)
                 std_nonzeroratio=float(setting[8].split(',')[1])
                 for i in range(len(kmeans_sel)):
                     kmeans_sel[i]=int(kmeans_sel[i])
                 print('PCweight',pcweight,'PCsel',pcs+1,'KMeans',kmeans,'KMeans-Selection',kmeans_sel)
                 print('maxthres',maxthres,'minthres',minthres,'maxlw',maxlw,'minlw',minlw)
-                messagebox.showinfo('Batch settings','PCweight='+str(pcweight)+'\nPCsel='+str(pcs)+'\nKMeans='+str(kmeans)+
+                messagebox.showinfo('Batch settings','PCweight='+str(pcweight)+'\nPCsel='+str(pcs+1)+'\nKMeans='+str(kmeans)+
                                     '\nCluster selection'+str(kmeans_sel)+'\nMax area='+str(maxthres)+
                                     '\nMin area='+str(minthres)+'\nMax diagonal='+str(maxlw)+'\nMin diagonal='+
-                                    str(minlw))
+                                    str(minlw)+'\nDrawpolygon='+str(drawpolygon)+'\nFilter='+filtercoord+
+                                    '\nOutputBigimg='+str(segmentoutputopt)+'\nOutputCropimg='+str(cropimageopt))
 
 def Open_batchfolder():
     # global batch_filenames,batch_Multiimage,batch_Multigray,batch_Multitype,batch_Multiimagebands,batch_Multigraybands
