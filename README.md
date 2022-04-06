@@ -72,7 +72,7 @@ Modify matplotlibrc file ADD: ```backend: TkAgg```
 - [2] SeedCounter https://www.frontiersin.org/articles/10.3389/fpls.2016.01990/full
 - [3] GrainScan https://plantmethods.biomedcentral.com/articles/10.1186/1746-4811-10-23-->
 #### Polygon Area selection segment demo
-![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/PolygonSelectionDemo.mov)
+![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/PolygonSelectionDemo.gif)
 
 #### Area selection segment and delet demo
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/areaselection.gif)
