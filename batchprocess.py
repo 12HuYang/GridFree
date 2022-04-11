@@ -54,6 +54,11 @@ class batch_ser_func():
         self.displaypclagels=None
         self.needswitchkmeanssel=False
         self.partialpca=False
+        self.drawpolygon=False
+        self.filtercoord=[]
+        self.filterbackground=[]
+        self.nonzero_vector=[]
+
 
     def Open_batchimage(self):
         try:
@@ -79,6 +84,12 @@ class batch_ser_func():
             self.batch_Multitype.update(tempdict)
             tempdict={self.file:Grayimg}
             self.batch_Multigraybands.update(tempdict)
+            if len(filtercoord)>0:
+                self.partialpca=True
+                self.drawpolygon=drawpolygon
+                self.filtercoord=filtercoord.copy()
+                self.filterbackground=filterbackground.copy()
+
         except:
             # messagebox.showerror('Invalid Image Format','Cannot open '+filename)
             return False
@@ -109,6 +120,18 @@ class batch_ser_func():
         try:
             bands=self.batch_Multiimagebands[self.file].bands
         except:
+            return
+        if self.partialpca==True:
+            npfilter=np.zeros((self.filterbackground[0],self.filterbackground[1]))
+            filter=Image.fromarray(npfilter)
+            draw=ImageDraw.Draw(filter)
+            if self.drawpolygon == False:
+                draw.ellipse(self.filtercoord, fill='red')
+            else:
+                draw.polygon(self.filtercoord, fill='red')
+            filter = np.array(filter)
+            filter=np.divide(filter,np.max(filter))
+            self.partialsingleband(filter)
             return
         channel,fea_l,fea_w=bands.shape
         print('bandsize',fea_l,fea_w)
@@ -244,7 +267,8 @@ class batch_ser_func():
             bands=self.batch_Multiimagebands[self.file].bands
         except:
             return
-        self.partialpca=True
+        # self.partialpca=True
+
         channel, fea_l, fea_w = bands.shape
         print('bandsize', fea_l, fea_w)
         if fea_l*fea_w>2000*2000:
@@ -252,7 +276,7 @@ class batch_ser_func():
         else:
             ratio=1
         print('ratio',ratio)
-        nonzero = np.where(filter != 0)
+
         originbands = {}
         displays = {}
         displaybands = cv2.resize(bands[0, :, :], (int(fea_w / ratio), int(fea_l / ratio)),
@@ -262,10 +286,16 @@ class batch_ser_func():
         self.RGB_vector = np.zeros((displayfea_l * displayfea_w, 3))
         self.colorindex_vector = np.zeros((displayfea_l * displayfea_w, 12))
         self.displayfea_l, self.displayfea_w = displaybands.shape
-        filter_vector = filter.reshape((displayfea_l * displayfea_w), 1)[:, 0]
-        Red = cv2.resize(bands[0, :, :], (displayfea_w, displayfea_l), interpolation=cv2.INTER_LINEAR)[nonzero]
-        Green = cv2.resize(bands[1, :, :], (displayfea_w, displayfea_l), interpolation=cv2.INTER_LINEAR)[nonzero]
-        Blue = cv2.resize(bands[2, :, :], (displayfea_w, displayfea_l), interpolation=cv2.INTER_LINEAR)[nonzero]
+        filter = cv2.resize(filter, (self.displayfea_w, self.displayfea_l), interpolation=cv2.INTER_LINEAR)
+        nonzero = np.where(filter != 0)
+        filter_vector = filter.reshape((self.displayfea_l * self.displayfea_w), 1)[:, 0]
+        Red = cv2.resize(bands[0, :, :], (self.displayfea_w, self.displayfea_l), interpolation=cv2.INTER_LINEAR)[nonzero]
+        Green = cv2.resize(bands[1, :, :], (self.displayfea_w, self.displayfea_l), interpolation=cv2.INTER_LINEAR)[nonzero]
+        Blue = cv2.resize(bands[2, :, :], (self.displayfea_w, self.displayfea_l), interpolation=cv2.INTER_LINEAR)[nonzero]
+        self.fillpartialbands(self.RGB_vector, 0, Red, filter_vector)
+        self.fillpartialbands(self.RGB_vector, 1, Green, filter_vector)
+        self.fillpartialbands(self.RGB_vector, 2, Blue, filter_vector)
+
         PAT_R = Red / (Red + Green)
         PAT_G = Green / (Green + Blue)
         PAT_B = Blue / (Blue + Red)
@@ -291,18 +321,88 @@ class batch_ser_func():
         self.fillpartialbands(self.colorindex_vector, 10, Green, filter_vector)
         self.fillpartialbands(self.colorindex_vector, 11, Blue, filter_vector)
 
-        # Green=Green[np.where(filter_vector!=0)]
-        # Red=Red[np.where(filter_vector!=0)]
-        # Blue=Blue[np.where(filter_vector!=0)]
-        NDI = 128 * ((Green - Red) / (Green + Red) + 1)
-        VEG = Green / (np.power(Red, 0.667) * np.power(Blue, (1 - 0.667)))
-        Greenness = Green / (Green + Red + Blue)
+        Green=self.RGB_vector[:,1]
+        Red=self.RGB_vector[:,0]
+        Blue=self.RGB_vector[:,2]
+        minvector = np.ones((displayfea_l * displayfea_w, 2)) * 1e-6
+        minvector=minvector[:,0]
+        NDI = 128 * ((Green - Red) / (Green + Red + minvector) + 1)
+        NDI=NDI.reshape((self.displayfea_l , self.displayfea_w))
+        VEG = Green / (np.power(Red, 0.667) * np.power(Blue, (1 - 0.667))+minvector)
+        VEG=VEG.reshape((self.displayfea_l , self.displayfea_w))
+        Greenness = Green / (Green + Red + Blue + minvector)
+        Greenness=Greenness.reshape((self.displayfea_l , self.displayfea_w))
         CIVE = 0.44 * Red + 0.811 * Green + 0.385 * Blue + 18.7845
+        CIVE=CIVE.reshape((self.displayfea_l , self.displayfea_w))
         MExG = 1.262 * Green - 0.844 * Red - 0.311 * Blue
-        NDRB = (Red - Blue) / (Red + Blue)
-        NGRDI = (Green - Red) / (Green + Red)
+        MExG=MExG.reshape((self.displayfea_l , self.displayfea_w))
+        NDRB = (Red - Blue) / (Red + Blue + minvector)
+        NDRB=NDRB.reshape((self.displayfea_l , self.displayfea_w))
+        NGRDI = (Green - Red) / (Green + Red + minvector)
+        NGRDI=NGRDI.reshape((self.displayfea_l , self.displayfea_w))
 
         colorindex_vector = np.zeros((displayfea_l * displayfea_w, 7))
+
+        self.fillbands(originbands, displays, colorindex_vector, 0, 'NDI', NDI)
+        self.fillbands(originbands, displays, colorindex_vector, 1, 'VEG', VEG)
+        self.fillbands(originbands, displays, colorindex_vector, 2, 'Greenness', Greenness)
+        self.fillbands(originbands, displays, colorindex_vector, 3, 'CIVE', CIVE)
+        self.fillbands(originbands, displays, colorindex_vector, 4, 'MExG', MExG)
+        self.fillbands(originbands, displays, colorindex_vector, 5, 'NDRB', NDRB)
+        self.fillbands(originbands, displays, colorindex_vector, 6, 'NGRDI', NGRDI)
+
+
+        for i in range(12):
+            perc = np.percentile(self.colorindex_vector[:, i], 1)
+            print('partial perc', perc)
+            self.colorindex_vector[:, i] = np.where(self.colorindex_vector[:, i] < perc, perc, self.colorindex_vector[:, i])
+            perc = np.percentile(self.colorindex_vector[:, i], 99)
+            print('partial perc', perc)
+            self.colorindex_vector[:, i] = np.where(self.colorindex_vector[:, i] > perc, perc, self.colorindex_vector[:, i])
+
+        self.nonzero_vector = np.where(filter_vector != 0)
+        rgb_M = np.mean(self.RGB_vector[self.nonzero_vector,:].T, axis=1)
+        colorindex_M = np.mean(self.colorindex_vector[self.nonzero_vector,:].T, axis=1)
+        print('rgb_M', rgb_M, 'colorindex_M', colorindex_M)
+        rgb_C = self.RGB_vector[self.nonzero_vector,:][0] - rgb_M.T
+        colorindex_C = self.colorindex_vector[self.nonzero_vector,:][0] - colorindex_M.T
+        rgb_V = np.corrcoef(rgb_C.T)
+        color_V = np.corrcoef(colorindex_C.T)
+        nans = np.isnan(color_V)
+        color_V[nans] = 1e-6
+        rgb_std = rgb_C / (np.std(self.RGB_vector[self.nonzero_vector, :].T, axis=1)).T
+        color_std = colorindex_C / (np.std(self.colorindex_vector[self.nonzero_vector, :].T, axis=1)).T
+        nans = np.isnan(color_std)
+        color_std[nans] = 1e-6
+        rgb_eigval, rgb_eigvec = np.linalg.eig(rgb_V)
+        color_eigval, color_eigvec = np.linalg.eig(color_V)
+        print('rgb_eigvec', rgb_eigvec)
+        print('color_eigvec', color_eigvec)
+        featurechannel = 12
+        pcabands = np.zeros((self.colorindex_vector.shape[0], featurechannel))
+        rgbbands = np.zeros((self.colorindex_vector.shape[0], 3))
+        for i in range(0, featurechannel):
+            pcn = color_eigvec[:, i]
+            pcnbands = np.dot(color_std, pcn)
+            pcvar = np.var(pcnbands)
+            print('color index pc', i + 1, 'var=', pcvar)
+            pcabands[self.nonzero_vector, i] = pcabands[self.nonzero_vector, i] + pcnbands
+
+        for i in range(12):
+            perc = np.percentile(pcabands[:, i], 1)
+            print('perc', perc)
+            pcabands[:, i] = np.where(pcabands[:, i] < perc, perc, pcabands[:, i])
+            perc = np.percentile(pcabands[:, i], 99)
+            print('perc', perc)
+            pcabands[:, i] = np.where(pcabands[:, i] > perc, perc, pcabands[:, i])
+
+        displayfea_vector = np.copy(self.colorindex_vector)
+
+        self.batch_originpcabands.update({self.file: displayfea_vector})
+        pcabandsdisplay = pcabands.reshape(displayfea_l, displayfea_w, featurechannel)
+        tempdictdisplay = {'LabOstu': pcabandsdisplay}
+        self.batch_displaybandarray.update({self.file: tempdictdisplay})
+        self.batch_originbandarray.update({self.file:originbands})
 
 
     def kmeansclassify(self):
@@ -337,12 +437,42 @@ class batch_ser_func():
                 h,w,c=tempband.shape
                 print('shape',tempband.shape)
                 reshapedtif=tempband.reshape(tempband.shape[0]*tempband.shape[1],c)
-                print('reshape',reshapedtif.shape)
-                clf=KMeans(n_clusters=kmeans,init='k-means++',n_init=10,random_state=0)
-                tempdisplayimg=clf.fit(reshapedtif)
-                # print('label=0',np.any(tempdisplayimg==0))
-                displaylabels=tempdisplayimg.labels_.reshape((self.batch_displaybandarray[self.file]['LabOstu'].shape[0],
-                                                      self.batch_displaybandarray[self.file]['LabOstu'].shape[1]))
+                if self.partialpca==True:
+                    partialshape = reshapedtif[self.nonzero_vector]
+                    print('partial reshape', partialshape.shape)
+                    clf = KMeans(n_clusters=kmeans, init='k-means++', n_init=10, random_state=0)
+                    tempdisplayimg = clf.fit(partialshape)
+                    reshapedtif[self.nonzero_vector, 0] = np.add(tempdisplayimg.labels_, 1)
+                    print(reshapedtif[self.nonzero_vector])
+                    displaylabels = reshapedtif.reshape((self.batch_displaybandarray[self.file]['LabOstu'].shape[0],
+                                                         self.batch_displaybandarray[self.file]['LabOstu'].shape[1]))
+                    # reshapedtif=cv2.resize(reshapedtif,(c,resizeshape[0]*resizeshape[1]),cv2.INTER_LINEAR)
+                    clusterdict = {}
+                    displaylabels = displaylabels + 10
+                    for i in range(kmeans):
+                        locs = np.where(tempdisplayimg.labels_ == i)
+                        try:
+                            maxval = partialshape[locs].max()
+                        except:
+                            print('kmeans', i)
+                            messagebox.showerror('Cluster maximum value is ', i)
+                            return displaylabels
+                        print(maxval)
+                        clusterdict.update({maxval: i + 11})
+                    print(clusterdict)
+                    sortcluster = list(sorted(clusterdict))
+                    print(sortcluster)
+                    for i in range(len(sortcluster)):
+                        cluster_num = clusterdict[sortcluster[i]]
+                        displaylabels = np.where(displaylabels == cluster_num, i, displaylabels)
+                    return displaylabels
+                else:
+                    print('reshape',reshapedtif.shape)
+                    clf=KMeans(n_clusters=kmeans,init='k-means++',n_init=10,random_state=0)
+                    tempdisplayimg=clf.fit(reshapedtif)
+                    # print('label=0',np.any(tempdisplayimg==0))
+                    displaylabels=tempdisplayimg.labels_.reshape((self.batch_displaybandarray[self.file]['LabOstu'].shape[0],
+                                                          self.batch_displaybandarray[self.file]['LabOstu'].shape[1]))
 
             clusterdict={}
             displaylabels=displaylabels+10
@@ -1123,6 +1253,7 @@ FOLDER=''
 exportpath=''
 drawpolygon=False
 filtercoord=[]
+filterbackground=[]
 segmentoutputopt=False
 cropimageopt=False
 
@@ -1173,7 +1304,7 @@ def Open_batchimage(dir,filename):
 
 def Open_batchfile():
     global pcs,pcweight,kmeans,kmeans_sel,maxthres,minthres,maxlw,minlw,std_nonzeroratio
-    global drawpolygon,filtercoord,segmentoutputopt,cropimageopt
+    global drawpolygon,filtercoord,filterbackground,segmentoutputopt,cropimageopt
     btfile=filedialog.askopenfilename()
     if len(btfile)>0:
         if '.txt' in btfile:
@@ -1200,16 +1331,19 @@ def Open_batchfile():
                 maxlw=float(maxlw)
                 minlw=setting[7].split(',')[1]
                 minlw=float(minlw)
-                drawpolygon=setting[8].split(',')[1]
+                std_nonzeroratio = float(setting[8].split(',')[1])
+                drawpolygon=int(setting[9].split(',')[1])
                 drawpolygon=bool(drawpolygon)
-                filtercoord=setting[9].split(',')[1:]
+                filtercoord=setting[10].split(',')[1:-1]
+                filterbackground=[]
                 if len(filtercoord)>0:
                     filtercoord=[float(ele) for ele in filtercoord]
-                segmentoutputopt=setting[10].split(',')[1]
-                segmentoutputopt=bool(segmentoutputopt)
-                cropimageopt=setting[11].split(',')[1]
-                cropimageopt=bool(cropimageopt)
-                std_nonzeroratio=float(setting[8].split(',')[1])
+                    filterbackground = setting[11].split(',')[1:-1]
+                    filterbackground=[int(ele) for ele in filterbackground]
+                segmentoutputopt=setting[12].split(',')[1]
+                segmentoutputopt=bool(int(segmentoutputopt))
+                cropimageopt=setting[13].split(',')[1]
+                cropimageopt=bool(int(cropimageopt))
                 for i in range(len(kmeans_sel)):
                     kmeans_sel[i]=int(kmeans_sel[i])
                 print('PCweight',pcweight,'PCsel',pcs+1,'KMeans',kmeans,'KMeans-Selection',kmeans_sel)
@@ -1217,7 +1351,7 @@ def Open_batchfile():
                 messagebox.showinfo('Batch settings','PCweight='+str(pcweight)+'\nPCsel='+str(pcs+1)+'\nKMeans='+str(kmeans)+
                                     '\nCluster selection'+str(kmeans_sel)+'\nMax area='+str(maxthres)+
                                     '\nMin area='+str(minthres)+'\nMax diagonal='+str(maxlw)+'\nMin diagonal='+
-                                    str(minlw)+'\nDrawpolygon='+str(drawpolygon)+'\nFilter='+filtercoord+
+                                    str(minlw)+'\nDrawpolygon='+str(drawpolygon)+'\nFilter='+''.join(str(e) for e in filtercoord)+
                                     '\nOutputBigimg='+str(segmentoutputopt)+'\nOutputCropimg='+str(cropimageopt))
 
 def Open_batchfolder():

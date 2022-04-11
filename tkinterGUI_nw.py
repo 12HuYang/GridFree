@@ -417,12 +417,14 @@ def changedisplayimg(frame,text):
         if selareapos!=[0,0,1,1] and originselarea==True:
             #need to redo PCA
             npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+            print("npfilter shape:", npfilter.shape)
             filter=Image.fromarray(npfilter)
             draw=ImageDraw.Draw(filter)
             if drawpolygon==False:
                 draw.ellipse(selareapos,fill='red')
             else:
                 draw.polygon(selareapos,fill='red')
+            global pcfilter
             pcfilter=selareapos.copy()
             filter=np.array(filter)
             filter=np.divide(filter,np.max(filter))
@@ -3123,6 +3125,9 @@ def export_ext(iterver,path,whext=False,blkext=False):
             segimage.save(path+'/'+originfile+extcolor+'-labelresult'+'.png',"PNG")
 
 def export_opts(iterver):
+    if proc_mode[proc_name].get()=='1':
+        batchprocess.batch_exportpath()
+        return
     opt_window=Toplevel()
     opt_window.geometry('300x150')
     opt_window.title('Export options')
@@ -3139,9 +3144,9 @@ def export_opts(iterver):
 
 def export_result(popup,segmentoutputopt,cropimageopt,iterver):
     global batch
-    if proc_mode[proc_name].get()=='1':
-        batchprocess.batch_exportpath()
-        return
+    # if proc_mode[proc_name].get()=='1':
+    #     batchprocess.batch_exportpath()
+    #     return
     suggsize=8
     print('fontsize',suggsize)
     smallfont=ImageFont.truetype('cmb10.ttf',size=suggsize)
@@ -3578,6 +3583,7 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
     batch['shape_min']=[minlw]
     batch['drawpolygon'] = [int(drawpolygon)]
     batch['filtercoord'] = pcfilter.copy()
+    batch['filterbackground']=[displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]]
     batch['segmentoutputopt'] = [segmentoutputopt.get()]
     batch['cropimageopt'] = [cropimageopt.get()]
 
@@ -4216,6 +4222,7 @@ def extraction():
     if selareapos!=[0,0,1,1] and originselarea==True:
         # selareadim=app.getinfo(rects[1])
         npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+        print("npfilter shape:",npfilter.shape)
         filter=Image.fromarray(npfilter)
         draw=ImageDraw.Draw(filter)
         if drawpolygon==False:
