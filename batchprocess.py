@@ -1024,8 +1024,24 @@ class batch_ser_func():
                             uly = min(originpixelloc[0])
                             rlx = max(originpixelloc[1])
                             rly = max(originpixelloc[0])
-                            cropimage = imgrsc[uly:rly, ulx:rlx]
+                            width = rlx - ulx + 1
+                            height = rly - uly + 1
+                            originbkgloc = np.where(originconvband == 0)
+                            blx = min(originbkgloc[1])
+                            bly = min(originbkgloc[0])
+                            if max(height / width, width / height) > 1.1:
+                                edgelen = max(height, width)
+                                zeronp = np.ones((edgelen, edgelen, 3), dtype='float')
+                            else:
+                                zeronp = np.ones((height, width, 3), dtype='float')
+                            zeronp = zeronp * imgrsc[blx, bly, :]
+                            temppixelloc = (originpixelloc[0] - uly, originpixelloc[1] - ulx)
+                            zeronp[temppixelloc[0], temppixelloc[1], :] = imgrsc[originpixelloc[0], originpixelloc[1],
+                                                                          :]
+                            # cropimage = imgrsc[uly:rly, ulx:rlx]
+                            cropimage = np.copy(zeronp)
                             cv2.imwrite(os.path.join(self.exportpath, originfile + '_crop_' + str(int(uni)) + '.png'), cropimage)
+                            print('output to cropimg', self.exportpath, originfile + '_crop_' + str(int(uni)) + '.png')
                             rowcontent = [index, 0, 0, originfile + '_crop_' + str(int(uni)) + '.png', 0]
                             csvwriter.writerow(rowcontent)
                             index += 1

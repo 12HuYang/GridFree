@@ -3144,9 +3144,6 @@ def export_opts(iterver):
 
 def export_result(popup,segmentoutputopt,cropimageopt,iterver):
     global batch
-    # if proc_mode[proc_name].get()=='1':
-    #     batchprocess.batch_exportpath()
-    #     return
     suggsize=8
     print('fontsize',suggsize)
     smallfont=ImageFont.truetype('cmb10.ttf',size=suggsize)
@@ -3199,13 +3196,6 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
         lesszeroonefive = []
         if cropimageopt.get()>0:
             imgrsc = cv2.imread(file, flags=cv2.IMREAD_ANYCOLOR)
-            # imgrsc = cv2.cvtColor(imgrsc,cv2.COLOR_BGR2RGB)
-            # imgrsc = cv2.cvtColor(imgrsc, cv2.COLOR_BGR2RGB)
-            # imgrsc = cv2.resize(imgrsc, (labels.shape[1], labels.shape[0]), interpolation=cv2.INTER_LINEAR)
-            # image = Image.fromarray(imgrsc)
-            # image=Image.open(file)
-            # image=image.resize((convband.shape[1], convband.shape[0]),resample=Image.BILINEAR)
-
             cropratio=findratio((originheight,originwidth),(labels.shape[0],labels.shape[1]))
             if cropratio>1:
                 cache = (np.zeros((originheight,originwidth)),
@@ -3213,8 +3203,6 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
                 originconvband = tkintercorestat.pool_backward(labels, cache)
             else:
                 originconvband=np.copy(labels)
-
-
             # cv2.imwrite(os.path.join(path, originfile + '_before.png'), originconvband)
             labelsegfile=os.path.join(path,originfile+'_cropimage_label.csv')
             with open(labelsegfile,mode='w') as f:
@@ -3250,8 +3238,24 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
                         uly = min(originpixelloc[0])
                         rlx = max(originpixelloc[1])
                         rly = max(originpixelloc[0])
-                        cropimage=imgrsc[uly:rly,ulx:rlx]
+                        width=rlx-ulx+1
+                        height=rly-uly+1
+                        originbkgloc=np.where(originconvband==0)
+                        blx=min(originbkgloc[1])
+                        bly=min(originbkgloc[0])
+
+                        if max(height/width,width/height)>1.1:
+                            edgelen=max(height,width)
+                            zeronp=np.ones((edgelen,edgelen,3),dtype='float')
+                        # cropimage=imgrsc[uly:rly,ulx:rlx]
+                        else:
+                            zeronp=np.ones((height,width,3),dtype='float')
+                        zeronp = zeronp * imgrsc[blx, bly, :]
+                        temppixelloc = (originpixelloc[0] - uly, originpixelloc[1] - ulx)
+                        zeronp[temppixelloc[0], temppixelloc[1], :] = imgrsc[originpixelloc[0], originpixelloc[1], :]
+                        cropimage=np.copy(zeronp)
                         cv2.imwrite(os.path.join(path,originfile+'_crop_'+str(int(uni))+'.png'),cropimage)
+                        print('output to cropimg',path,originfile+'_crop_'+str(int(uni))+'.png')
                         rowcontent=[index,0,0,originfile+'_crop_'+str(int(uni))+'.png',0]
                         csvwriter.writerow(rowcontent)
                         index+=1
