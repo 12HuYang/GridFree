@@ -74,6 +74,9 @@ Modify matplotlibrc file ADD: ```backend: TkAgg```
 #### Polygon Area selection segment demo
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/PolygonSelectionDemo.gif)
 
+#### Area selection on PC and Cluster views
+![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/areasel_gridfree.gif)
+
 #### Area selection segment and delet demo
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/areaselection.gif)
 ##### YouTube: https://youtu.be/oGYw1ZBcrhk
