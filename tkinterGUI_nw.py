@@ -155,8 +155,14 @@ kmeanschanged=False
 pcweightchanged=False
 originbinaryimg=None
 clusterchanged=False
-originselarea=False
+# originselarea=False
+# binaryselarea=False
+# pcselarea=False
 zoomoff=False
+selview=''
+selareapos=[]
+kmeanselareapose=[]
+binaryselareaspose=[]
 
 maxx=0
 minx=0
@@ -312,25 +318,25 @@ def displaypreview(text):
     figcanvas.create_image(0,0,image=previewimage,anchor=NW)
     figcanvas.update()
 
-def switchevent_shift(event,widget,img):
+def switchevent_shift(event,widget):
     global zoomoff,zoomfnid_m,zoomfnid_l,zoombox
     global drawpolygon,app,rects
     drawpolygon=not drawpolygon
     app = sel_area.Application(widget)
     app.end(rects)
-    rects=app.start(0,0,drawpolygon)
+    rects=app.start(selview,0,0,drawpolygon)
     print("Drawpolygon to :",drawpolygon)
-    zoomoff = True
-    if zoomoff==True:
-        widget.unbind('<Motion>',zoomfnid_m)
-        widget.unbind('<Leave>',zoomfnid_l)
-        if len(zoombox)>0:
-            for i in range(len(zoombox)):
-                widget.delete(zoombox.pop(0))
-        widget.update()
-    else:
-        zoomfnid_m=widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,img))
-        zoomfnid_l=widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
+    # zoomoff = True
+    # if zoomoff==True:
+    #     widget.unbind('<Motion>',zoomfnid_m)
+    #     widget.unbind('<Leave>',zoomfnid_l)
+    #     if len(zoombox)>0:
+    #         for i in range(len(zoombox)):
+    #             widget.delete(zoombox.pop(0))
+    #     widget.update()
+    # else:
+    #     zoomfnid_m=widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,img))
+    #     zoomfnid_l=widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
 
 
 def switchevent(event,widget,img):
@@ -361,9 +367,24 @@ def changedisplayimg(frame,text):
     widget.create_image(0,0,image=displayimg[text]['Image'],anchor=NW)
     widget.pack()
     widget.update()
-    global rects,selareapos,app,delapp,delrects,delselarea,originselarea
-    global zoomfnid_m,zoomfnid_l
+    global rects,selareapos,app,delapp,delrects,delselarea,selview
+    global zoomfnid_m,zoomfnid_l,kmeanselareapose
     global app
+    try:
+        selareadim = app.getinfo(rects[1])
+        if selareadim != [0, 0, 1, 1]:
+            selareapos = selareadim
+            selview = app.getselview()
+        app.end(rects)
+
+    except:
+        pass
+    try:
+        # widget.unbind('<Shift-Double-Button-1>')
+        # widget.unbind('<Double-Button-1>')
+        widget.unbind('<Motion>')
+    except:
+        pass
     app = sel_area.Application(widget)
     # delapp=sel_area.Application(widget)
     if text=='Output':
@@ -374,7 +395,7 @@ def changedisplayimg(frame,text):
             return
         zoomfnid_m=widget.bind('<Motion>',lambda event,arg=widget:zoom(event,arg,image))
         zoomfnid_l=widget.bind('<Leave>',lambda event,arg=widget:deletezoom(event,arg))
-        delrects=app.start(zoomfnid_m,zoomfnid_l,False)
+        delrects=app.start('Output',zoomfnid_m,zoomfnid_l,False)
         widget.bind('<Double-Button-1>',lambda event,arg=widget:switchevent(event,arg,image))
         print('delrects',delrects)
     else:
@@ -384,7 +405,7 @@ def changedisplayimg(frame,text):
             delelareadim=app.getinfo(delrects[1])
             if delelareadim!=[]:
                 delselarea=delelareadim
-            app.end()
+            app.end(rects)
         except:
             pass
         if text=='Origin':
@@ -396,53 +417,74 @@ def changedisplayimg(frame,text):
             except:
                 return
             widget.bind('<Double-Button-1>',lambda event,arg=widget:switchevent(event,arg,image))
-            widget.bind('<Shift-Double-Button-1>', lambda event,arg=widget:switchevent_shift(event,arg,image))
+            widget.bind('<Shift-Double-Button-1>', lambda event,arg=widget:switchevent_shift(event,arg))
             for widget in resviewframe.winfo_children():
                 widget.pack_forget()
-            rects=app.start()
+            rects=app.start('Origin')
+            selview = app.getselview()
             print(rects)
-            originselarea=True
 
-        else:
-            widget.unbind('<Motion>')
-            selareadim=app.getinfo(rects[1])
-            if selareadim!=[]:
-                selareapos=selareadim
-            app.end(rects)
+        if text=='PCs':
+            if selview=='Origin' and len(selareapos)>0 and selareapos!=[0,0,1,1]:
+                # selareadim=app.getinfo(rects[1])
+                # if selareadim!=[0,0,1,1] and selareadim!=[] and selareadim!=selareapos:
+                #     selareapos=selareadim
+                # if selareapos!=[0,0,1,1] and originselarea==True:
+                    #need to redo PCA
+                kmeanselareapose=selareapos.copy()
+                npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+                print("npfilter shape:", npfilter.shape)
+                filter=Image.fromarray(npfilter)
+                draw=ImageDraw.Draw(filter)
+                if drawpolygon==False:
+                    draw.ellipse(selareapos,fill='red')
+                else:
+                    draw.polygon(selareapos,fill='red')
+                global pcfilter
+                pcfilter=selareapos.copy()
+                filter=np.array(filter)
+                filter=np.divide(filter,np.max(filter))
+                filter=cv2.resize(filter,(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)
+                partialsingleband(filter)
+            for widget in resviewframe.winfo_children():
+                widget.pack_forget()
+            PCbuttons(resviewframe,frame)
+            # try:
+            #     image = displayimg['ColorIndices']['Image']
+            #     zoomfnid_m = widget.bind('<Motion>', lambda event, arg=widget: zoom(event, arg, image))
+            #     zoomfnid_l = widget.bind('<Leave>', lambda event, arg=widget: deletezoom(event, arg))
+            #
+            # except:
+            #     return
+            # widget.bind('<Double-Button-1>', lambda event, arg=widget: switchevent(event, arg, image))
+            widget.bind('<Shift-Double-Button-1>', lambda event, arg=widget: switchevent_shift(event, arg))
+            rects = app.start('PCs')
+            selview = app.getselview()
+            print(rects)
+        # else:
+        #     widget.unbind('<Motion>')
+        if text=='Color Deviation':
+            widget.bind('<Shift-Double-Button-1>', lambda event, arg=widget: switchevent_shift(event, arg))
+            rects = app.start('Color Deviation')
+            selview = app.getselview()
+            print(rects)
 
-    if text=='PCs':
-        selareadim=app.getinfo(rects[1])
-        if selareadim!=[0,0,1,1] and selareadim!=[] and selareadim!=selareapos:
-            selareapos=selareadim
-        if selareapos!=[0,0,1,1] and originselarea==True:
-            #need to redo PCA
-            npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
-            print("npfilter shape:", npfilter.shape)
-            filter=Image.fromarray(npfilter)
-            draw=ImageDraw.Draw(filter)
-            if drawpolygon==False:
-                draw.ellipse(selareapos,fill='red')
-            else:
-                draw.polygon(selareapos,fill='red')
-            global pcfilter
-            pcfilter=selareapos.copy()
-            filter=np.array(filter)
-            filter=np.divide(filter,np.max(filter))
-            filter=cv2.resize(filter,(displayfea_w,displayfea_l),interpolation=cv2.INTER_LINEAR)
-            partialsingleband(filter)
-            originselarea=False
+            #displaypreview
+            displaypreview(text)
             pass
-        PCbuttons(resviewframe,frame)
-        pass
+        if text=='ColorIndices':
+            #displaypreview
+            displaypreview(text)
 
-    if text=='Color Deviation':
-        #displaypreview
-        displaypreview(text)
-        pass
-    if text=='ColorIndices':
-        #displaypreview
-        displaypreview(text)
-        pass
+            # widget.bind('<Shift-Double-Button-1>', lambda event,arg=widget:switchevent_shift(event,arg))
+            # for widget in resviewframe.winfo_children():
+            #     widget.pack_forget()
+            # rects=app.start('ColorIndices')
+            # selview=app.getselview()
+            # print(rects)
+
+
+
 
     #print('change to '+text)
     #time.sleep(1)
@@ -2198,6 +2240,32 @@ def generatecheckbox(frame,classnum):
 
 def generateimgplant(event):
     global currentlabels,changekmeans,colordicesband,originbinaryimg,pre_checkbox
+    global selview,selareapos,binaryselareaspose
+    global displaylabels
+    try:
+        selview=app.getselview()
+        selareapos=app.getinfo(rects[1])
+    except:
+        pass
+    if selview=='Color Deviation' and len(selareapos)>0 and selareapos!=[0,0,1,1]:
+        binaryselareaspose=selareapos.copy()
+    if binaryselareaspose!=[0,0,1,1] and len(binaryselareaspose)>0:
+        npfilter = np.zeros((displayimg['Origin']['Size'][0], displayimg['Origin']['Size'][1]))
+        print("npfilter shape:", npfilter.shape)
+        filter = Image.fromarray(npfilter)
+        draw = ImageDraw.Draw(filter)
+        if app.getdrawpolygon() == False:
+            draw.ellipse(binaryselareaspose, fill='red')
+        else:
+            draw.polygon(binaryselareaspose, fill='red')
+        filter = np.array(filter)
+        filter = np.divide(filter, np.max(filter))
+        # filter = cv2.resize(filter, (displaylabels.shape[1], displaylabels.shape[0]), interpolation=cv2.INTER_LINEAR)
+        # displaylabels = np.multiply(displaylabels, filter)
+
+
+
+
     colordicesband=np.copy(displaylabels)
     keys=checkboxdict.keys()
     plantchoice=[]
@@ -2205,13 +2273,12 @@ def generateimgplant(event):
     for key in keys:
         plantchoice.append(checkboxdict[key].get())
         pre_checkbox.append(checkboxdict[key].get())
-    origindisplaylabels=np.copy(displaybandarray[currentfilename]['LabOstu'])
-    h,w,c=origindisplaylabels.shape
+    try:
+        origindisplaylabels=np.copy(displaybandarray[currentfilename]['LabOstu'])
+        h, w, c = origindisplaylabels.shape
+    except:
+        return
 
-    # tempdisplayimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0],
-    #                          displaybandarray[currentfilename]['LabOstu'].shape[1]))
-    # colordivimg=np.zeros((displaybandarray[currentfilename]['LabOstu'].shape[0],
-    #                       displaybandarray[currentfilename]['LabOstu'].shape[1]))
     tempdisplayimg=np.zeros((h,w))
     colordivimg=np.zeros((h,w))
     sel_count=plantchoice.count('1')
@@ -2225,28 +2292,15 @@ def generateimgplant(event):
     # uniquecolor=np.unique(tempdisplayimg)
     # if len(uniquecolor)==1 and uniquecolor[0]==1:
     #     tempdisplayimg=np.copy(displaylabels).astype('float32')
+    try:
+        filter = cv2.resize(filter, (tempdisplayimg.shape[1], tempdisplayimg.shape[0]), interpolation=cv2.INTER_LINEAR)
+        tempdisplayimg = np.multiply(tempdisplayimg,filter)
+    except:
+        pass
     currentlabels=np.copy(tempdisplayimg)
     originbinaryimg=np.copy(tempdisplayimg)
 
     tempcolorimg=np.copy(displaylabels).astype('float32')
-    # ratio=findratio([h,w],[850,850])
-    # if h*w<850*850:
-    #     tempdisplayimg=cv2.resize(tempdisplayimg,(int(w*ratio),int(h*ratio)))
-    #     colordivimg=cv2.resize(tempcolorimg,(int(w*ratio),int(h*ratio)))
-    #     if h>850:
-    #         ratio=round(h/850)
-    #         tempdisplayimg=cv2.resize(tempdisplayimg,(int(w/ratio),int(h/ratio)))
-    #         colordivimg=cv2.resize(tempcolorimg,(int(w/ratio),int(h/ratio)))
-    #     if w>850:
-    #         ratio=round(w/850)
-    #         tempdisplayimg=cv2.resize(tempdisplayimg,(int(w/ratio),int(h/ratio)))
-    #         colordivimg=cv2.resize(tempcolorimg,(int(w/ratio),int(h/ratio)))
-    # else:
-    #     tempdisplayimg=cv2.resize(tempdisplayimg,(int(w/ratio),int(h/ratio)))
-    #     colordivimg=cv2.resize(tempcolorimg,(int(w/ratio),int(h/ratio)))
-
-    # tempdisplayimg=cv2.resize(tempdisplayimg,(int(resizeshape[0]),int(resizeshape[1])))
-    # colordivimg=cv2.resize(tempcolorimg,(int(resizeshape[0]),int(resizeshape[1])))
 
     colordivimg=np.copy(tempcolorimg)
     binaryimg=np.zeros((h,w,3))
@@ -2420,6 +2474,8 @@ def kmeansclassify_oldversion():
 
 def kmeansclassify():
     global clusterdisplay,displaylabels
+    global selview,selareapos,kmeanselareapose
+    # global selareapos, pcselarea
     if int(kmeans.get())==0:
         return
     originpcabands=displaybandarray[currentfilename]['LabOstu']
@@ -2452,6 +2508,52 @@ def kmeansclassify():
             h,w,c=tempband.shape
             print('shape',tempband.shape)
             reshapedtif=tempband.reshape(tempband.shape[0]*tempband.shape[1],c)
+            selview = app.getselview()
+            selareapos = app.getinfo(rects[1])
+            if selview == 'PCs' and len(selareapos)>0 and selareapos!=[0,0,1,1]:
+                kmeanselareapose=selareapos.copy()
+            if kmeanselareapose!=[0,0,1,1] and len(kmeanselareapose)>0:
+                npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+                print("npfilter shape:", npfilter.shape)
+                filter = Image.fromarray(npfilter)
+                draw = ImageDraw.Draw(filter)
+                if drawpolygon == False:
+                    draw.ellipse(kmeanselareapose, fill='red')
+                else:
+                    draw.polygon(kmeanselareapose, fill='red')
+                filter = np.array(filter)
+                filter = np.divide(filter, np.max(filter))
+                filter = cv2.resize(filter, (displayfea_w, displayfea_l), interpolation=cv2.INTER_LINEAR)
+
+                partialtempband=np.multiply(tempband[:,:,0],filter)
+                partialshape=partialtempband.reshape(tempband.shape[0]*tempband.shape[1],c)
+                nonzerovector = np.where(partialshape > 0)
+                clf = KMeans(n_clusters=int(kmeans.get()), init='k-means++', n_init=10, random_state=0)
+                tempdisplayimg = clf.fit(partialshape)
+                # partialshape[nonzerovector,0]=np.add(tempdisplayimg.labels_,1)
+                displaylabels=tempdisplayimg.labels_.reshape((displaybandarray[currentfilename]['LabOstu'].shape[0],
+                                                  displaybandarray[currentfilename]['LabOstu'].shape[1]))
+                # print(tempdisplayimg)
+                clusterdict = {}
+                displaylabels = displaylabels + 10
+                for i in range(int(kmeans.get())):
+                    locs = np.where(tempdisplayimg.labels_ == i)
+                    try:
+                        maxval = partialshape[locs].max()
+                    except:
+                        print('kmeans', i)
+                        messagebox.showerror('Cluster maximum value is ', i)
+                        return displaylabels
+                    print(maxval)
+                    clusterdict.update({maxval: i + 11})
+                print(clusterdict)
+                sortcluster = list(sorted(clusterdict))
+                print(sortcluster)
+                for i in range(len(sortcluster)):
+                    cluster_num = clusterdict[sortcluster[i]]
+                    displaylabels = np.where(displaylabels == cluster_num, i, displaylabels)
+                return displaylabels
+
             if partialpca==True:
                 partialshape=reshapedtif[nonzero_vector]
                 print('partial reshape',partialshape.shape)
@@ -2483,6 +2585,7 @@ def kmeansclassify():
                 return displaylabels
             else:
                 print('reshape',reshapedtif.shape)
+
                 clf=KMeans(n_clusters=int(kmeans.get()),init='k-means++',n_init=10,random_state=0)
                 tempdisplayimg=clf.fit(reshapedtif)
                 # print('label=0',np.any(tempdisplayimg==0))
@@ -2491,6 +2594,7 @@ def kmeansclassify():
                     # displaylabels=tempdisplayimg.labels_.reshape((resizeshape[1],resizeshape[0]))
         clusterdict={}
         displaylabels=displaylabels+10
+        
         for i in range(int(kmeans.get())):
             locs=np.where(tempdisplayimg.labels_==i)
             maxval=reshapedtif[locs].max()
@@ -4224,10 +4328,10 @@ def extraction():
     ratio=1
     # if selarea.get()=='1':
     selareadim=app.getinfo(rects[1])
-    global selareapos,originselarea
+    global selareapos,originselarea,binaryselarea
     if selareadim!=[0,0,1,1] and selareadim!=[] and selareadim!=selareapos:
         selareapos=selareadim
-    if selareapos!=[0,0,1,1] and originselarea==True:
+    if selareapos!=[0,0,1,1] and len(selareapos)>0 and selview!='' and selview!='Color Deviation':
         # selareadim=app.getinfo(rects[1])
         npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
         print("npfilter shape:",npfilter.shape)
@@ -4236,7 +4340,7 @@ def extraction():
         if drawpolygon==False:
             draw.ellipse(selareapos,fill='red')
         else:
-            draw.polygon(selareapos,fill='rdd')
+            draw.polygon(selareapos,fill='red')
         filter=np.array(filter)
 
 
@@ -4250,6 +4354,7 @@ def extraction():
         #     filter[i,:]=0
         filter=np.divide(filter,np.max(filter))
         originselarea=False
+        binaryselarea=False
         # filter=np.where(filter==max(filter),1,0)
     else:
         filter=np.ones((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
@@ -5015,7 +5120,8 @@ for i in range(10):
     # else:
     tempdict[dictkey].set('0')
     checkboxdict.update(tempdict)
-    ch=Checkbutton(checkboxframe,text=dictkey,variable=checkboxdict[dictkey],command=partial(generateimgplant,''))
+    # ch=Checkbutton(checkboxframe,text=dictkey,variable=checkboxdict[dictkey],command=partial(generateimgplant,''))
+    ch = Checkbutton(checkboxframe, text=dictkey, variable=checkboxdict[dictkey])
     if i+1>int(kmeans.get()):
         ch.config(state=DISABLED)
     ch.pack(side=LEFT)

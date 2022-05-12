@@ -202,8 +202,8 @@ class Application(tk.Frame):
     SELECT_OPTS = dict(dash=(2, 2), stipple='gray25',
                           outline='')
 
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
+    def __init__(self, parent,*args, **kwargs):
+        super().__init__(parent,*args, **kwargs)
 
         # path = "convimg.png"
         # img = ImageTk.PhotoImage(Image.open(path))
@@ -215,6 +215,7 @@ class Application(tk.Frame):
         # self.canvas.img = img  # Keep reference.
         # self.canvas=canvas
         self.canvas=parent
+        self.selview=''
         npimg=np.zeros((int(self.canvas.cget('height')),int(self.canvas.cget('width'))))
         self.img=Image.fromarray(npimg)
         self.drawpolygon = False
@@ -235,8 +236,9 @@ class Application(tk.Frame):
         self.selection_obj.delete(rects)
         self.canvas.update()
 
-    def start(self,fn_m=0,fn_l=0,drawpolygon=False):
+    def start(self,currentview,fn_m=0,fn_l=0,drawpolygon=False):
         # Callback function to update it given two points of its diagonal.
+        self.selview=currentview
         if isinstance(fn_m,int)==False:
             self.zoom_m=fn_m
         if isinstance(fn_l,int)==False:
@@ -257,6 +259,10 @@ class Application(tk.Frame):
 
         return self.selection_obj.rects
 
+    def getdrawpolygon(self):
+        return self.drawpolygon
+    def getselview(self):
+        return self.selview
 
     def getinfo(self,rect):
         # sizes=self.canvas.coords(rect)
