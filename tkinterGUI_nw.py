@@ -3247,11 +3247,15 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
                         if max(height/width,width/height)>1.1:
                             edgelen=max(height,width)
                             zeronp=np.ones((edgelen,edgelen,3),dtype='float')
+                            if height>width: #vertical
+                                temppixelloc = (originpixelloc[0] - uly, originpixelloc[1] - ulx + int((edgelen-width)/2))
+                            else:               #horizontal
+                                temppixelloc = (originpixelloc[0] - uly + int((edgelen-height)/2), originpixelloc[1] - ulx)
                         # cropimage=imgrsc[uly:rly,ulx:rlx]
                         else:
                             zeronp=np.ones((height,width,3),dtype='float')
+                            temppixelloc = (originpixelloc[0] - uly, originpixelloc[1] - ulx)
                         zeronp = zeronp * imgrsc[blx, bly, :]
-                        temppixelloc = (originpixelloc[0] - uly, originpixelloc[1] - ulx)
                         zeronp[temppixelloc[0], temppixelloc[1], :] = imgrsc[originpixelloc[0], originpixelloc[1], :]
                         cropimage=np.copy(zeronp)
                         cv2.imwrite(os.path.join(path,originfile+'_crop_'+str(int(uni))+'.png'),cropimage)
