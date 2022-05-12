@@ -159,6 +159,7 @@ clusterchanged=False
 # binaryselarea=False
 # pcselarea=False
 zoomoff=False
+kmeanspolygon=False
 selview=''
 selareapos=[]
 kmeanselareapose=[]
@@ -326,6 +327,8 @@ def switchevent_shift(event,widget):
     app.end(rects)
     rects=app.start(selview,0,0,drawpolygon)
     print("Drawpolygon to :",drawpolygon)
+
+
     # zoomoff = True
     # if zoomoff==True:
     #     widget.unbind('<Motion>',zoomfnid_m)
@@ -368,13 +371,15 @@ def changedisplayimg(frame,text):
     widget.pack()
     widget.update()
     global rects,selareapos,app,delapp,delrects,delselarea,selview
-    global zoomfnid_m,zoomfnid_l,kmeanselareapose
+    global zoomfnid_m,zoomfnid_l,kmeanselareapose,drawpolygon
     global app
     try:
         selareadim = app.getinfo(rects[1])
+
         if selareadim != [0, 0, 1, 1]:
             selareapos = selareadim
             selview = app.getselview()
+            drawpolygon = app.getdrawpolygon()
         app.end(rects)
 
     except:
@@ -2474,7 +2479,7 @@ def kmeansclassify_oldversion():
 
 def kmeansclassify():
     global clusterdisplay,displaylabels
-    global selview,selareapos,kmeanselareapose
+    global selview,selareapos,kmeanselareapose,kmeanspolygon
     # global selareapos, pcselarea
     if int(kmeans.get())==0:
         return
@@ -2510,14 +2515,16 @@ def kmeansclassify():
             reshapedtif=tempband.reshape(tempband.shape[0]*tempband.shape[1],c)
             selview = app.getselview()
             selareapos = app.getinfo(rects[1])
+            # drawpolygon = app.getdrawpolygon()
             if selview == 'PCs' and len(selareapos)>0 and selareapos!=[0,0,1,1]:
                 kmeanselareapose=selareapos.copy()
+                kmeanspolygon = app.getdrawpolygon()
             if kmeanselareapose!=[0,0,1,1] and len(kmeanselareapose)>0:
                 npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
                 print("npfilter shape:", npfilter.shape)
                 filter = Image.fromarray(npfilter)
                 draw = ImageDraw.Draw(filter)
-                if drawpolygon == False:
+                if kmeanspolygon == False:
                     draw.ellipse(kmeanselareapose, fill='red')
                 else:
                     draw.polygon(kmeanselareapose, fill='red')
