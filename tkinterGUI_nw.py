@@ -544,15 +544,17 @@ def generatedisplayimg(filename):  # init display images
             updateresizeshape(previewshape,width*ratio)
             updateresizeshape(previewshape,height*ratio)
             if height>400:
-                previewshape=[]
                 ratio=round(height/screenstd)
-                updateresizeshape(previewshape,width/ratio)
-                updateresizeshape(previewshape,height/ratio)
+                if ratio!=0:
+                    previewshape = []
+                    updateresizeshape(previewshape,width/ratio)
+                    updateresizeshape(previewshape,height/ratio)
             if width>450:
-                previewshape=[]
                 ratio=round(width/screenstd)
-                updateresizeshape(previewshape,width/ratio)
-                updateresizeshape(previewshape,height/ratio)
+                if ratio!=0:
+                    previewshape = []
+                    updateresizeshape(previewshape,width/ratio)
+                    updateresizeshape(previewshape,height/ratio)
         else:
             #resize=cv2.resize(Multiimage[filename],(int(width/ratio),int(height/ratio)),interpolation=cv2.INTER_LINEAR)
             updateresizeshape(previewshape,width/ratio)
@@ -2618,6 +2620,22 @@ def kmeansclassify():
     #     tempdict={kmeans.get():displaylabels}
     #     #clusterdisplay.update({''.join(choicelist):tempdict})
     #     clusterdisplay.update(tempdict)
+    c1=np.where(displaylabels==0)
+    c2=np.where(displaylabels==1)
+    c3=np.where(displaylabels==2)
+    c4=np.where(displaylabels==3)
+    try:
+        c1pix = tempband[c1]
+        c1pix = np.reshape(c1pix,c1pix.shape[0])
+        c2pix=tempband[c2]
+        c2pix = np.reshape(c2pix,c2pix.shape[0])
+        c3pix=tempband[c3]
+        c4pix=tempband[c4]
+        c3pix=np.reshape(c3pix,c3pix.shape[0])
+        c4pix=np.reshape(c4pix,c4pix.shape[0])
+        print('two cluster var:',np.var(c1pix),c1pix.shape,np.var(c2pix),c2pix.shape,np.var(c3pix),c3pix.shape,np.var(c4pix),c4pix.shape)
+    except:
+        pass
     return displaylabels
 
 
@@ -3306,6 +3324,13 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
         '''For image crop version below'''
         lesszeroonefive = []
         if cropimageopt.get()>0:
+            thresholds = [cal_xvalue(linelocs[0]), cal_xvalue(linelocs[1])]
+            minthres = min(thresholds)
+            maxthres = max(thresholds)
+            lwthresholds = [cal_yvalue(linelocs[2]), cal_yvalue(linelocs[3])]
+            maxlw = max(lwthresholds)
+            minlw = min(lwthresholds)
+            print('thresholds',thresholds,'lwthresholds',lwthresholds)
             imgrsc = cv2.imread(file, flags=cv2.IMREAD_ANYCOLOR)
             cropratio=findratio((originheight,originwidth),(labels.shape[0],labels.shape[1]))
             if cropratio>1:
@@ -3325,6 +3350,8 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
             #     result_nparr=np.array(result_ref.load())
             #     corrected_nparr=np.copy(result_nparr)
                 index=1
+                cropfilenames=[]
+                kernelpixsize=[]
                 for uni in uniquelabels:
                     if uni!=0:
                         tempuni=colortable[uni]
@@ -3354,22 +3381,25 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
                         originbkgloc=np.where(originconvband==0)
                         blx=min(originbkgloc[1])
                         bly=min(originbkgloc[0])
-
+                        # cropimage = imgrsc[uly:rly, ulx:rlx]
+                        print('width,height',width,height,'pixelsize',len(originpixelloc[0]))
                         if max(height/width,width/height)>1.1:
-                            edgelen=max(height,width)
-                            zeronp=np.ones((edgelen,edgelen,3),dtype='float')
+                            # edgelen = max(height, width)
                             if height>width: #vertical
-                                temppixelloc = (originpixelloc[0] - uly, originpixelloc[1] - ulx + int((edgelen-width)/2))
-                            else:               #horizontal
-                                temppixelloc = (originpixelloc[0] - uly + int((edgelen-height)/2), originpixelloc[1] - ulx)
-                        # cropimage=imgrsc[uly:rly,ulx:rlx]
+                                addlen=int((height-width)/2)
+                                ulx = (ulx - addlen) if (ulx-addlen)>0 else ulx
+                                cropimage = imgrsc[uly:rly,ulx:(rlx+addlen)]
+                            else:
+                                addlen=int((width-height)/2)
+                                uly = (uly - addlen) if (uly - addlen)>0 else uly
+                                cropimage = imgrsc[uly:(rly+addlen),ulx:rlx]
                         else:
-                            zeronp=np.ones((height,width,3),dtype='float')
-                            temppixelloc = (originpixelloc[0] - uly, originpixelloc[1] - ulx)
-                        zeronp = zeronp * imgrsc[blx, bly, :]
-                        zeronp[temppixelloc[0], temppixelloc[1], :] = imgrsc[originpixelloc[0], originpixelloc[1], :]
-                        cropimage=np.copy(zeronp)
-                        cv2.imwrite(os.path.join(path,originfile+'_crop_'+str(int(uni))+'.png'),cropimage)
+                            cropimage = imgrsc[uly:rly, ulx:rlx]
+
+                        cropimgoutput=os.path.join(path,originfile+'_crop_'+str(int(uni))+'.png')
+                        cropfilenames.append(cropimgoutput)
+                        kernelpixsize.append(len(originpixelloc[0]))
+                        cv2.imwrite(cropimgoutput,cropimage)
                         print('output to cropimg',path,originfile+'_crop_'+str(int(uni))+'.png')
                         rowcontent=[index,0,0,originfile+'_crop_'+str(int(uni))+'.png',0]
                         csvwriter.writerow(rowcontent)
@@ -3381,8 +3411,14 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
                         # rowcontent=rowcontent+list(pixelloc[1])
                         # csvwriter.writerow(rowcontent)
 
-
-
+                print(cropfilenames)
+                print(kernelpixsize)
+                # import cropimg_extraction
+                # minkernelpix=min(kernelpixsize)
+                # maxkernelpix=max(kernelpixsize)
+                # for filename in cropfilenames:
+                #     cropapp=cropimg_extraction.batch_cropimg(filename,path,minkernelpix,maxkernelpix)
+                #     cropapp.process()
 
                 f.close()
         print(lesszeroonefive)
