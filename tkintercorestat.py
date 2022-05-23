@@ -20,7 +20,6 @@ from skimage.feature import peak_local_max
 
 import lm_method
 
-
 tinyareas=[]
 colortable={}
 colormatch={}

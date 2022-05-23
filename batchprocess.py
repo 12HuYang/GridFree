@@ -1030,22 +1030,32 @@ class batch_ser_func():
                             blx = min(originbkgloc[1])
                             bly = min(originbkgloc[0])
                             if max(height / width, width / height) > 1.1:
-                                edgelen = max(height, width)
-                                zeronp = np.ones((edgelen, edgelen, 3), dtype='float')
+                                # edgelen = max(height, width)
+                                # zeronp = np.ones((edgelen, edgelen, 3), dtype='float')
+                                # if height > width:  # vertical
+                                #     temppixelloc = (
+                                #     originpixelloc[0] - uly, originpixelloc[1] - ulx + int((edgelen - width) / 2))
+                                # else:  # horizontal
+                                #     temppixelloc = (
+                                #     originpixelloc[0] - uly + int((edgelen - height) / 2), originpixelloc[1] - ulx)
                                 if height > width:  # vertical
-                                    temppixelloc = (
-                                    originpixelloc[0] - uly, originpixelloc[1] - ulx + int((edgelen - width) / 2))
-                                else:  # horizontal
-                                    temppixelloc = (
-                                    originpixelloc[0] - uly + int((edgelen - height) / 2), originpixelloc[1] - ulx)
+                                    addlen = int((height - width) / 2)
+                                    ulx = (ulx - addlen) if (ulx - addlen) > 0 else ulx
+                                    cropimage = imgrsc[uly:rly, ulx:(rlx + addlen)]
+                                else:
+                                    addlen = int((width - height) / 2)
+                                    uly = (uly - addlen) if (uly - addlen) > 0 else uly
+                                    cropimage = imgrsc[uly:(rly + addlen), ulx:rlx]
                             else:
-                                zeronp = np.ones((height, width, 3), dtype='float')
-                                temppixelloc = (originpixelloc[0] - uly, originpixelloc[1] - ulx)
-                            zeronp = zeronp * imgrsc[blx, bly, :]
-                            zeronp[temppixelloc[0], temppixelloc[1], :] = imgrsc[originpixelloc[0], originpixelloc[1],
-                                                                          :]
+                                # zeronp = np.ones((height, width, 3), dtype='float')
+                                # temppixelloc = (originpixelloc[0] - uly, originpixelloc[1] - ulx)
+                                cropimage = imgrsc[uly:rly, ulx:rlx]
+                            # zeronp = zeronp * imgrsc[blx, bly, :]
+                            # zeronp[temppixelloc[0], temppixelloc[1], :] = imgrsc[originpixelloc[0], originpixelloc[1],
+                            #                                               :]
                             # cropimage = imgrsc[uly:rly, ulx:rlx]
-                            cropimage = np.copy(zeronp)
+                            # cropimage = np.copy(zeronp)
+
                             cv2.imwrite(os.path.join(self.exportpath, originfile + '_crop_' + str(int(uni)) + '.png'), cropimage)
                             print('output to cropimg', self.exportpath, originfile + '_crop_' + str(int(uni)) + '.png')
                             rowcontent = [index, 0, 0, originfile + '_crop_' + str(int(uni)) + '.png', 0]
