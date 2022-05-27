@@ -2487,6 +2487,7 @@ def kmeansclassify():
         return
     originpcabands=displaybandarray[currentfilename]['LabOstu']
     pcah,pcaw,pcac=originpcabands.shape
+    print('pcah',pcah,'pcaw',pcaw,'pcac',pcac)
     pcpara=pc_combine_up.get()
     print(pcpara,type(pcpara))
     tempband=np.zeros((pcah,pcaw,1))
@@ -3270,6 +3271,43 @@ def export_opts(iterver):
     opt_window.transient(root)
     opt_window.grab_set()
 
+def removeisland(cropband,uin,cropimg):
+    tempband = cropband - uin
+    island = np.where((tempband!=0) & (tempband!= 0 -uin))
+    islandminx,islandmaxx=np.min(island[1]),np.max(island[1])
+    islandminy,islandmaxy=np.min(island[0]),np.max(island[0])
+    islandarea=cropband[islandminy:islandmaxy,islandminx:islandmaxx]
+    # islandarea=islandarea.astype(np.uint8)
+    # islandcontour,_=cv2.findContours(cropimg,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    # print(islandcontour)
+    background = np.where(cropband==0)
+    # cimg = np.zeros_like(islandarea)
+    # cv2.drawContours(cimg,islandcontour,0,color=255, thickness=-1)
+    # dummyimg = np.zeros_like(cropband)
+    # dummyimg[islandminy:islandmaxy,islandminx:islandmaxx]=cimg
+    # island = np.where(dummyimg==255)
+    background = cropimg[background]
+    backgroundavg=np.mean(background,axis=1)
+
+    # backgroundperc=np.percentile(backgroundavg,50)
+    backgroundperc = np.percentile(backgroundavg,25)
+    print(background, backgroundavg,backgroundperc)
+    backgroundavg = np.where(backgroundavg<backgroundperc)
+    print(backgroundavg,'axis 0 length',len(backgroundavg[0]))
+    if len(backgroundavg[0])>0:
+        background = background[backgroundavg[0][0]]
+        cropimg[island] = background
+    # cropimg[island] = [0,0,0]
+    return cropimg
+
+def checkisland(cropband,uin):
+    tempband=cropband-uin
+    uniqband=np.unique(tempband)
+    if uniqband.shape[0]>2:
+        return True
+    return False
+    # nonzero=np.where((tempband != 0) & (tempband != -uin))
+    # print(nonzero)
 
 def export_result(popup,segmentoutputopt,cropimageopt,iterver):
     global batch
@@ -3306,7 +3344,8 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
         originfile,extension=os.path.splitext(head_tail[1])
         originimg_crop=cv2.imread(file)
         uniquelabels=list(colortable.keys())
-        originheight,originwidth=Multigraybands[file].size
+        # originheight,originwidth=Multigraybands[file].size
+        originheight, originwidth=currentlabels.shape
         ratio=int(findratio([512,512],[labels.shape[0],labels.shape[1]]))
         if labels.shape[0]<512:
             cache=(np.zeros((labels.shape[0]*ratio,labels.shape[1]*ratio)),{"f":int(ratio),"stride":int(ratio)})
@@ -3324,6 +3363,7 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
         '''For image crop version below'''
         lesszeroonefive = []
         if cropimageopt.get()>0:
+            import cropimg_extraction
             thresholds = [cal_xvalue(linelocs[0]), cal_xvalue(linelocs[1])]
             minthres = min(thresholds)
             maxthres = max(thresholds)
@@ -3332,8 +3372,9 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
             minlw = min(lwthresholds)
             print('thresholds',thresholds,'lwthresholds',lwthresholds)
             imgrsc = cv2.imread(file, flags=cv2.IMREAD_ANYCOLOR)
+            imgrsc = cv2.resize(imgrsc, (originwidth,originheight),interpolation=cv2.INTER_LINEAR)
             cropratio=findratio((originheight,originwidth),(labels.shape[0],labels.shape[1]))
-            if cropratio>1:
+            if cropratio>1 and originheight*originwidth!=labels.shape[0]*labels.shape[1]:
                 cache = (np.zeros((originheight,originwidth)),
                      {"f": int(cropratio), "stride": int(cropratio)})
                 originconvband = tkintercorestat.pool_backward(labels, cache)
@@ -3358,9 +3399,11 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
                         if tempuni=='Ref':
                             # pixelloc = np.where(convband == 65535)
                             originpixelloc=np.where(originconvband == 65535)
+                            # labelpixelloc = np.where(labels == 65535)
                         else:
                             # pixelloc = np.where(convband == float(uni))
                             originpixelloc = np.where(originconvband == float(uni))
+                            # labelpixelloc = np.where(labels == float(uni))
                         # kernelval=corrected_nparr[pixelloc]
                         # nirs=np.mean(kernelval,axis=0)
             #             print('nirs 170',nirs[170])
@@ -3369,38 +3412,113 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
                         try:
                             # ulx = min(pixelloc[1])
                             ulx = min(originpixelloc[1])
+                            # labelulx = min(labelpixelloc[1])
                         except:
                             print('no pixellloc[1] on uni=', uni)
                             print('pixelloc =', originpixelloc)
                             continue
                         uly = min(originpixelloc[0])
+                        # labeluly = min(labelpixelloc[0])
                         rlx = max(originpixelloc[1])
+                        # labelrlx = max(labelpixelloc[1])
                         rly = max(originpixelloc[0])
+                        # labelrly = max(labelpixelloc[0])
                         width=rlx-ulx+1
                         height=rly-uly+1
+                        # labelwidth=labelrlx-labelulx+1
+                        # labelheight=labelrly-labeluly+1
                         originbkgloc=np.where(originconvband==0)
                         blx=min(originbkgloc[1])
                         bly=min(originbkgloc[0])
                         # cropimage = imgrsc[uly:rly, ulx:rlx]
                         print('width,height',width,height,'pixelsize',len(originpixelloc[0]))
+                        print('output to cropimg', path, originfile + '_crop_' + str(int(uni)) + '.png')
                         if max(height/width,width/height)>1.1:
                             # edgelen = max(height, width)
                             if height>width: #vertical
                                 addlen=int((height-width)/2)
-                                ulx = (ulx - addlen) if (ulx-addlen)>0 else ulx
-                                cropimage = imgrsc[uly:rly,ulx:(rlx+addlen)]
+                                # labeladdlen=int((labelheight-labelwidth)/2)
+                                newulx = (ulx - addlen) if (ulx-addlen)>0 else ulx
+                                # cropband = labels[labeluly:labelrly,labelulx:(labelrlx+labeladdlen)]
+                                # cropband = originconvband[uly:rly, ulx:(rlx + addlen)]
+                                cropband = originconvband[uly:rly,ulx:rlx]
+                                cropimage = imgrsc[uly:rly,ulx:rlx]
+                                # cropimage = imgrsc[uly:rly, newulx:(rlx + addlen)]
+                                # cropimage = cv2.resize(cropimage,(224,224),interpolation = cv2.INTER_LINEAR)
+                                if checkisland(cropband,uni)==True:
+                                    cropimage = removeisland(cropband,uni,cropimage)
+                                    # cropimgband=currentlabels[uly:rly, ulx:(rlx + addlen)]
+                                    # cropimg = cropimg_extraction.batch_cropimg(originfile+'_crop_'+str(int(uni))+'.png',
+                                    #                                            path,0,
+                                    #                                            len(originpixelloc[0]),cropimgband)
+                                    # cropimg.process()![](../Downloads/OneDrive_1_5-23-2022/gridfree/10_202-18C_crop_1.png)
+                                    # print(cropimg.batch_results)
+                                    # continue
+                                    # print('have other kernels, V')
+
+                                dummyimg=np.zeros([height-1,height-1,3])
+                                dummyimg[:,addlen:addlen+width-1]=cropimage
+                                background=np.where(cropband==0)
+                                background=cropimage[background]
+                                backgroundavg=np.mean(background,axis=1)
+                                backgroundproc=np.percentile(backgroundavg,25)
+                                # backgroundproc = np.median(backgroundavg)
+                                print(backgroundproc,backgroundavg)
+                                backgroundavg=np.where(backgroundavg<backgroundproc)
+                                if len(backgroundavg[0])>0:
+                                    background=background[backgroundavg[0][0]]
+                                    dummyimg[:,:addlen]=background
+                                    dummyimg[:,addlen+width-1:]=background
+                                cropimage=np.copy(dummyimg)
+
                             else:
                                 addlen=int((width-height)/2)
-                                uly = (uly - addlen) if (uly - addlen)>0 else uly
-                                cropimage = imgrsc[uly:(rly+addlen),ulx:rlx]
-                        else:
-                            cropimage = imgrsc[uly:rly, ulx:rlx]
+                                newuly = (uly - addlen) if (uly - addlen)>0 else uly
+                                # cropband = labels[labeluly:(labelrly+labeladdlen),labelulx:labelrlx]
+                                # cropband = originconvband[uly:(rly+addlen),ulx:rlx]
+                                checkisland(cropband,uni)
+                                # cropimage = imgrsc[uly:(rly+addlen),ulx:rlx]
+                                cropband = originconvband[uly:rly, ulx:rlx]
+                                cropimage = imgrsc[uly:rly, ulx:rlx]
+                                if checkisland(cropband,uni)==True:
+                                    # print('have other kernel, H')
+                                    cropimage = removeisland(cropband, uni, cropimage)
+                                    # cropimg = cropimg_extraction.batch_cropimg(
+                                    #     originfile + '_crop_' + str(int(uni)) + '.png',
+                                    #     path, len(originpixelloc[0]), len(originpixelloc[0] + 500))
+                                    # cropimg.process()
+                                    # continue
 
+                                dummyimg = np.zeros([width - 1, width - 1, 3])
+                                dummyimg[addlen:addlen+height-1, :] = cropimage
+                                background = np.where(cropband == 0)
+                                background = cropimage[background]
+                                backgroundavg = np.mean(background, axis=1)
+                                backgroundproc = np.percentile(backgroundavg,25)
+                                backgroundavg = np.where(backgroundavg <backgroundproc)
+                                if len(backgroundavg[0])>0:
+                                    background = background[backgroundavg[0][0]]
+                                    dummyimg[:addlen, :] = background
+                                    dummyimg[addlen + height - 1:, :] = background
+                                cropimage = np.copy(dummyimg)
+                        else:
+                            # cropband = labels[labeluly:labelrly, labelulx:labelrlx]
+                            cropband = originconvband[uly:rly, ulx:rlx]
+                            checkisland(cropband,uni)
+                            cropimage = imgrsc[uly:rly, ulx:rlx]
+                            if checkisland(cropband, uni) == True:
+                                cropimage = removeisland(cropband, uni, cropimage)
+                                # cropimg = cropimg_extraction.batch_cropimg(
+                                #     originfile + '_crop_' + str(int(uni)) + '.png',
+                                #     path, len(originpixelloc[0]), len(originpixelloc[0] + 500))
+                                # cropimg.process()
+                                # continue
+                        cropimage = cv2.resize(cropimage,(224,224),interpolation=cv2.INTER_LINEAR)
                         cropimgoutput=os.path.join(path,originfile+'_crop_'+str(int(uni))+'.png')
                         cropfilenames.append(cropimgoutput)
                         kernelpixsize.append(len(originpixelloc[0]))
                         cv2.imwrite(cropimgoutput,cropimage)
-                        print('output to cropimg',path,originfile+'_crop_'+str(int(uni))+'.png')
+
                         rowcontent=[index,0,0,originfile+'_crop_'+str(int(uni))+'.png',0]
                         csvwriter.writerow(rowcontent)
                         index+=1
