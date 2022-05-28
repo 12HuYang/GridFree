@@ -58,6 +58,7 @@ class batch_ser_func():
         self.filtercoord=[]
         self.filterbackground=[]
         self.nonzero_vector=[]
+        self.currentlables=None
 
 
     def Open_batchimage(self):
@@ -562,6 +563,7 @@ class batch_ser_func():
         else:
             tempdisplayimg=cv2.resize(tempdisplayimg,(int(tempdisplayimg.shape[1]/ratio),int(tempdisplayimg.shape[0]/ratio)))
             colordivimg=cv2.resize(tempcolorimg,(int(colordivimg.shape[1]/ratio),int(colordivimg.shape[0]/ratio)))
+        self.currentlables=np.copy(tempdisplayimg)
         binaryimg=np.zeros((tempdisplayimg.shape[0],tempdisplayimg.shape[1],3))
         colordeimg=np.zeros((colordivimg.shape[0],colordivimg.shape[1],3))
         locs=np.where(tempdisplayimg==1)
@@ -955,6 +957,35 @@ class batch_ser_func():
             segimage=segimg.resize([originwidth,originheight],resample=Image.BILINEAR)
             segimage.save(path+'/'+originfile+extcolor+'-labelresult'+'.png',"PNG")
 
+    def removeisland(self,cropband, uin, cropimg):
+        tempband = cropband - uin
+        island = np.where((tempband != 0) & (tempband != 0 - uin))
+        islandminx, islandmaxx = np.min(island[1]), np.max(island[1])
+        islandminy, islandmaxy = np.min(island[0]), np.max(island[0])
+        islandarea = cropband[islandminy:islandmaxy, islandminx:islandmaxx]
+        background = np.where(cropband == 0)
+        background = cropimg[background]
+        backgroundavg = np.mean(background, axis=1)
+
+        # backgroundperc=np.percentile(backgroundavg,50)
+        backgroundperc = np.percentile(backgroundavg, 25)
+        print(background, backgroundavg, backgroundperc)
+        backgroundavg = np.where(backgroundavg < backgroundperc)
+        print(backgroundavg, 'axis 0 length', len(backgroundavg[0]))
+        if len(backgroundavg[0]) > 0:
+            background = background[backgroundavg[0][0]]
+            cropimg[island] = background
+        # cropimg[island] = [0,0,0]
+        return cropimg
+
+
+    def checkisland(self,cropband, uin):
+        tempband = cropband - uin
+        uniqband = np.unique(tempband)
+        if uniqband.shape[0] > 2:
+            return True
+        return False
+
     def export_result(self):
         file=self.file
         if len(batch_filenames)==0:
@@ -979,10 +1010,11 @@ class batch_ser_func():
         '''export cropped images'''
         if cropimageopt==True:
             if len(self.exportpath)>0:
-                originheight, originwidth = self.batch_Multigraybands[file].size
+                # originheight, originwidth = self.batch_Multigraybands[file].size
+                originheight,originwidth = self.currentlables.shape
                 uniquelabels = list(colortable.keys())
                 cropratio = batch_findratio((originheight, originwidth), (labels.shape[0], labels.shape[1]))
-                if cropratio > 1:
+                if cropratio > 1 and originheight*originwidth!=labels.shape[0]*labels.shape[1]:
                     cache = (np.zeros((originheight, originwidth)),
                              {"f": int(cropratio), "stride": int(cropratio)})
                     originconvband = tkintercorestat.pool_backward(labels, cache)
@@ -1029,6 +1061,8 @@ class batch_ser_func():
                             originbkgloc = np.where(originconvband == 0)
                             blx = min(originbkgloc[1])
                             bly = min(originbkgloc[0])
+                            print('width,height', width, height, 'pixelsize', len(originpixelloc[0]))
+                            print('output to cropimg', self.exportpath, originfile + '_crop_' + str(int(uni)) + '.png')
                             if max(height / width, width / height) > 1.1:
                                 # edgelen = max(height, width)
                                 # zeronp = np.ones((edgelen, edgelen, 3), dtype='float')
@@ -1040,24 +1074,58 @@ class batch_ser_func():
                                 #     originpixelloc[0] - uly + int((edgelen - height) / 2), originpixelloc[1] - ulx)
                                 if height > width:  # vertical
                                     addlen = int((height - width) / 2)
-                                    ulx = (ulx - addlen) if (ulx - addlen) > 0 else ulx
-                                    cropimage = imgrsc[uly:rly, ulx:(rlx + addlen)]
+                                    newulx = (ulx - addlen) if (ulx - addlen) > 0 else ulx
+                                    cropband = originconvband[uly:rly, ulx:rlx]
+                                    cropimage = imgrsc[uly:rly, ulx:rlx]
+                                    if self.checkisland(cropband, uni) == True:
+                                        cropimage = self.removeisland(cropband, uni, cropimage)
+                                    dummyimg = np.zeros([height - 1, height - 1, 3])
+                                    dummyimg[:, addlen:addlen + width - 1] = cropimage
+                                    background = np.where(cropband == 0)
+                                    background = cropimage[background]
+                                    backgroundavg = np.mean(background, axis=1)
+                                    backgroundproc = np.percentile(backgroundavg, 25)
+                                    # backgroundproc = np.median(backgroundavg)
+                                    print(backgroundproc, backgroundavg)
+                                    backgroundavg = np.where(backgroundavg < backgroundproc)
+                                    if len(backgroundavg[0]) > 0:
+                                        background = background[backgroundavg[0][0]]
+                                        dummyimg[:, :addlen] = background
+                                        dummyimg[:, addlen + width - 1:] = background
+                                    cropimage = np.copy(dummyimg)
                                 else:
                                     addlen = int((width - height) / 2)
-                                    uly = (uly - addlen) if (uly - addlen) > 0 else uly
-                                    cropimage = imgrsc[uly:(rly + addlen), ulx:rlx]
+                                    newuly = (uly - addlen) if (uly - addlen) > 0 else uly
+                                    cropband = originconvband[uly:rly, ulx:rlx]
+                                    cropimage = imgrsc[uly:rly, ulx:rlx]
+                                    if self.checkisland(cropband,uni)==True:
+                                        cropimage = self.removeisland(cropband, uni, cropimage)
+                                    dummyimg = np.zeros([width - 1, width - 1, 3])
+                                    dummyimg[addlen:addlen + height - 1, :] = cropimage
+                                    background = np.where(cropband == 0)
+                                    background = cropimage[background]
+                                    backgroundavg = np.mean(background, axis=1)
+                                    backgroundproc = np.percentile(backgroundavg, 25)
+                                    backgroundavg = np.where(backgroundavg < backgroundproc)
+                                    if len(backgroundavg[0]) > 0:
+                                        background = background[backgroundavg[0][0]]
+                                        dummyimg[:addlen, :] = background
+                                        dummyimg[addlen + height - 1:, :] = background
+                                    cropimage = np.copy(dummyimg)
                             else:
                                 # zeronp = np.ones((height, width, 3), dtype='float')
                                 # temppixelloc = (originpixelloc[0] - uly, originpixelloc[1] - ulx)
+                                cropband = originconvband[uly:rly, ulx:rlx]
                                 cropimage = imgrsc[uly:rly, ulx:rlx]
+                                if self.checkisland(cropband, uni) == True:
+                                    cropimage = self.removeisland(cropband, uni, cropimage)
                             # zeronp = zeronp * imgrsc[blx, bly, :]
                             # zeronp[temppixelloc[0], temppixelloc[1], :] = imgrsc[originpixelloc[0], originpixelloc[1],
                             #                                               :]
                             # cropimage = imgrsc[uly:rly, ulx:rlx]
                             # cropimage = np.copy(zeronp)
-
+                            cropimage = cv2.resize(cropimage, (224, 224), interpolation=cv2.INTER_LINEAR)
                             cv2.imwrite(os.path.join(self.exportpath, originfile + '_crop_' + str(int(uni)) + '.png'), cropimage)
-                            print('output to cropimg', self.exportpath, originfile + '_crop_' + str(int(uni)) + '.png')
                             rowcontent = [index, 0, 0, originfile + '_crop_' + str(int(uni)) + '.png', 0]
                             csvwriter.writerow(rowcontent)
                             index += 1
