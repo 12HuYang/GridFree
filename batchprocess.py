@@ -1084,14 +1084,17 @@ class batch_ser_func():
                                     background = np.where(cropband == 0)
                                     background = cropimage[background]
                                     backgroundavg = np.mean(background, axis=1)
-                                    backgroundproc = np.percentile(backgroundavg, 25)
-                                    # backgroundproc = np.median(backgroundavg)
-                                    print(backgroundproc, backgroundavg)
-                                    backgroundavg = np.where(backgroundavg < backgroundproc)
-                                    if len(backgroundavg[0]) > 0:
-                                        background = background[backgroundavg[0][0]]
-                                        dummyimg[:, :addlen] = background
-                                        dummyimg[:, addlen + width - 1:] = background
+                                    try:
+                                        backgroundproc = np.percentile(backgroundavg, 25)
+                                        # backgroundproc = np.median(backgroundavg)
+                                        print(backgroundproc, backgroundavg)
+                                        backgroundavg = np.where(backgroundavg < backgroundproc)
+                                        if len(backgroundavg[0]) > 0:
+                                            background = background[backgroundavg[0][0]]
+                                            dummyimg[:, :addlen] = background
+                                            dummyimg[:, addlen + width - 1:] = background
+                                    except:
+                                        pass
                                     cropimage = np.copy(dummyimg)
                                 else:
                                     addlen = int((width - height) / 2)
@@ -1105,12 +1108,15 @@ class batch_ser_func():
                                     background = np.where(cropband == 0)
                                     background = cropimage[background]
                                     backgroundavg = np.mean(background, axis=1)
-                                    backgroundproc = np.percentile(backgroundavg, 25)
-                                    backgroundavg = np.where(backgroundavg < backgroundproc)
-                                    if len(backgroundavg[0]) > 0:
-                                        background = background[backgroundavg[0][0]]
-                                        dummyimg[:addlen, :] = background
-                                        dummyimg[addlen + height - 1:, :] = background
+                                    try:
+                                        backgroundproc = np.percentile(backgroundavg, 25)
+                                        backgroundavg = np.where(backgroundavg < backgroundproc)
+                                        if len(backgroundavg[0]) > 0:
+                                            background = background[backgroundavg[0][0]]
+                                            dummyimg[:addlen, :] = background
+                                            dummyimg[addlen + height - 1:, :] = background
+                                    except:
+                                        pass
                                     cropimage = np.copy(dummyimg)
                             else:
                                 # zeronp = np.ones((height, width, 3), dtype='float')
