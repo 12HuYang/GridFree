@@ -1021,6 +1021,7 @@ class batch_ser_func():
                 else:
                     originconvband = np.copy(labels)
                 imgrsc = cv2.imread(os.path.join(FOLDER,file), flags=cv2.IMREAD_ANYCOLOR)
+                imgrsc = cv2.resize(imgrsc, (originwidth, originheight), interpolation=cv2.INTER_LINEAR)
                 # cv2.imwrite(os.path.join(self.exportpath, originfile + '_before.png'), originconvband)
                 labelsegfile = os.path.join(self.exportpath, originfile + '_cropimage_label.csv')
                 with open(labelsegfile, mode='w') as f:
