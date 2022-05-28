@@ -3476,7 +3476,6 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
                                 newuly = (uly - addlen) if (uly - addlen)>0 else uly
                                 # cropband = labels[labeluly:(labelrly+labeladdlen),labelulx:labelrlx]
                                 # cropband = originconvband[uly:(rly+addlen),ulx:rlx]
-                                checkisland(cropband,uni)
                                 # cropimage = imgrsc[uly:(rly+addlen),ulx:rlx]
                                 cropband = originconvband[uly:rly, ulx:rlx]
                                 cropimage = imgrsc[uly:rly, ulx:rlx]
@@ -3504,7 +3503,6 @@ def export_result(popup,segmentoutputopt,cropimageopt,iterver):
                         else:
                             # cropband = labels[labeluly:labelrly, labelulx:labelrlx]
                             cropband = originconvband[uly:rly, ulx:rlx]
-                            checkisland(cropband,uni)
                             cropimage = imgrsc[uly:rly, ulx:rlx]
                             if checkisland(cropband, uni) == True:
                                 cropimage = removeisland(cropband, uni, cropimage)
