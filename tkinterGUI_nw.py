@@ -810,7 +810,7 @@ def Open_Multifile():
     global buttonvar
     global colorindicearray
     global selarea
-    global app,drawpolygon
+    global app,drawpolygon,binaryselareaspose
     MULTIFILES=filedialog.askopenfilenames()
     root.update()
     if len(MULTIFILES)>0:
@@ -840,6 +840,7 @@ def Open_Multifile():
         displaypclabels=None
         app = ''
         drawpolygon=False
+        binaryselareaspose=[]
         buttonvar.set(0)
         # if 'NDI' in bandchoice:
         #     bandchoice['NDI'].set('1')
