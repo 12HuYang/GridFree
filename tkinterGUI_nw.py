@@ -2521,8 +2521,6 @@ def kmeansclassify():
             reshapedtif=tempband.reshape(tempband.shape[0]*tempband.shape[1],c)
             selview = app.getselview()
             selareapos = app.getinfo(rects[1])
-            # drawpolygon = app.getdrawpolygon()
-            # kmeanspolygon = drawpolygon
             if selview == 'PCs' and len(selareapos)>0 and selareapos!=[0,0,1,1]:
                 kmeanselareapose=selareapos.copy()
                 kmeanspolygon = app.getdrawpolygon()
