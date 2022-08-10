@@ -379,7 +379,7 @@ def changedisplayimg(frame,text):
         if selareadim != [0, 0, 1, 1]:
             selareapos = selareadim
             selview = app.getselview()
-            drawpolygon = app.getdrawpolygon()
+            # drawpolygon = app.getdrawpolygon()
         app.end(rects)
 
     except:
@@ -463,14 +463,14 @@ def changedisplayimg(frame,text):
             #     return
             # widget.bind('<Double-Button-1>', lambda event, arg=widget: switchevent(event, arg, image))
             widget.bind('<Shift-Double-Button-1>', lambda event, arg=widget: switchevent_shift(event, arg))
-            rects = app.start('PCs')
+            rects = app.start('PCs',0,0,drawpolygon)
             selview = app.getselview()
             print(rects)
         # else:
         #     widget.unbind('<Motion>')
         if text=='Color Deviation':
             widget.bind('<Shift-Double-Button-1>', lambda event, arg=widget: switchevent_shift(event, arg))
-            rects = app.start('Color Deviation')
+            rects = app.start('Color Deviation',0,0,drawpolygon)
             selview = app.getselview()
             print(rects)
 
@@ -810,6 +810,7 @@ def Open_Multifile():
     global buttonvar
     global colorindicearray
     global selarea
+    global app,drawpolygon
     MULTIFILES=filedialog.askopenfilenames()
     root.update()
     if len(MULTIFILES)>0:
@@ -837,6 +838,8 @@ def Open_Multifile():
         refarea=None
         havecolorstrip=False
         displaypclabels=None
+        app = ''
+        drawpolygon=False
         buttonvar.set(0)
         # if 'NDI' in bandchoice:
         #     bandchoice['NDI'].set('1')
@@ -2516,53 +2519,54 @@ def kmeansclassify():
             h,w,c=tempband.shape
             print('shape',tempband.shape)
             reshapedtif=tempband.reshape(tempband.shape[0]*tempband.shape[1],c)
-            selview = app.getselview()
-            selareapos = app.getinfo(rects[1])
+            # selview = app.getselview()
+            # selareapos = app.getinfo(rects[1])
             # drawpolygon = app.getdrawpolygon()
-            if selview == 'PCs' and len(selareapos)>0 and selareapos!=[0,0,1,1]:
-                kmeanselareapose=selareapos.copy()
-                kmeanspolygon = app.getdrawpolygon()
-            if kmeanselareapose!=[0,0,1,1] and len(kmeanselareapose)>0:
-                npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
-                print("npfilter shape:", npfilter.shape)
-                filter = Image.fromarray(npfilter)
-                draw = ImageDraw.Draw(filter)
-                if kmeanspolygon == False:
-                    draw.ellipse(kmeanselareapose, fill='red')
-                else:
-                    draw.polygon(kmeanselareapose, fill='red')
-                filter = np.array(filter)
-                filter = np.divide(filter, np.max(filter))
-                filter = cv2.resize(filter, (displayfea_w, displayfea_l), interpolation=cv2.INTER_LINEAR)
-
-                partialtempband=np.multiply(tempband[:,:,0],filter)
-                partialshape=partialtempband.reshape(tempband.shape[0]*tempband.shape[1],c)
-                nonzerovector = np.where(partialshape > 0)
-                clf = KMeans(n_clusters=int(kmeans.get()), init='k-means++', n_init=10, random_state=0)
-                tempdisplayimg = clf.fit(partialshape)
-                # partialshape[nonzerovector,0]=np.add(tempdisplayimg.labels_,1)
-                displaylabels=tempdisplayimg.labels_.reshape((displaybandarray[currentfilename]['LabOstu'].shape[0],
-                                                  displaybandarray[currentfilename]['LabOstu'].shape[1]))
-                # print(tempdisplayimg)
-                clusterdict = {}
-                displaylabels = displaylabels + 10
-                for i in range(int(kmeans.get())):
-                    locs = np.where(tempdisplayimg.labels_ == i)
-                    try:
-                        maxval = partialshape[locs].max()
-                    except:
-                        print('kmeans', i)
-                        messagebox.showerror('Cluster maximum value is ', i)
-                        return displaylabels
-                    print(maxval)
-                    clusterdict.update({maxval: i + 11})
-                print(clusterdict)
-                sortcluster = list(sorted(clusterdict))
-                print(sortcluster)
-                for i in range(len(sortcluster)):
-                    cluster_num = clusterdict[sortcluster[i]]
-                    displaylabels = np.where(displaylabels == cluster_num, i, displaylabels)
-                return displaylabels
+            # kmeanspolygon = drawpolygon
+            # if selview == 'PCs' and len(selareapos)>0 and selareapos!=[0,0,1,1]:
+            #     kmeanselareapose=selareapos.copy()
+            #     kmeanspolygon = app.getdrawpolygon()
+            # if kmeanselareapose!=[0,0,1,1] and len(kmeanselareapose)>0:
+            #     npfilter=np.zeros((displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]))
+            #     print("npfilter shape:", npfilter.shape)
+            #     filter = Image.fromarray(npfilter)
+            #     draw = ImageDraw.Draw(filter)
+            #     if kmeanspolygon == False:
+            #         draw.ellipse(kmeanselareapose, fill='red')
+            #     else:
+            #         draw.polygon(kmeanselareapose, fill='red')
+            #     filter = np.array(filter)
+            #     filter = np.divide(filter, np.max(filter))
+            #     filter = cv2.resize(filter, (displayfea_w, displayfea_l), interpolation=cv2.INTER_LINEAR)
+            #
+            #     partialtempband=np.multiply(tempband[:,:,0],filter)
+            #     partialshape=partialtempband.reshape(tempband.shape[0]*tempband.shape[1],c)
+            #     nonzerovector = np.where(partialshape > 0)
+            #     clf = KMeans(n_clusters=int(kmeans.get()), init='k-means++', n_init=10, random_state=0)
+            #     tempdisplayimg = clf.fit(partialshape)
+            #     # partialshape[nonzerovector,0]=np.add(tempdisplayimg.labels_,1)
+            #     displaylabels=tempdisplayimg.labels_.reshape((displaybandarray[currentfilename]['LabOstu'].shape[0],
+            #                                       displaybandarray[currentfilename]['LabOstu'].shape[1]))
+            #     # print(tempdisplayimg)
+            #     clusterdict = {}
+            #     displaylabels = displaylabels + 10
+            #     for i in range(int(kmeans.get())):
+            #         locs = np.where(tempdisplayimg.labels_ == i)
+            #         try:
+            #             maxval = partialshape[locs].max()
+            #         except:
+            #             print('kmeans', i)
+            #             messagebox.showerror('Cluster maximum value is ', i)
+            #             return displaylabels
+            #         print(maxval)
+            #         clusterdict.update({maxval: i + 11})
+            #     print(clusterdict)
+            #     sortcluster = list(sorted(clusterdict))
+            #     print(sortcluster)
+            #     for i in range(len(sortcluster)):
+            #         cluster_num = clusterdict[sortcluster[i]]
+            #         displaylabels = np.where(displaylabels == cluster_num, i, displaylabels)
+            #     return displaylabels
 
             if partialpca==True:
                 partialshape=reshapedtif[nonzero_vector]
@@ -5109,9 +5113,11 @@ def changeclusterbox(event):
 def beforecluster(event):
     global kmeanschanged,pcweightchanged,imageframe
     if pcweightchanged==True:
+        # app=''
         pcweightchanged=False
         pcweightupdate(imageframe)
     if kmeanschanged==True:
+        # app=''
         kmeanschanged=False
         changecluster('')
 
