@@ -93,7 +93,7 @@ Modify matplotlibrc file ADD: ```backend: TkAgg```
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/corns_demo.gif)
 ##### YouTube: https://youtu.be/1ngHQsUFWH4
 
-```
+<!--```
 python3.8 trainNN.py ./resnet50.json testsetfolder traingsetfolder ResNet50 modelweight 4 3 Adam binary_crossentropy tempfolder testsetlabel.csv 0.6 False False True False trainingsetlabel.csv
-```
+```-->
 
