@@ -93,7 +93,7 @@ Modify matplotlibrc file ADD: ```backend: TkAgg```
 ![screenshot](https://raw.githubusercontent.com/12HuYang/GridFree/master/corns_demo.gif)
 ##### YouTube: https://youtu.be/1ngHQsUFWH4
 
-'''
+```
 python3.8 trainNN.py 
-'''
+```
 
