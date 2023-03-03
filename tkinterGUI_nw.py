@@ -3464,7 +3464,7 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
                         # cropimage = imgrsc[uly:rly, ulx:rlx]
                         print('width,height',width,height,'pixelsize',len(originpixelloc[0]))
                         print('output to cropimg', path, originfile + '_crop_' + str(int(uni)) + '.png')
-                        if max(height/width,width/height)>1.1:
+                        if max(height/width,width/height)>1.05:
                             # edgelen = max(height, width)
                             if height>width: #vertical
                                 addlen=int((height-width)/2)
@@ -3543,10 +3543,10 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
                                 '''
                         else:
                             # cropband = labels[labeluly:labelrly, labelulx:labelrlx]
-                            cropband = originconvband[uly:rly, ulx:rlx]
+                            # cropband = originconvband[uly:rly, ulx:rlx]
                             cropimage = imgrsc[uly:rly, ulx:rlx]
-                            if checkisland(cropband, uni) == True:
-                                cropimage = removeisland(cropband, uni, cropimage)
+                            # if checkisland(cropband, uni) == True:
+                            #     cropimage = removeisland(cropband, uni, cropimage)
                                 # cropimg = cropimg_extraction.batch_cropimg(
                                 #     originfile + '_crop_' + str(int(uni)) + '.png',
                                 #     path, len(originpixelloc[0]), len(originpixelloc[0] + 500))
