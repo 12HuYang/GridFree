@@ -3404,10 +3404,10 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
             print('thresholds',thresholds,'lwthresholds',lwthresholds)
             imgrsc = cv2.imread(file, flags=cv2.IMREAD_ANYCOLOR)
             imgheight,imgwidth,imgchannel=imgrsc.shape
-            # imgrsc = cv2.resize(imgrsc, (originwidth,originheight),interpolation=cv2.INTER_LINEAR)
-            cropratio=findratio((imgheight,imgwidth),(labels.shape[0],labels.shape[1]))
-            if cropratio>1 and imgheight*imgwidth!=labels.shape[0]*labels.shape[1]:
-                cache = (np.zeros((imgheight,imgwidth)),
+            imgrsc = cv2.resize(imgrsc, (originwidth,originheight),interpolation=cv2.INTER_LINEAR)
+            cropratio=findratio((originheight,originwidth),(labels.shape[0],labels.shape[1]))
+            if cropratio>1 and originheight*originwidth!=labels.shape[0]*labels.shape[1]:
+                cache = (np.zeros((originheight,originwidth)),
                      {"f": int(cropratio), "stride": int(cropratio)})
                 originconvband = tkintercorestat.pool_backward(labels, cache)
             else:
