@@ -2960,6 +2960,7 @@ def showcounting(tup,number=True,frame=True,header=True,whext=False,blkext=False
     uniquelabels=list(colortable.keys())
     originfile,extension=os.path.splitext(filename)
     imgrsc=cv2.imread(filename,flags=cv2.IMREAD_ANYCOLOR)
+    # assert imgrsc!=None, messagebox.showerror('Invalid file path',"Cannot open "+filename+" to output counting")
     imgrsc=cv2.cvtColor(imgrsc,cv2.COLOR_BGR2RGB)
     imgrsc=cv2.resize(imgrsc,(labels.shape[1],labels.shape[0]),interpolation=cv2.INTER_LINEAR)
     image=Image.fromarray(imgrsc)
@@ -3598,6 +3599,15 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
         '''end'''
 
         if segmentoutputopt.get()>0:
+            # if originsize.get() > 0:
+            # imgrsc = cv2.resize(imgrsc, (originwidth, originheight), interpolation=cv2.INTER_LINEAR)
+            cropratio = findratio((imgheight, imgwidth), (labels.shape[0], labels.shape[1]))
+            if cropratio > 1 and imgheight * imgwidth != labels.shape[0] * labels.shape[1]:
+                cache = (np.zeros((imgheight, imgwidth)),
+                         {"f": int(cropratio), "stride": int(cropratio)})
+                originconvband = tkintercorestat.pool_backward(labels, cache)
+            else:
+                originconvband = np.copy(labels)
             if len(path)>0:
                 tup=(labels,counts,colortable,[],currentfilename)
                 _band,segimg,small_segimg=showcounting(tup,False)
@@ -3618,9 +3628,11 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
                         #uni=colortable[uni]
                         tempuni=colortable[uni]
                         if tempuni=='Ref':
-                            pixelloc = np.where(labels == 65535)
+                            # pixelloc = np.where(labels == 65535)
+                            pixelloc = np.where(originconvband == 65535)
                         else:
-                            pixelloc = np.where(labels == float(uni))
+                            # pixelloc = np.where(labels == float(uni))
+                            pixelloc = np.where(originconvband == float(uni))
                         try:
                             ulx = min(pixelloc[1])
                         except:
@@ -3632,7 +3644,8 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
                         midx = ulx + int((rlx - ulx) / 2)
                         midy = uly + int((rly - uly) / 2)
                         length={}
-                        currborder=tkintercore.get_boundaryloc(labels,uni)
+                        # currborder=tkintercore.get_boundaryloc(labels,uni)
+                        currborder = tkintercore.get_boundaryloc(originconvband, uni)
                         for i in range(len(currborder[0])):
                             for j in range(i+1,len(currborder[0])):
                                 templength=float(((currborder[0][i]-currborder[0][j])**2+(currborder[1][i]-currborder[1][j])**2)**0.5)
@@ -3795,9 +3808,11 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
                     uni=colortable[uni]
                     if uni=='Ref':
                         uniloc=np.where(labels==65535)
+                        amountloc = np.where(originconvband == 65535)
                         smalluniloc=np.where(originrestoredband==65535)
                     else:
                         uniloc=np.where(labels==float(uni))
+                        amountloc = np.where(originconvband == float(uni))
                         smalluniloc=np.where(originrestoredband==uni)
                     if len(uniloc)==0 or len(uniloc[1])==0:
                         print('no uniloc\n')
@@ -3811,7 +3826,7 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
                     print(width,length)
                     subarea=restoredband[uly:rly+1,ulx:rlx+1]
                     subarea=subarea.tolist()
-                    amount=len(uniloc[0])
+                    amount=len(amountloc[0])
                     print(amount)
                     try:
                         sizes=currentsizes[uni]
