@@ -969,6 +969,7 @@ def partialoneband(filter):
     global nonzero_vector,partialpca
 
     partialpca=True
+    print('partialpcs is True')
     bands=Multiimagebands[currentfilename].bands
     channel,fea_l,fea_w=bands.shape
     nonzero=np.where(filter!=0)
@@ -3477,94 +3478,96 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
                         # cropimage = imgrsc[uly:rly, ulx:rlx]
                         print('width,height',width,height,'pixelsize',len(originpixelloc[0]))
                         print('output to cropimg', path, originfile + '_crop_' + str(int(uni)) + '.png')
-                        if max(height/width,width/height)>1.05:
-                            # edgelen = max(height, width)
-                            if height>width: #vertical
-                                addlen=int((height-width)/2)
-                                # labeladdlen=int((labelheight-labelwidth)/2)
-                                newulx = (ulx - addlen) if (ulx-addlen)>0 else ulx
-                                # cropband = labels[labeluly:labelrly,labelulx:(labelrlx+labeladdlen)]
-                                # cropband = originconvband[uly:rly, ulx:(rlx + addlen)]
-                                cropband = originconvband[uly:rly,ulx:rlx]
-                                # cropimage = imgrsc[uly:rly,ulx:rlx]
-                                cropimage = imgrsc[uly:rly, newulx:(rlx + addlen)]
-
-                                '''add dummy background to cover other kernels
-                                # if checkisland(cropband,uni)==True:
-                                #     cropimage = removeisland(cropband,uni,cropimage)
-                                #     # cropimgband=currentlabels[uly:rly, ulx:(rlx + addlen)]
-                                #     # cropimg = cropimg_extraction.batch_cropimg(originfile+'_crop_'+str(int(uni))+'.png',
-                                #     #                                            path,0,
-                                #     #                                            len(originpixelloc[0]),cropimgband)
-                                #     # cropimg.process()![](../Downloads/OneDrive_1_5-23-2022/gridfree/10_202-18C_crop_1.png)
-                                #     # print(cropimg.batch_results)
-                                #     # continue
-                                #     # print('have other kernels, V')
-                                # 
-                                # dummyimg=np.zeros([height-1,height-1,3])
-                                # dummyimg[:,addlen:addlen+width-1]=cropimage
-                                # background=np.where(cropband==0)
-                                # background=cropimage[background]
-                                # backgroundavg=np.mean(background,axis=1)
-                                # try:
-                                #     backgroundproc=np.percentile(backgroundavg,25)
-                                #     # backgroundproc = np.median(backgroundavg)
-                                #     print(backgroundproc,backgroundavg)
-                                #     backgroundavg=np.where(backgroundavg<backgroundproc)
-                                #     if len(backgroundavg[0])>0:
-                                #         background=background[backgroundavg[0][0]]
-                                #         dummyimg[:,:addlen]=background
-                                #         dummyimg[:,addlen+width-1:]=background
-                                # except:
-                                #     pass
-                                # cropimage=np.copy(dummyimg)
-                                '''
-
-                            else:
-                                addlen=int((width-height)/2)
-                                newuly = (uly - addlen) if (uly - addlen)>0 else uly
-                                # cropband = labels[labeluly:(labelrly+labeladdlen),labelulx:labelrlx]
-                                # cropband = originconvband[uly:(rly+addlen),ulx:rlx]
-                                cropimage = imgrsc[uly:(rly+addlen),ulx:rlx]
-                                '''add dummy background to cover other kernels
-                                cropband = originconvband[uly:rly, ulx:rlx]
-                                cropimage = imgrsc[uly:rly, ulx:rlx]
-                                if checkisland(cropband,uni)==True:
-                                    # print('have other kernel, H')
-                                    cropimage = removeisland(cropband, uni, cropimage)
-                                    # cropimg = cropimg_extraction.batch_cropimg(
-                                    #     originfile + '_crop_' + str(int(uni)) + '.png',
-                                    #     path, len(originpixelloc[0]), len(originpixelloc[0] + 500))
-                                    # cropimg.process()![](../germination_NIR/band_img_output/spring/band_01_germ_1.png)
-                                    # continue
-
-                                dummyimg = np.zeros([width - 1, width - 1, 3])
-                                dummyimg[addlen:addlen+height-1, :] = cropimage
-                                background = np.where(cropband == 0)
-                                background = cropimage[background]
-                                backgroundavg = np.mean(background, axis=1)
-                                try:
-                                    backgroundproc = np.percentile(backgroundavg,25)
-                                    backgroundavg = np.where(backgroundavg <backgroundproc)
-                                    if len(backgroundavg[0])>0:
-                                        background = background[backgroundavg[0][0]]
-                                        dummyimg[:addlen, :] = background
-                                        dummyimg[addlen + height - 1:, :] = background
-                                except:
-                                    pass
-                                cropimage = np.copy(dummyimg)
-                                '''
-                        else:
-                            # cropband = labels[labeluly:labelrly, labelulx:labelrlx]
-                            # cropband = originconvband[uly:rly, ulx:rlx]
-                            cropimage = imgrsc[uly:rly, ulx:rlx]
-                            # if checkisland(cropband, uni) == True:
-                            #     cropimage = removeisland(cropband, uni, cropimage)
-                                # cropimg = cropimg_extraction.batch_cropimg(
-                                #     originfile + '_crop_' + str(int(uni)) + '.png',
-                                #     path, len(originpixelloc[0]), len(originpixelloc[0] + 500))
-                                # cropimg.process()
-                                # continue
+                        '''crop image in square shape'''
+                        # if max(height/width,width/height)>1.05:
+                        #     # edgelen = max(height, width)
+                        #     if height>width: #vertical
+                        #         addlen=int((height-width)/2)
+                        #         # labeladdlen=int((labelheight-labelwidth)/2)
+                        #         newulx = (ulx - addlen) if (ulx-addlen)>0 else ulx
+                        #         # cropband = labels[labeluly:labelrly,labelulx:(labelrlx+labeladdlen)]
+                        #         # cropband = originconvband[uly:rly, ulx:(rlx + addlen)]
+                        #         cropband = originconvband[uly:rly,ulx:rlx]
+                        #         # cropimage = imgrsc[uly:rly,ulx:rlx]
+                        #         cropimage = imgrsc[uly:rly, newulx:(rlx + addlen)]
+                        #
+                        #         '''add dummy background to cover other kernels
+                        #         # if checkisland(cropband,uni)==True:
+                        #         #     cropimage = removeisland(cropband,uni,cropimage)
+                        #         #     # cropimgband=currentlabels[uly:rly, ulx:(rlx + addlen)]
+                        #         #     # cropimg = cropimg_extraction.batch_cropimg(originfile+'_crop_'+str(int(uni))+'.png',
+                        #         #     #                                            path,0,
+                        #         #     #                                            len(originpixelloc[0]),cropimgband)
+                        #         #     # cropimg.process()![](../Downloads/OneDrive_1_5-23-2022/gridfree/10_202-18C_crop_1.png)
+                        #         #     # print(cropimg.batch_results)
+                        #         #     # continue
+                        #         #     # print('have other kernels, V')
+                        #         #
+                        #         # dummyimg=np.zeros([height-1,height-1,3])
+                        #         # dummyimg[:,addlen:addlen+width-1]=cropimage
+                        #         # background=np.where(cropband==0)
+                        #         # background=cropimage[background]
+                        #         # backgroundavg=np.mean(background,axis=1)
+                        #         # try:
+                        #         #     backgroundproc=np.percentile(backgroundavg,25)
+                        #         #     # backgroundproc = np.median(backgroundavg)
+                        #         #     print(backgroundproc,backgroundavg)
+                        #         #     backgroundavg=np.where(backgroundavg<backgroundproc)
+                        #         #     if len(backgroundavg[0])>0:
+                        #         #         background=background[backgroundavg[0][0]]
+                        #         #         dummyimg[:,:addlen]=background
+                        #         #         dummyimg[:,addlen+width-1:]=background
+                        #         # except:
+                        #         #     pass
+                        #         # cropimage=np.copy(dummyimg)
+                        #         '''
+                        #
+                        #     else:
+                        #         addlen=int((width-height)/2)
+                        #         newuly = (uly - addlen) if (uly - addlen)>0 else uly
+                        #         # cropband = labels[labeluly:(labelrly+labeladdlen),labelulx:labelrlx]
+                        #         # cropband = originconvband[uly:(rly+addlen),ulx:rlx]
+                        #         cropimage = imgrsc[uly:(rly+addlen),ulx:rlx]
+                        #         '''add dummy background to cover other kernels
+                        #         cropband = originconvband[uly:rly, ulx:rlx]
+                        #         cropimage = imgrsc[uly:rly, ulx:rlx]
+                        #         if checkisland(cropband,uni)==True:
+                        #             # print('have other kernel, H')
+                        #             cropimage = removeisland(cropband, uni, cropimage)
+                        #             # cropimg = cropimg_extraction.batch_cropimg(
+                        #             #     originfile + '_crop_' + str(int(uni)) + '.png',
+                        #             #     path, len(originpixelloc[0]), len(originpixelloc[0] + 500))
+                        #             # cropimg.process()![](../germination_NIR/band_img_output/spring/band_01_germ_1.png)
+                        #             # continue
+                        #
+                        #         dummyimg = np.zeros([width - 1, width - 1, 3])
+                        #         dummyimg[addlen:addlen+height-1, :] = cropimage
+                        #         background = np.where(cropband == 0)
+                        #         background = cropimage[background]
+                        #         backgroundavg = np.mean(background, axis=1)
+                        #         try:
+                        #             backgroundproc = np.percentile(backgroundavg,25)
+                        #             backgroundavg = np.where(backgroundavg <backgroundproc)
+                        #             if len(backgroundavg[0])>0:
+                        #                 background = background[backgroundavg[0][0]]
+                        #                 dummyimg[:addlen, :] = background
+                        #                 dummyimg[addlen + height - 1:, :] = background
+                        #         except:
+                        #             pass
+                        #         cropimage = np.copy(dummyimg)
+                        #         '''
+                        # else:
+                        #     # cropband = labels[labeluly:labelrly, labelulx:labelrlx]
+                        #     # cropband = originconvband[uly:rly, ulx:rlx]
+                        #     cropimage = imgrsc[uly:rly, ulx:rlx]
+                        #     # if checkisland(cropband, uni) == True:
+                        #     #     cropimage = removeisland(cropband, uni, cropimage)
+                        #         # cropimg = cropimg_extraction.batch_cropimg(
+                        #         #     originfile + '_crop_' + str(int(uni)) + '.png',
+                        #         #     path, len(originpixelloc[0]), len(originpixelloc[0] + 500))
+                        #         # cropimg.process()
+                        #         # continue
+                        cropimage = imgrsc[uly:rly, ulx:rlx]
                         if hundredsize.get() > 0:
                             cropimage = cv2.resize(cropimage, (100, 100), interpolation=cv2.INTER_LINEAR)
                         if two_hundredsize.get() > 0:
