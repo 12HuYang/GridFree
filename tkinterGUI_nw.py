@@ -3268,17 +3268,19 @@ def export_opts(iterver):
     opt_window.title('Export options')
     segmentresult=IntVar()
     croppedimage=IntVar()
-    hundred=IntVar()
-    two_hundred=IntVar()
-    originsize=IntVar()
+    # hundred=IntVar()
+    # two_hundred=IntVar()
+    # originsize=IntVar()
+    cropsize=IntVar()
+    cropsize.set(0)
     checkframe=Frame(opt_window)
     checkframe.pack()
     Checkbutton(checkframe,text='Export Segment outlook images (big size)',variable=segmentresult).pack(padx=10,pady=10)
     Checkbutton(checkframe,text='Export Cropped images for ML dataset',variable=croppedimage).pack(padx=10,pady=10)
-    Checkbutton(checkframe,text='100x100',variable=hundred).pack(padx=10,pady=10)
-    Checkbutton(checkframe,text='224x224',variable=two_hundred).pack(padx=10,pady=10)
-    Checkbutton(checkframe,text='Origin',variable=originsize).pack(padx=10,pady=10)
-    Button(checkframe,text='Export',command=partial(export_result,opt_window,segmentresult,croppedimage,hundred,two_hundred,originsize,iterver)).pack(padx=10,pady=10)
+    Radiobutton(checkframe,text='100x100',variable=cropsize,value=1).pack(padx=10,pady=10)
+    Radiobutton(checkframe,text='224x224',variable=cropsize,value=2).pack(padx=10,pady=10)
+    Radiobutton(checkframe,text='Origin',variable=cropsize,value=3).pack(padx=10,pady=10)
+    Button(checkframe,text='Export',command=partial(export_result,opt_window,segmentresult,croppedimage,cropsize,iterver)).pack(padx=10,pady=10)
     opt_window.transient(root)
     opt_window.grab_set()
 
@@ -3320,7 +3322,7 @@ def checkisland(cropband,uin):
     # nonzero=np.where((tempband != 0) & (tempband != -uin))
     # print(nonzero)
 
-def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsize,originsize,iterver):
+def export_result(popup,segmentoutputopt,cropimageopt,cropsize,iterver):
     global batch
     suggsize=8
     print('fontsize',suggsize)
@@ -3407,7 +3409,7 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
             imgrsc = cv2.imread(file, flags=cv2.IMREAD_ANYCOLOR)
             imgheight,imgwidth,imgchannel=imgrsc.shape
             '''original size crops from origin image'''
-            if originsize.get()>0:
+            if cropsize.get()==3:
                 # imgrsc = cv2.resize(imgrsc, (originwidth, originheight), interpolation=cv2.INTER_LINEAR)
                 cropratio = findratio((imgheight, imgwidth), (labels.shape[0], labels.shape[1]))
                 if cropratio > 1 and imgheight * imgwidth != labels.shape[0] * labels.shape[1]:
@@ -3567,12 +3569,32 @@ def export_result(popup,segmentoutputopt,cropimageopt,hundredsize,two_hundredsiz
                         #         #     path, len(originpixelloc[0]), len(originpixelloc[0] + 500))
                         #         # cropimg.process()
                         #         # continue
-                        cropimage = imgrsc[uly:rly, ulx:rlx]
-                        if hundredsize.get() > 0:
+                        if cropsize.get() == 3:
+                            cropimage = imgrsc[uly:rly, ulx:rlx]
+                        else:
+                            if max(height/width,width/height)>1.05:
+                                # edgelen = max(height, width)
+                                if height>width: #vertical
+                                    addlen=int((height-width)/2)
+                                    # labeladdlen=int((labelheight-labelwidth)/2)
+                                    newulx = (ulx - addlen) if (ulx-addlen)>0 else ulx
+                                    # cropband = labels[labeluly:labelrly,labelulx:(labelrlx+labeladdlen)]
+                                    # cropband = originconvband[uly:rly, ulx:(rlx + addlen)]
+                                    cropband = originconvband[uly:rly,ulx:rlx]
+                                    # cropimage = imgrsc[uly:rly,ulx:rlx]
+                                    cropimage = imgrsc[uly:rly, newulx:(rlx + addlen)]
+                                else:
+                                    addlen=int((width-height)/2)
+                                    newuly = (uly - addlen) if (uly - addlen)>0 else uly
+                                    # cropband = labels[labeluly:(labelrly+labeladdlen),labelulx:labelrlx]
+                                    # cropband = originconvband[uly:(rly+addlen),ulx:rlx]
+                                    cropimage = imgrsc[newuly:(rly+addlen),ulx:rlx]
+                            else:
+                                cropimage = imgrsc[uly:rly, ulx:rlx]
+                        if cropsize.get() == 1:
                             cropimage = cv2.resize(cropimage, (100, 100), interpolation=cv2.INTER_LINEAR)
-                        if two_hundredsize.get() > 0:
+                        if cropsize.get() ==2:
                             cropimage = cv2.resize(cropimage, (224, 224), interpolation=cv2.INTER_LINEAR)
-                        # cropimage = cv2.resize(cropimage,(224,224),interpolation=cv2.INTER_LINEAR)
                         cropimgoutput=os.path.join(path,originfile+'_crop_'+str(int(uni))+'.png')
                         cropfilenames.append(cropimgoutput)
                         kernelpixsize.append(len(originpixelloc[0]))
