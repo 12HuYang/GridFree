@@ -3572,23 +3572,34 @@ def export_result(popup,segmentoutputopt,cropimageopt,cropsize,iterver):
                         if cropsize.get() == 3:
                             cropimage = imgrsc[uly:rly, ulx:rlx]
                         else:
-                            if max(height/width,width/height)>1.05:
-                                # edgelen = max(height, width)
-                                if height>width: #vertical
-                                    addlen=int((height-width)/2)
-                                    # labeladdlen=int((labelheight-labelwidth)/2)
-                                    newulx = (ulx - addlen) if (ulx-addlen)>0 else ulx
-                                    # cropband = labels[labeluly:labelrly,labelulx:(labelrlx+labeladdlen)]
-                                    # cropband = originconvband[uly:rly, ulx:(rlx + addlen)]
-                                    cropband = originconvband[uly:rly,ulx:rlx]
-                                    # cropimage = imgrsc[uly:rly,ulx:rlx]
-                                    cropimage = imgrsc[uly:rly, newulx:(rlx + addlen)]
+                            # if max(height/width,width/height)>1.05:
+                            #     # edgelen = max(height, width)
+                            #     if height>width: #vertical
+                            #         addlen=int((height-width)/2)
+                            #         # labeladdlen=int((labelheight-labelwidth)/2)
+                            #         newulx = (ulx - addlen) if (ulx-addlen)>0 else ulx
+                            #         # cropband = labels[labeluly:labelrly,labelulx:(labelrlx+labeladdlen)]
+                            #         # cropband = originconvband[uly:rly, ulx:(rlx + addlen)]
+                            #         cropband = originconvband[uly:rly,ulx:rlx]
+                            #         # cropimage = imgrsc[uly:rly,ulx:rlx]
+                            #         cropimage = imgrsc[uly:rly, newulx:(rlx + addlen)]
+                            #     else:
+                            #         addlen=int((width-height)/2)
+                            #         newuly = (uly - addlen) if (uly - addlen)>0 else uly
+                            #         # cropband = labels[labeluly:(labelrly+labeladdlen),labelulx:labelrlx]
+                            #         # cropband = originconvband[uly:(rly+addlen),ulx:rlx]
+                            #         cropimage = imgrsc[newuly:(rly+addlen),ulx:rlx]
+
+                            if max(height / width, width / height) > 1.05:
+                                if height > width:
+                                    makeupimg = np.zeros((height, height, 3))
+                                    extralen = int((height - width) / 2)
+                                    makeupimg[:, extralen:extralen + width, :] = makeupimg[:, extralen:extralen + width,:] + imgrsc[uly:rly+1, ulx:rlx+1]
                                 else:
-                                    addlen=int((width-height)/2)
-                                    newuly = (uly - addlen) if (uly - addlen)>0 else uly
-                                    # cropband = labels[labeluly:(labelrly+labeladdlen),labelulx:labelrlx]
-                                    # cropband = originconvband[uly:(rly+addlen),ulx:rlx]
-                                    cropimage = imgrsc[newuly:(rly+addlen),ulx:rlx]
+                                    makeupimg = np.zeros((width, width, 3))
+                                    extralen = int((width - height) / 2)
+                                    makeupimg[extralen:extralen + height, :, :] = makeupimg[extralen:extralen + height,:, :] + imgrsc[uly:rly+1, ulx:rlx+1]
+                                cropimage = makeupimg.copy()
                             else:
                                 cropimage = imgrsc[uly:rly, ulx:rlx]
                         if cropsize.get() == 1:
