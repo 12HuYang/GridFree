@@ -793,7 +793,7 @@ def Open_Multifile():
     global extractbutton,outputbutton
     if proc_mode[proc_name].get()=='1':
         batchprocess.Open_batchfolder()
-        extractbutton.config(state=NORMAL)
+        # extractbutton.config(state=NORMAL)
         outputbutton.config(state=NORMAL)
         return
     # else:
@@ -3259,10 +3259,13 @@ def export_ext(iterver,path,whext=False,blkext=False):
             segimage=segimg.resize([originwidth,originheight],resample=Image.BILINEAR)
             segimage.save(path+'/'+originfile+extcolor+'-labelresult'+'.png',"PNG")
 
+def batchexportopt(popup,segmentresult,croppedimage,cropsize):
+    popup.destroy()
+    root.update()
+    batchprocess.batch_exportpath(segmentresult.get(),croppedimage.get(),cropsize.get())
+    batchprocess.batch_process()
+
 def export_opts(iterver):
-    if proc_mode[proc_name].get()=='1':
-        batchprocess.batch_exportpath()
-        return
     opt_window=Toplevel()
     opt_window.geometry('300x150')
     opt_window.title('Export options')
@@ -3280,7 +3283,11 @@ def export_opts(iterver):
     Radiobutton(checkframe,text='100x100',variable=cropsize,value=1).pack(padx=10,pady=10)
     Radiobutton(checkframe,text='224x224',variable=cropsize,value=2).pack(padx=10,pady=10)
     Radiobutton(checkframe,text='Origin',variable=cropsize,value=3).pack(padx=10,pady=10)
-    Button(checkframe,text='Export',command=partial(export_result,opt_window,segmentresult,croppedimage,cropsize,iterver)).pack(padx=10,pady=10)
+    if proc_mode[proc_name].get()=='1':
+        # batchprocess.batch_exportpath()
+        Button(checkframe, text='Export',command=partial(batchexportopt,opt_window,segmentresult,croppedimage,cropsize)).pack(padx=10,pady=10)
+    else:
+        Button(checkframe,text='Export',command=partial(export_result,opt_window,segmentresult,croppedimage,cropsize,iterver)).pack(padx=10,pady=10)
     opt_window.transient(root)
     opt_window.grab_set()
 
@@ -3963,8 +3970,11 @@ def export_result(popup,segmentoutputopt,cropimageopt,cropsize,iterver):
     batch['drawpolygon'] = [int(drawpolygon)]
     batch['filtercoord'] = pcfilter.copy()
     batch['filterbackground']=[displayimg['Origin']['Size'][0],displayimg['Origin']['Size'][1]]
-    batch['segmentoutputopt'] = [segmentoutputopt.get()]
-    batch['cropimageopt'] = [cropimageopt.get()]
+    # batch['segmentoutputopt'] = [segmentoutputopt.get()]
+    # batch['cropimageopt'] = [cropimageopt.get()]
+    # batch['cropsize']=[cropsize.get()]
+
+
 
     print('batch',batch)
 
@@ -4390,24 +4400,24 @@ def gen_convband():
 
 def process():
     # global outputbutton
-    if proc_mode[proc_name].get()=='1':
-        batchprocess.batch_process()
-        # outputbutton.config(state=NORMAL)
-        return
-    # else:
-    #     outputbutton.config(state=DISABLED)
+    '''change to only work for single img '''
+    # if proc_mode[proc_name].get()=='1':
+    #     batchprocess.batch_process()
+    #     # outputbutton.config(state=NORMAL)
+    #     return
 
-    if originlabels is None:
-        extraction()
-    else:
-        if changekmeans==True:
+    if proc_mode[proc_name].get()=='0':
+        if originlabels is None:
             extraction()
         else:
-            if linelocs[1]==425 and linelocs[3]==50:
+            if changekmeans==True:
                 extraction()
             else:
-                resegment()
-    gen_convband()
+                if linelocs[1]==425 and linelocs[3]==50:
+                    extraction()
+                else:
+                    resegment()
+        gen_convband()
     #highlightcoin()
 
 def displayfig():
