@@ -1301,30 +1301,30 @@ class batch_ser_func():
                     # tempdict={colortable[uni]:templist+indeclist+pcalist}  #NIR,Redeyes,R,G,B,NDVI,area
                     tempdict={uni:templist+indeclist+pcalist}
                     print(tempdict)
-                    for ki in range(len(indicekeys)):
-                        originNDVI=origindata[indicekeys[ki]]
-                        print(len(originNDVI),len(originNDVI[0]))
-                        pixellist=[]
-                        for k in range(len(uniloc[0])):
-                            #print(uniloc[0][k],uniloc[1][k])
-                            try:
-                                tempdict[uni][6+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
-                            except IndexError:
-                                print(uniloc[0][k],uniloc[1][k])
-                            tempdict[uni][7+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
-                            pixellist.append(originNDVI[uniloc[0][k]][uniloc[1][k]])
-                        tempdict[uni][ki*3+6]=tempdict[uni][ki*3+6]/amount
-                        tempdict[uni][ki*3+8]=np.std(pixellist)
-                    pixellist=[]
-                    for k in range(len(uniloc[0])):
-                        try:
-                            tempdict[uni][-2]+=pcabands[uniloc[0][k]][uniloc[1][k]]
-                        except IndexError:
-                            print(uniloc[0][k],uniloc[1][k])
-                        tempdict[uni][-3]+=pcabands[uniloc[0][k]][uniloc[1][k]]
-                        pixellist.append(pcabands[uniloc[0][k]][uniloc[1][k]])
-                        tempdict[uni][-3]=tempdict[uni][-3]/amount
-                        tempdict[uni][-1]=np.std(pixellist)
+                    # for ki in range(len(indicekeys)):
+                    #     originNDVI=origindata[indicekeys[ki]]
+                    #     print(len(originNDVI),len(originNDVI[0]))
+                    #     pixellist=[]
+                    #     for k in range(len(uniloc[0])):
+                    #         #print(uniloc[0][k],uniloc[1][k])
+                    #         try:
+                    #             tempdict[uni][6+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
+                    #         except IndexError:
+                    #             print(uniloc[0][k],uniloc[1][k])
+                    #         tempdict[uni][7+ki*3]+=originNDVI[uniloc[0][k]][uniloc[1][k]]
+                    #         pixellist.append(originNDVI[uniloc[0][k]][uniloc[1][k]])
+                    #     tempdict[uni][ki*3+6]=tempdict[uni][ki*3+6]/amount
+                    #     tempdict[uni][ki*3+8]=np.std(pixellist)
+                    # pixellist=[]
+                    # for k in range(len(uniloc[0])):
+                    #     try:
+                    #         tempdict[uni][-2]+=pcabands[uniloc[0][k]][uniloc[1][k]]
+                    #     except IndexError:
+                    #         print(uniloc[0][k],uniloc[1][k])
+                    #     tempdict[uni][-3]+=pcabands[uniloc[0][k]][uniloc[1][k]]
+                    #     pixellist.append(pcabands[uniloc[0][k]][uniloc[1][k]])
+                    #     tempdict[uni][-3]=tempdict[uni][-3]/amount
+                    #     tempdict[uni][-1]=np.std(pixellist)
                     datatable.update(tempdict)
                 filename=self.exportpath+'/'+originfile+'-outputdata.csv'
                 with open(filename,mode='w') as f:
